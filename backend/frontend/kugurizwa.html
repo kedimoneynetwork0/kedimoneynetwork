@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="rw">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gusaba Inguzanyo – Kedi Money Network</title>
+  <style>
+    body {
+      background-color: #f9fafb;
+      color: #1f2937;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background-color: #ffffff;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      padding: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header h1 {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #16a34a;
+    }
+
+    nav a {
+      color: #374151;
+      margin-left: 1rem;
+      text-decoration: none;
+    }
+
+    nav a:hover {
+      color: #16a34a;
+    }
+
+    .form-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 2rem;
+    }
+
+    .form-container form {
+      background-color: #ffffff;
+      padding: 2rem;
+      border-radius: 0.5rem;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 500px;
+    }
+
+    .form-container h2 {
+      font-size: 1.75rem;
+      margin-bottom: 1rem;
+      text-align: center;
+      color: #16a34a;
+    }
+
+    .form-container label {
+      font-size: 1rem;
+      color: #374151;
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+
+    .form-container input[type="text"],
+    .form-container input[type="number"],
+    .form-container input[type="email"],
+    .form-container select,
+    .form-container textarea {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.375rem;
+      margin-bottom: 1rem;
+      font-size: 1rem;
+    }
+
+    .form-container input[type="submit"] {
+      background-color: #16a34a;
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.375rem;
+      font-size: 1rem;
+      border: none;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    .form-container input[type="submit"]:hover {
+      background-color: #15803d;
+    }
+
+    /* Hiding input field for "Ikindi" at first */
+    #other-income-container {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Navbar -->
+  <header>
+    <h1>Kedi money network</h1>
+    <nav>
+      <a href="kwizigama.html">Ahabanza</a>
+      <a href="#">Ibyerekeye</a>
+      <a href="log.html">Sign up</a>
+      <a href="login.html">Sign in</a>
+    </nav>
+  </header>
+
+  <!-- Loan Application Form Section -->
+  <section class="form-container">
+    <form action="submit_inguzanyo.php" method="POST">
+      <h2>Gusaba Inguzanyo</h2>
+
+      <!-- Full Name -->
+      <label for="full-name">Amazina yose</label>
+      <input type="text" id="full-name" name="full_name" required placeholder="Andika amazina yawe">
+
+      <!-- Email Address -->
+      <label for="email">Imeli</label>
+      <input type="email" id="email" name="email" required placeholder="Andika imeli yawe">
+
+      <!-- Phone Number -->
+      <label for="phone">Nomero ya Telefoni</label>
+      <input type="text" id="phone" name="phone" required placeholder="Andika nomero ya telefoni yawe">
+
+      <!-- Loan Amount -->
+      <label for="amount">Amafaranga asabwa</label>
+      <input type="number" id="amount" name="amount" required placeholder="Andika amafaranga usaba" min="1000">
+
+      <!-- Loan Duration -->
+      <label for="duration">Igihe cyo kwishyura</label>
+      <select id="duration" name="duration" required>
+        <option value="1">Buri munsi</option>
+        <option value="7">Buri cyumweru</option>
+        <option value="28">Ukwezi</option>
+        <option value="84">Amezi 3</option>
+      </select>
+
+      <!-- Purpose of Loan -->
+      <label for="purpose">Impamvu yo gusaba inguzanyo</label>
+      <textarea id="purpose" name="purpose" rows="4" required placeholder="Andika impamvu yo gusaba inguzanyo"></textarea>
+
+      <!-- Source of Income -->
+      <label for="employment-source">Aho ukura amafaranga</label>
+      <select id="employment-source" name="employment_source" onchange="checkOtherIncome()" required>
+        <option value="">--Hitamo--</option>
+        <option value="salary">Umushahara (akazi gasanzwe)</option>
+        <option value="business">Ubucuruzi</option>
+        <option value="farming">Ubuhinzi/Ubworozi</option>
+        <option value="freelance">Ibikorwa byigenga (freelance)</option>
+        <option value="other">Ikindi</option>
+      </select>
+
+      <!-- Other income (appears only if 'other' is selected) -->
+      <div id="other-income-container">
+        <label for="other-income">Andika aho ukura amafaranga:</label>
+        <input type="text" id="other-income" name="other_income" placeholder="Andika aho ukura amafaranga">
+      </div>
+
+      <!-- Collateral -->
+      <label for="collateral">Icyemezo cyo kubika ingwate (Niba bihari)</label>
+      <input type="text" id="collateral" name="collateral" placeholder="Niba ufite ingwate, andika ibiranga">
+
+      <!-- Additional Comments -->
+      <label for="comments">Ibisobanuro cyangwa ibitekerezo</label>
+      <textarea id="comments" name="comments" rows="4" placeholder="Andika ibitekerezo cyangwa ibisobanuro"></textarea>
+
+      <!-- Submit Button -->
+      <input type="submit" value="Tangira Gusaba Inguzanyo">
+    </form>
+  </section>
+
+  <!-- JavaScript to handle 'other' option -->
+  <script>
+    function checkOtherIncome() {
+      var source = document.getElementById('employment-source').value;
+      var otherIncomeContainer = document.getElementById('other-income-container');
+      if (source === 'other') {
+        otherIncomeContainer.style.display = 'block';
+      } else {
+        otherIncomeContainer.style.display = 'none';
+      }
+    }
+  </script>
+</body>
+</html>

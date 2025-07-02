@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="rw">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kwizigama Form – Kedi Money Network</title>
+  <style>
+    body {
+      background-color: #f9fafb;
+      color: #1f2937;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background-color: #ffffff;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      padding: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header h1 {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #16a34a;
+    }
+
+    .form-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 2rem;
+    }
+
+    .form-container form {
+      background-color: #ffffff;
+      padding: 2rem;
+      border-radius: 0.5rem;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 600px;
+    }
+
+    .form-container h2 {
+      font-size: 1.75rem;
+      margin-bottom: 1rem;
+      text-align: center;
+      color: #16a34a;
+    }
+
+    .form-container label {
+      font-size: 1rem;
+      color: #374151;
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+
+    .form-container input[type="text"],
+    .form-container input[type="number"],
+    .form-container input[type="email"],
+    .form-container input[type="date"],
+    .form-container textarea,
+    .form-container input[type="file"] {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.375rem;
+      margin-bottom: 1rem;
+      font-size: 1rem;
+    }
+
+    .form-container input[type="submit"] {
+      background-color: #16a34a;
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.375rem;
+      font-size: 1rem;
+      border: none;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    .form-container input[type="submit"]:hover {
+      background-color: #15803d;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Kedi Money Network</h1>
+</header>
+
+<section class="form-container">
+  <form action="submit_form.php" method="POST" enctype="multipart/form-data">
+    <h2>Itangiriro ry'ubwizigame</h2>
+
+    <!-- First Name -->
+    <label for="first-name">Izina Ribanza</label>
+    <input type="text" id="first-name" name="first_name" required placeholder="Andika izina ribanza">
+
+    <!-- Last Name -->
+    <label for="last-name">Izina Rikurikira</label>
+    <input type="text" id="last-name" name="last_name" required placeholder="Andika izina rikurikira">
+
+    <!-- Phone Number -->
+    <label for="phone">Numero ya Telefone</label>
+    <input type="text" id="phone" name="phone" required placeholder="Andika numero ya telefone">
+
+    <!-- Amount -->
+    <label for="amount">Amafaranga</label>
+    <input type="number" id="amount" name="amount" required placeholder="Andika amafaranga" min="500" max="10000">
+
+    <!-- Deposit Date -->
+    <label for="deposit-date">Itariki yo kubitsa</label>
+    <input type="date" id="deposit-date" name="deposit_date" required>
+
+    <!-- Description -->
+    <label for="description">Ibisobanuro</label>
+    <textarea id="description" name="description" rows="4" placeholder="Andika ibisobanuro byiyongera"></textarea>
+
+    <!-- Screenshot Upload -->
+    <label for="screenshot">Upload Screenshot (Ifoto y'ubwishyu)</label>
+    <input type="file" id="screenshot" name="screenshot" accept="image/*" required>
+
+    <!-- Submit Button -->
+    <input type="submit" value="Ohereza">
+  </form>
+</section>
+
+</body>
+</html>
