@@ -1,3 +1,4 @@
+// server.js
 const express = require('express');
 const multer = require('multer');
 const nodemailer = require('nodemailer');
@@ -12,6 +13,7 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Folder kubika uploads
 const uploadDir = path.join(__dirname, 'uploads');
@@ -25,7 +27,7 @@ const storage = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    const uniqueName = `${Date.now()}-${Math.round(Math.random()*1e9)}${path.extname(file.originalname)}`;
+    const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(file.originalname)}`;
     cb(null, uniqueName);
   }
 });
@@ -42,12 +44,12 @@ const upload = multer({ storage }).fields([
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: process.env.MAIL_USER,    // muri .env wandike email yawe
-    pass: process.env.MAIL_PASS     // muri .env wandike password cyangwa app password
+    user: process.env.MAIL_USER,    // email yawe muri .env (ex: kedimoneynetwork@gmail.com)
+    pass: process.env.MAIL_PASS     // password ya email cyangwa app password
   }
 });
 
-// Route yo kwakira form na amafoto
+// POST route yo kwakira form na amafoto
 app.post('/tree_signup', (req, res) => {
   upload(req, res, async (err) => {
     if (err) return res.status(400).json({ message: 'Error uploading files.', error: err.message });
@@ -77,13 +79,13 @@ app.post('/tree_signup', (req, res) => {
     // Generate Referral ID niba idatanzwe (optional)
     let generatedReferralId = referralId;
     if (!referralId) {
-      generatedReferralId = `KEDI${Date.now().toString().slice(-6)}`; // urugero rworoshye
+      generatedReferralId = `KEDI${Date.now().toString().slice(-6)}`;
     }
 
     // Email content
     const mailOptions = {
       from: process.env.MAIL_USER,
-      to: process.env.MAIL_USER, // wohereza email kuri email yawe ubwawe
+      to: process.env.MAIL_USER, // wohereza email kuri email yawe
       subject: `New Tree Plan Signup - ${firstName} ${lastName}`,
       html: `
         <h2>Tree Plan Signup Details</h2>
@@ -112,7 +114,7 @@ app.post('/tree_signup', (req, res) => {
     try {
       await transporter.sendMail(mailOptions);
 
-      // Optional: Hano ushobora gusiba amafoto yo mu uploads niba udashaka kubika
+      // Ushobora gusiba amafoto nyuma yo kohereza email niba udashaka kubika
       // fs.unlinkSync(profilePhoto.path);
       // fs.unlinkSync(idFront.path);
       // fs.unlinkSync(idBack.path);
