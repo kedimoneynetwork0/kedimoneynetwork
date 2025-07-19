@@ -14,8 +14,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve frontend static files from ./frontend folder
-app.use(express.static(path.join(__dirname, 'frontend')));
+// Serve frontend static files from ../frontend folder (one level up from backend)
+app.use(express.static(path.join(__dirname, '..', 'frontend')));
 
 // Folder kubikamo amafoto yoherejwe
 const uploadDir = path.join(__dirname, 'uploads');
@@ -130,7 +130,7 @@ app.post('/tree_signup', (req, res) => {
 
 // Serve index.html on any GET request (for SPA or simple website)
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'frontend', 'index.html'));
+  res.sendFile(path.join(__dirname, '..', 'frontend', 'index.html'));
 });
 
 // Start server
