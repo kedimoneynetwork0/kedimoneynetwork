@@ -14,16 +14,16 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve frontend static files from ../frontend folder (one level up from backend)
+// Serve frontend static files from ../frontend folder
 app.use(express.static(path.join(__dirname, '..', 'frontend')));
 
-// Folder kubikamo amafoto yoherejwe
+// Create uploads directory if not exists
 const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir);
 }
 
-// Multer config kubika amafoto
+// Multer config for file storage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, uploadDir);
@@ -34,7 +34,7 @@ const storage = multer.diskStorage({
   }
 });
 
-// Multer fields (ama foto menshi)
+// Accept these file fields only
 const upload = multer({ storage }).fields([
   { name: 'profilePhoto', maxCount: 1 },
   { name: 'idFront', maxCount: 1 },
@@ -42,16 +42,16 @@ const upload = multer({ storage }).fields([
   { name: 'paymentScreenshot', maxCount: 1 },
 ]);
 
-// Nodemailer transporter
+// Nodemailer transporter setup
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: process.env.MAIL_USER,  // email yawe muri .env
-    pass: process.env.MAIL_PASS   // password / app password muri .env
+    user: process.env.MAIL_USER, // example: youremail@gmail.com
+    pass: process.env.MAIL_PASS  // app password or your email password
   }
 });
 
-// API route - kwakira form yoherejwe na frontend
+// POST /tree_signup route to handle form submission
 app.post('/tree_signup', (req, res) => {
   upload(req, res, async (err) => {
     if (err) return res.status(400).json({ message: 'Error uploading files.', error: err.message });
@@ -62,11 +62,12 @@ app.post('/tree_signup', (req, res) => {
       referralId, referrerFirstName, referrerLastName
     } = req.body;
 
-    // Check required fields
+    // Validate required fields
     if (!firstName || !lastName || !district || !sector || !cell || !village || !idNumber || !username || !password) {
       return res.status(400).json({ message: 'Please fill all required fields!' });
     }
 
+    // Check uploaded files
     const profilePhoto = req.files['profilePhoto'] ? req.files['profilePhoto'][0] : null;
     const idFront = req.files['idFront'] ? req.files['idFront'][0] : null;
     const idBack = req.files['idBack'] ? req.files['idBack'][0] : null;
@@ -76,16 +77,16 @@ app.post('/tree_signup', (req, res) => {
       return res.status(400).json({ message: 'All required images must be uploaded!' });
     }
 
-    // Generate Referral ID niba idatanzwe
+    // Generate referral ID if not provided
     let generatedReferralId = referralId;
     if (!referralId) {
       generatedReferralId = `KEDI${Date.now().toString().slice(-6)}`;
     }
 
-    // Email content
+    // Prepare email content
     const mailOptions = {
       from: process.env.MAIL_USER,
-      to: process.env.MAIL_USER, // wohereza email ku email yawe
+      to: process.env.MAIL_USER, // send to yourself
       subject: `New Tree Plan Signup - ${firstName} ${lastName}`,
       html: `
         <h2>Tree Plan Signup Details</h2>
@@ -114,7 +115,7 @@ app.post('/tree_signup', (req, res) => {
     try {
       await transporter.sendMail(mailOptions);
 
-      // Optional: gusiba amafoto uploaded nyuma yo kohereza email
+      // Optionally delete uploaded files after sending email
       // fs.unlinkSync(profilePhoto.path);
       // fs.unlinkSync(idFront.path);
       // fs.unlinkSync(idBack.path);
@@ -128,7 +129,7 @@ app.post('/tree_signup', (req, res) => {
   });
 });
 
-// Serve index.html on any GET request (for SPA or simple website)
+// Serve index.html for all other GET requests (for SPA support)
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'frontend', 'index.html'));
 });
