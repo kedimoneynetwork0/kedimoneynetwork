@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="rw">
+<head>
+  <meta charset="UTF-8" />
+  <title>KEDI Money Network - Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f2f2f2;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+    }
+    header {
+      background-color: #4CAF50;
+      color: white;
+      padding: 15px;
+      font-size: 24px;
+    }
+    .container {
+      margin-top: 30px;
+    }
+    .btn {
+      padding: 12px 25px;
+      margin: 10px;
+      font-size: 16px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    .btn:hover {
+      background-color: #45a049;
+    }
+    .history {
+      margin-top: 30px;
+      text-align: left;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .logout {
+      margin-top: 20px;
+      color: red;
+      cursor: pointer;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body onload="loadUsername(); loadTransactions();">
+
+  <header>
+    Dashboard yawe - KEDI Money Network
+  </header>
+
+  <div class="container">
+    <h2>Murakaza neza, <span id="username">User</span>!</h2>
+
+    <button class="btn" onclick="location.href='form.html'">Make Transaction</button>
+    <button class="btn" onclick="location.href='tree.html'">See Tree</button>
+
+    <div class="history">
+      <h3>Transaction History</h3>
+      <ul id="transactionList">
+        <li>Loading transactions...</li>
+      </ul>
+    </div>
+
+    <div class="logout" onclick="logout()">→ Logout</div>
+  </div>
+
+  <script>
+    // Sample data to simulate backend response
+    const sampleTransactions = [
+      { type: "Deposit", amount: 5000, date: "2025-07-21" },
+      { type: "Loan", amount: 15000, date: "2025-07-22" },
+    ];
+
+    document.addEventListener("DOMContentLoaded", function () {
+      const username = localStorage.getItem("username") || "User";
+      document.getElementById("username").innerText = username;
+
+      const list = document.getElementById("transactionList");
+      list.innerHTML = "";
+      sampleTransactions.forEach((txn) => {
+        const li = document.createElement("li");
+        li.textContent = `${txn.type}: RWF ${txn.amount} - ${txn.date}`;
+        list.appendChild(li);
+      });
+    });
+
+    function logout() {
+      localStorage.removeItem("token");
+      localStorage.removeItem("username");
+      window.location.href = "login.html";
+    }
+  </script>
+
+</body>
+</html>

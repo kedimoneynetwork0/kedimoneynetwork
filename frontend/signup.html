@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="rw">
+<head>
+  <meta charset="UTF-8">
+  <title>Kwiyandikisha - KEDI Money Network</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9f9f9;
+      padding: 0;
+      margin: 0;
+    }
+    header {
+      background: #2b8a3e;
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+    nav a {
+      margin: 0 15px;
+      color: white;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    .form-container {
+      max-width: 500px;
+      margin: 40px auto;
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h2 {
+      text-align: center;
+      color: #2b8a3e;
+    }
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    .info-box {
+      margin-top: 10px;
+      padding: 10px;
+      background: #e8f5e9;
+      border-left: 5px solid #2b8a3e;
+      display: none;
+    }
+    button {
+      background: #2b8a3e;
+      color: white;
+      padding: 10px 20px;
+      margin-top: 20px;
+      width: 100%;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #246f34;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>KEDI Money Network</h1>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="about.html">About</a>
+      <a href="login.html">Signin</a>
+      <a href="signup.html">Signup</a>
+      <a href="admin.html">Admin Login</a>
+    </nav>
+  </header>
+
+  <div class="form-container">
+    <h2>Iyandikishe</h2>
+    <form id="signupForm" onsubmit="signupUser(event)">
+      <label>Izina ribanza:</label>
+      <input type="text" name="firstName" required>
+
+      <label>Izina rikurikira:</label>
+      <input type="text" name="lastName" required>
+
+      <label>Nimero ya telefone:</label>
+      <input type="tel" name="phone" required>
+
+      <label>Email:</label>
+      <input type="email" name="email" required>
+
+      <label>Username:</label>
+      <input type="text" name="username" required>
+
+      <label>Ijambo ry’ibanga:</label>
+      <input type="password" name="password" required>
+
+      <label>Subiramo ijambo ry’ibanga:</label>
+      <input type="password" name="confirmPassword" required>
+
+      <label>Uburyo bwo kwishyura:</label>
+      <select name="paymentMethod" id="paymentMethod" required>
+        <option value="">-- Hitamo --</option>
+        <option value="mtn">MTN Mobile Money</option>
+        <option value="bank">Bank (Coming Soon)</option>
+      </select>
+
+      <div id="paymentInfo" class="info-box"></div>
+
+      <label>Transaction ID:</label>
+      <input type="text" name="txnId" required>
+
+      <label>Referral ID (wahereweho):</label>
+      <input type="text" name="referralId" required>
+
+      <button type="submit">Ohereza</button>
+    </form>
+  </div>
+
+  <script>
+    const paymentMethod = document.getElementById('paymentMethod');
+    const paymentInfo = document.getElementById('paymentInfo');
+
+    paymentMethod.addEventListener('change', function () {
+      const value = this.value;
+      if (value === 'mtn') {
+        paymentInfo.style.display = 'block';
+        paymentInfo.innerHTML = 'Kwishyura ukoresheje MTN Mobile Money: <br><strong>*182*8*1*1594092#</strong>';
+      } else if (value === 'bank') {
+        paymentInfo.style.display = 'block';
+        paymentInfo.innerHTML = 'Bank: <em>Coming Soon</em>';
+      } else {
+        paymentInfo.style.display = 'none';
+      }
+    });
+
+    document.getElementById('signupForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      // Here you will call fetch() to send form data to backend
+      alert('Form yoherejwe! (Code izashyirwaho muri main.js)');
+    });
+  </script>
+</body>
+</html>

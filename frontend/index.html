@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="rw">
+<head>
+  <meta charset="UTF-8">
+  <title>KEDI Money Network - Home</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9f9f9;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background: #2b8a3e;
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+    nav a {
+      margin: 0 15px;
+      color: white;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    .hero {
+      padding: 40px;
+      text-align: center;
+      background: #e0f2f1;
+    }
+    .hero h2 {
+      margin-bottom: 10px;
+    }
+    .icons {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-top: 30px;
+    }
+    .icon {
+      background: white;
+      padding: 20px 30px;
+      border-radius: 10px;
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      transition: transform 0.3s;
+    }
+    .icon:hover {
+      transform: scale(1.05);
+      background-color: #e8f5e9;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>KEDI Money Network</h1>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="about.html">About</a>
+      <a href="login.html">Signin</a>
+      <a href="signup.html">Signup</a>
+      <a href="admin.html">Admin Login</a>
+    </nav>
+  </header>
+
+  <div class="hero">
+    <h2>Ikimina k’Ikoranabuhanga</h2>
+    <p>Tangira kwizigamira, ubikuze, usabe inguzanyo, urebe Tree Plan!</p>
+
+    <div class="icons">
+      <div class="icon" onclick="redirectIfLoggedIn('form.html', 'save')">Kwizigama</div>
+      <div class="icon" onclick="redirectIfLoggedIn('form.html', 'withdraw')">Kubikuza</div>
+      <div class="icon" onclick="redirectIfLoggedIn('form.html', 'loan')">Inguzanyo</div>
+      <div class="icon" onclick="redirectIfLoggedIn('tree.html')">Tree Plan</div>
+    </div>
+  </div>
+
+  <script src="main.js"></script>
+</body>
+</html>
