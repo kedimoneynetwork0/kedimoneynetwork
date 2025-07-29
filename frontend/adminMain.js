@@ -1,6 +1,8 @@
 // adminMain.js
 
 document.addEventListener("DOMContentLoaded", () => {
+  const backendUrl = "https://kedimoneynetwork.onrender.com"; // <-- Hano shyiramo backend URL yawe
+
   const adminForm = document.getElementById("adminLoginForm");
   const approveBtnClass = ".approve-btn";
   const rejectBtnClass = ".reject-btn";
@@ -48,7 +50,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      const res = await fetch("/api/admin/users/pending", {
+      const res = await fetch(`${backendUrl}/api/admin/users/pending`, {
         headers: { Authorization: `Bearer ${getAdminToken()}` },
       });
       if (!res.ok) throw new Error("Failed to load pending users.");
@@ -82,7 +84,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.target.matches(approveBtnClass)) {
       const userId = e.target.dataset.id;
       try {
-        const res = await fetch(`/api/admin/users/approve/${userId}`, {
+        const res = await fetch(`${backendUrl}/api/admin/users/approve/${userId}`, {
           method: "PATCH",
           headers: { Authorization: `Bearer ${getAdminToken()}` },
         });
@@ -97,7 +99,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.target.matches(rejectBtnClass)) {
       const userId = e.target.dataset.id;
       try {
-        const res = await fetch(`/api/admin/users/reject/${userId}`, {
+        const res = await fetch(`${backendUrl}/api/admin/users/reject/${userId}`, {
           method: "PATCH",
           headers: { Authorization: `Bearer ${getAdminToken()}` },
         });
@@ -117,7 +119,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
     try {
-      const res = await fetch("/api/admin/users", {
+      const res = await fetch(`${backendUrl}/api/admin/users`, {
         headers: { Authorization: `Bearer ${getAdminToken()}` },
       });
       if (!res.ok) throw new Error("Failed to load all users.");
@@ -147,7 +149,7 @@ document.addEventListener("DOMContentLoaded", () => {
   async function loadTotalDeposits() {
     if (!getAdminToken()) return;
     try {
-      const res = await fetch("/api/admin/deposits/total", {
+      const res = await fetch(`${backendUrl}/api/admin/deposits/total`, {
         headers: { Authorization: `Bearer ${getAdminToken()}` },
       });
       if (!res.ok) throw new Error("Failed to load total deposits.");
@@ -164,7 +166,7 @@ document.addEventListener("DOMContentLoaded", () => {
   async function loadTopBonusUsers() {
     if (!getAdminToken()) return;
     try {
-      const res = await fetch("/api/admin/users/top-bonus", {
+      const res = await fetch(`${backendUrl}/api/admin/users/top-bonus`, {
         headers: { Authorization: `Bearer ${getAdminToken()}` },
       });
       if (!res.ok) throw new Error("Failed to load top bonus users.");
