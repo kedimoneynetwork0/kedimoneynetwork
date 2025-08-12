@@ -63,3 +63,12 @@ import Signup from './pages/signup';
 ```
 
 Also, ensure there's only one signup component file in the `frontend/src/pages` directory with the correct case.
+
+Similarly, if you encounter an error like "Could not resolve '../Api' from 'src/pages/UserProfile.jsx'", it's due to the same issue with the API file. Make sure all import statements for the API file use the correct case:
+
+```javascript
+// Correct import (lowercase 'a')
+import { getUserProfile, changePassword, requestPasswordReset } from '../api';
+```
+
+Also, ensure there's only one API file in the `frontend/src` directory with the correct case (`api.js`).
