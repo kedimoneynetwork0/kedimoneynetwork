@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: kedi-money-frontend
+    env: static
+    buildCommand: cd frontend && npm install && npm run build
+    staticFiles:
+      - path: /frontend/dist
+        directory: frontend/dist
+    routes:
+      - type: spa
+        source: /
