@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Button from '../components/Button';
-import { getUserBonus, getUserDashboard, getUserProfile, createTransaction } from '../Api';
+import { getUserBonus, getUserDashboard, getUserProfile, createTransaction } from '../api';
 import Header from '../components/Header';
 
 export default function UserDashboard() {

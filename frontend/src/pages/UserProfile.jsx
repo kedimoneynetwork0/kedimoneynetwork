@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getUserProfile, changePassword, requestPasswordReset } from '../Api';
+import { getUserProfile, changePassword, requestPasswordReset } from '../api';
 import Header from '../components/Header';
 
 export default function UserProfile() {

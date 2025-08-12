@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getNews } from '../Api';
+import { getNews } from '../api';
 
 export default function NewsSection() {
   const [news, setNews] = useState([]);

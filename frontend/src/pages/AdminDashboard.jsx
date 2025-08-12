@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getPendingUsers, getPendingTransactions, getAllUsers, getAllTransactions, approveUser, approveTransaction, createNews, getNews } from '../Api';
+import { getPendingUsers, getPendingTransactions, getAllUsers, getAllTransactions, approveUser, approveTransaction, createNews, getNews } from '../api';
 import Header from '../components/Header';
 
 export default function AdminDashboard() {
