@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Home from './pages/home';
 import About from './pages/about';
 import Login from './pages/login';
-import Signup from './pages/Signup';
+import Signup from './pages/signup';
 import UserDashboard from './pages/UserDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import UserProfile from './pages/UserProfile';
