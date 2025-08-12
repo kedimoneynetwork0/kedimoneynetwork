@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# Environment variables
+.env
+
+# Logs
+*.log
+
+# Database
+*.sqlite
+
+# IDE files
+.vscode/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
