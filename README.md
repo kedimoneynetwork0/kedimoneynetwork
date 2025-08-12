@@ -50,3 +50,16 @@ If you've fixed the news table issue, you'll need to run the migration script:
 ```bash
 cd backend
 node migrate-news-table.js
+```
+
+## Common Issues
+
+### Case-sensitive file names
+If you encounter an error like "Could not resolve './pages/Signup' from 'src/App.jsx'", it's likely due to case-sensitive file names. Make sure the import statement in `App.jsx` matches the actual file name case:
+
+```javascript
+// Correct import (lowercase 's')
+import Signup from './pages/signup';
+```
+
+Also, ensure there's only one signup component file in the `frontend/src/pages` directory with the correct case.
