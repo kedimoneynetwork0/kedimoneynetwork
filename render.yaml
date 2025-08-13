@@ -4,7 +4,7 @@ services:
     env: static
     buildCommand: cd frontend && npm install && npm run build
     staticFiles:
-      - path: /frontend/dist
+      - path: /
         directory: frontend/dist
     routes:
       - type: spa
