@@ -1,164 +1,46 @@
-const API_BASE = 'http://localhost:4000/api';
+import axios from 'axios';
 
-// Helper function for authenticated requests
-async function authenticatedRequest(url, options = {}) {
+// Get the API base URL from environment variables or use a default
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:4000';
+
+// Create an axios instance with the base URL
+const api = axios.create({
+  baseURL: API_BASE,
+});
+
+// Add a request interceptor to include the auth token
+api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
-  const headers = {
-    ...options.headers,
-  };
-  
   if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+    config.headers.Authorization = `Bearer ${token}`;
   }
-  
-  // If we're sending FormData, don't set Content-Type header
-  // Browser will set it with the correct boundary
-  if (options.body instanceof FormData) {
-    delete headers['Content-Type'];
-  } else {
-    headers['Content-Type'] = 'application/json';
-  }
-  
-  const res = await fetch(`${API_BASE}${url}`, {
-    ...options,
-    headers,
-  });
-  
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({}));
-    throw new Error(error.message || 'Request failed');
-  }
-  
-  return res.json();
-}
+  return config;
+});
 
-export async function signup(data) {
-  return authenticatedRequest('/auth/signup', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
-}
+// Auth APIs
+export const signup = (userData) => api.post('/api/auth/signup', userData);
+export const login = (credentials) => api.post('/api/auth/login', credentials);
+export const adminLogin = (credentials) => api.post('/api/auth/admin-login', credentials);
 
-export async function login(data) {
-  return authenticatedRequest('/auth/login', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
-}
+// User APIs
+export const getUserBonus = () => api.get('/api/user/bonus');
+export const getUserDashboard = () => api.get('/api/user/dashboard');
+export const getUserProfile = () => api.get('/api/user/profile');
+export const createTransaction = (transactionData) => api.post('/api/transactions', transactionData);
+export const changePassword = (passwordData) => api.post('/api/user/change-password', passwordData);
+export const requestPasswordReset = (emailData) => api.post('/api/user/request-password-reset', emailData);
 
-export async function adminLogin(data) {
-  return authenticatedRequest('/auth/admin-login', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
-}
+// News APIs
+export const getNews = () => api.get('/api/news');
 
-// User functions
-export async function getUserBonus() {
-  return authenticatedRequest('/user/bonus');
-}
-
-export async function getUserDashboard() {
-  return authenticatedRequest('/user/dashboard');
-}
-
-export async function getUserProfile() {
-  return authenticatedRequest('/user/profile');
-}
-
-export async function createTransaction(data) {
-  return authenticatedRequest('/transactions', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
-}
-
-export async function changePassword(data) {
-  return authenticatedRequest('/user/change-password', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
-}
-
-export async function requestPasswordReset(data) {
-  return authenticatedRequest('/user/request-password-reset', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
-}
-
-// News functions
-export async function getNews() {
-  const token = localStorage.getItem('token');
-  const headers = {};
-  
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-  
-  const res = await fetch(`${API_BASE}/news`, {
-    headers,
-  });
-  
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({}));
-    throw new Error(error.message || 'Request failed');
-  }
-  
-  return res.json();
-}
-
-export async function createNews(data) {
-  return authenticatedRequest('/admin/news', {
-    method: 'POST',
-    body: data, // FormData object
-  });
-}
-
-export async function updateNews(id, data) {
-  return authenticatedRequest(`/admin/news/${id}`, {
-    method: 'PUT',
-    body: data, // FormData object or JSON
-  });
-}
-
-export async function deleteNews(id) {
-  return authenticatedRequest(`/admin/news/${id}`, {
-    method: 'DELETE',
-  });
-}
-
-// Admin functions
-export async function getPendingUsers() {
-  return authenticatedRequest('/admin/pending-users');
-}
-
-export async function getPendingTransactions() {
-  return authenticatedRequest('/admin/pending-transactions');
-}
-
-export async function getAllUsers() {
-  return authenticatedRequest('/admin/users');
-}
-
-export async function getUserTransactions(userId) {
-  return authenticatedRequest(`/admin/users/${userId}/transactions`);
-}
-
-export async function getAllTransactions() {
-  return authenticatedRequest('/admin/transactions');
-}
-
-export async function approveUser(userId, approve) {
-  return authenticatedRequest(`/admin/users/${userId}/approve`, {
-    method: 'PUT',
-    body: JSON.stringify({ approve }),
-  });
-}
-
-export async function approveTransaction(txnId, approve) {
-  return authenticatedRequest(`/admin/transactions/${txnId}/approve`, {
-    method: 'PUT',
-    body: JSON.stringify({ approve }),
-  });
-}
+// Admin APIs
+export const getPendingUsers = () => api.get('/api/admin/pending-users');
+export const getPendingTransactions = () => api.get('/api/admin/pending-transactions');
+export const createNews = (newsData) => api.post('/api/admin/news', newsData);
+export const updateNews = (id, newsData) => api.put(`/api/admin/news/${id}`, newsData);
+export const deleteNews = (id) => api.delete(`/api/admin/news/${id}`);
+export const getAllUsers = () => api.get('/api/admin/users');
+export const getUserTransactions = (id) => api.get(`/api/admin/users/${id}/transactions`);
+export const getAllTransactions = () => api.get('/api/admin/transactions');
+export const approveUser = (id, approveData) => api.put(`/api/admin/users/${id}/approve`, approveData);
+export const approveTransaction = (id, approveData) => api.put(`/api/admin/transactions/${id}/approve`, approveData);
