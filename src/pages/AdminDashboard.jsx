@@ -198,3 +198,210 @@ export default function AdminDashboard() {
                     <li key={txn.id} className="transaction-item">
                       <div className="transaction-meta">
                         <span className={`status-badge status-${txn.status.toLowerCase()}`}>
+                          {txn.status}
+                        </span>
+                        <span>{new Date(txn.created_at).toLocaleString()}</span>
+                      </div>
+                      <div className="transaction-details">
+                        <div className="transaction-detail">
+                          <span className="detail-label">User</span>
+                          <span className="detail-value">{txn.email}</span>
+                        </div>
+                        <div className="transaction-detail">
+                          <span className="detail-label">Type</span>
+                          <span className="detail-value">{txn.type}</span>
+                        </div>
+                        <div className="transaction-detail">
+                          <span className="detail-label">Amount</span>
+                          <span className="detail-value">{txn.amount} RWF</span>
+                        </div>
+                        <div className="transaction-detail">
+                          <span className="detail-label">Transaction ID</span>
+                          <span className="detail-value">{txn.txn_id}</span>
+                        </div>
+                      </div>
+                      <div className="action-buttons">
+                        <button
+                          onClick={() => handleApproveTxn(txn.id, true)}
+                          className="action-button"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => handleApproveTxn(txn.id, false)}
+                          className="action-button danger"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Transaction History Tab */}
+        {activeTab === 'history' && (
+          <div className="dashboard-grid">
+            <div className="dashboard-card">
+              <h3>All Users</h3>
+              {allUsers.length === 0 ? (
+                <p className="text-center">No users found</p>
+              ) : (
+                <ul className="transaction-list">
+                  {allUsers.map((user) => (
+                    <li key={user.id} className="transaction-item">
+                      <div className="transaction-details">
+                        <div className="transaction-detail">
+                          <span className="detail-label">Name</span>
+                          <span className="detail-value">{user.firstname} {user.lastname}</span>
+                        </div>
+                        <div className="transaction-detail">
+                          <span className="detail-label">Email</span>
+                          <span className="detail-value">{user.email}</span>
+                        </div>
+                        <div className="transaction-detail">
+                          <span className="detail-label">Username</span>
+                          <span className="detail-value">{user.username}</span>
+                        </div>
+                        <div className="transaction-detail">
+                          <span className="detail-label">Status</span>
+                          <span className={`status-badge status-${user.status.toLowerCase()}`}>
+                            {user.status}
+                          </span>
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div className="dashboard-card">
+              <h3>All Transactions</h3>
+              {allTransactions.length === 0 ? (
+                <p className="text-center">No transactions found</p>
+              ) : (
+                <ul className="transaction-list">
+                  {allTransactions.map((txn) => (
+                    <li key={txn.id} className="transaction-item">
+                      <div className="transaction-meta">
+                        <span className={`status-badge status-${txn.status.toLowerCase()}`}>
+                          {txn.status}
+                        </span>
+                        <span>{new Date(txn.created_at).toLocaleString()}</span>
+                      </div>
+                      <div className="transaction-details">
+                        <div className="transaction-detail">
+                          <span className="detail-label">User</span>
+                          <span className="detail-value">{txn.email}</span>
+                        </div>
+                        <div className="transaction-detail">
+                          <span className="detail-label">Type</span>
+                          <span className="detail-value">{txn.type}</span>
+                        </div>
+                        <div className="transaction-detail">
+                          <span className="detail-label">Amount</span>
+                          <span className="detail-value">{txn.amount} RWF</span>
+                        </div>
+                        <div className="transaction-detail">
+                          <span className="detail-label">Transaction ID</span>
+                          <span className="detail-value">{txn.txn_id}</span>
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* News Management Tab */}
+        {activeTab === 'news' && (
+          <div className="dashboard-grid">
+            <div className="dashboard-card">
+              <h3>Create News</h3>
+              <form onSubmit={handleCreateNews}>
+                <div className="form-group">
+                  <label htmlFor="newsTitle">Title</label>
+                  <input
+                    type="text"
+                    id="newsTitle"
+                    value={newsTitle}
+                    onChange={(e) => setNewsTitle(e.target.value)}
+                    required
+                    className="form-control"
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="newsContent">Content</label>
+                  <textarea
+                    id="newsContent"
+                    value={newsContent}
+                    onChange={(e) => setNewsContent(e.target.value)}
+                    required
+                    className="form-control"
+                    rows="5"
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="newsMedia">Media (Image, Video, or PDF)</label>
+                  <input
+                    type="file"
+                    id="newsMedia"
+                    onChange={(e) => setNewsMedia(e.target.files[0])}
+                    className="form-control"
+                    accept="image/*,video/*,application/pdf"
+                  />
+                </div>
+                <button type="submit" className="action-button">
+                  Post News
+                </button>
+              </form>
+            </div>
+
+            <div className="dashboard-card">
+              <h3>Existing News</h3>
+              {news.length === 0 ? (
+                <p className="text-center">No news posted yet</p>
+              ) : (
+                <ul className="transaction-list">
+                  {news.map((item) => (
+                    <li key={item.id} className="transaction-item">
+                      <h4>{item.title}</h4>
+                      <p>{item.content}</p>
+                      {item.media_url && item.media_type === 'image' && (
+                        <img src={getFullUrl(item.media_url)} alt="News" className="news-media" />
+                      )}
+                      {item.media_url && item.media_type === 'video' && (
+                        <video src={getFullUrl(item.media_url)} controls className="news-media" />
+                      )}
+                      {item.media_url && item.media_type === 'application' && (
+                        <a href={getFullUrl(item.media_url)} target="_blank" rel="noopener noreferrer" className="news-media-link">
+                          View PDF Document
+                        </a>
+                      )}
+                      <p className="text-muted">{new Date(item.created_at).toLocaleString()}</p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        )}
+
+        <div className="text-center">
+          <button
+            onClick={handleLogout}
+            className="danger"
+          >
+            Logout
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
