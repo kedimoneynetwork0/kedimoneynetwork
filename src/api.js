@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 // Get the API base URL from environment variables or use a default
+// In production, this should be your backend URL without the /api prefix
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:4000';
 
 // Create an axios instance with the base URL
@@ -16,6 +17,21 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
+
+// Helper function to get full URL for media files
+export const getFullUrl = (path) => {
+  if (!path) return '';
+  // If path is already a full URL, return it as is
+  if (path.startsWith('http')) {
+    return path;
+  }
+  // If path starts with /api, it's relative to the API base
+  if (path.startsWith('/api')) {
+    return `${API_BASE}${path}`;
+  }
+  // Otherwise, assume it's relative to the API base
+  return `${API_BASE}${path.startsWith('/') ? path : '/' + path}`;
+};
 
 // Auth APIs
 export const signup = (userData) => api.post('/api/auth/signup', userData);

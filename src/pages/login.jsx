@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import { login } from '../api'; // Use the API module instead of direct axios
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 
@@ -26,7 +26,7 @@ export default function Login() {
     }
 
     try {
-      const res = await axios.post('http://localhost:4000/api/auth/login', { email, password });
+      const res = await login({ email, password }); // Use the API module function
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('role', res.data.role);
       navigate(res.data.role === 'admin' ? '/admin-dashboard' : '/user-dashboard');

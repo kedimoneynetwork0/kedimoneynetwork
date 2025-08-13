@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getNews } from '../api';
+import { getNews, getFullUrl } from '../api';
 
 export default function NewsSection() {
   const [news, setNews] = useState([]);
@@ -42,13 +42,13 @@ export default function NewsSection() {
               <h3>{item.title}</h3>
               <p className="news-content">{item.content}</p>
               {item.media_url && item.media_type === 'image' && (
-                <img src={`http://localhost:4000${item.media_url}`} alt={item.title} className="news-media" />
+                <img src={getFullUrl(item.media_url)} alt={item.title} className="news-media" />
               )}
               {item.media_url && item.media_type === 'video' && (
-                <video src={`http://localhost:4000${item.media_url}`} controls className="news-media" />
+                <video src={getFullUrl(item.media_url)} controls className="news-media" />
               )}
               {item.media_url && item.media_type === 'application' && (
-                <a href={`http://localhost:4000${item.media_url}`} target="_blank" rel="noopener noreferrer" className="news-media-link">
+                <a href={getFullUrl(item.media_url)} target="_blank" rel="noopener noreferrer" className="news-media-link">
                   View PDF Document
                 </a>
               )}

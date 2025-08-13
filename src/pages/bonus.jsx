@@ -1,24 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import { getUserBonus } from '../api'; // Use the API module instead of direct axios
 import Header from '../components/Header';
 
 export default function UserDashboard() {
   const [bonus, setBonus] = useState(0);
-  const token = localStorage.getItem('token');
 
   useEffect(() => {
     async function fetchBonus() {
       try {
-        const res = await axios.get('http://localhost:4000/api/user/bonus', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const res = await getUserBonus(); // Use the API module function
         setBonus(res.data.totalBonus || 0);
       } catch (error) {
         console.error(error);
       }
     }
     fetchBonus();
-  }, [token]);
+  }, []);
 
   return (
     <div>

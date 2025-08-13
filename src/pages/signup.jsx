@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import { signup } from '../api'; // Use the API module instead of direct axios
 import './signup.css';
 import HeroSection from '../components/HeroSection';
 import Header from '../components/Header';
@@ -36,7 +36,7 @@ export default function Signup() {
     }
 
     try {
-      const res = await axios.post('http://localhost:4000/api/auth/signup', form);
+      const res = await signup(form); // Use the API module function
       setMessage(res.data.message);
     } catch (err) {
       setMessage(err.response?.data?.message || 'Signup failed');
