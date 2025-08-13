@@ -1,11 +1,16 @@
 {
-  "name": "kedi-money-frontend",
+  "name": "kedi-money-network",
   "version": "1.0.0",
   "private": true,
+  "workspaces": [
+    "backend"
+  ],
   "scripts": {
     "dev": "vite",
     "start": "vite",
-    "build": "vite build"
+    "build": "vite build",
+    "backend": "cd backend && npm start",
+    "backend-install": "cd backend && npm install"
   },
   "dependencies": {
     "react": "^18.2.0",
