@@ -35,7 +35,7 @@ export default function NewsSection() {
   return (
     <div className="news-section">
       <h2>Latest News</h2>
-      {news.length === 0 ? (
+      {!Array.isArray(news) || news.length === 0 ? (
         <p>No news available at the moment.</p>
       ) : (
         <div className="news-list">
