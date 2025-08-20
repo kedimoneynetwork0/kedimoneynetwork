@@ -4,8 +4,8 @@ const bodyParser = require('body-parser');
 const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const dotenv = require('dotenv');
 const util = require('util');
+const dotenv = require('dotenv');
 const rateLimit = require('express-rate-limit');
 const morgan = require('morgan');
 const multer = require('multer');
@@ -16,7 +16,7 @@ dotenv.config();
 const app = express();
 const db = new sqlite3.Database('./db.sqlite');
 
-// Promisify db.get for use with async/await
+// Promisify db.get and db.all for use with async/await
 const dbGet = util.promisify(db.get.bind(db));
 
 const SECRET_KEY = process.env.JWT_SECRET || 'your_secret_key';
@@ -231,10 +231,6 @@ app.post('/api/auth/signup', async (req, res) => {
 // Login (user)
 app.post('/api/auth/login', userLoginLimiter, (req, res) => {
   const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json({ message: 'Email and password are required' });
-  }
 
   db.get(`SELECT * FROM users WHERE email = ?`, [email], async (err, user) => {
     if (err) return res.status(500).json({ message: 'Server error' });

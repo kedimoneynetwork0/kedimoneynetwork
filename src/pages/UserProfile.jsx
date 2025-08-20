@@ -19,8 +19,8 @@ export default function UserProfile() {
   useEffect(() => {
     async function fetchProfile() {
       try {
-        const data = await getUserProfile();
-        setProfile(data);
+        const response = await getUserProfile();
+        setProfile(response.data || {});
       } catch (err) {
         setMessage('Failed to load profile');
       }
