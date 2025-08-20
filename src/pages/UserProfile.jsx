@@ -19,10 +19,10 @@ export default function UserProfile() {
   useEffect(() => {
     async function fetchProfile() {
       try {
-        const data = await getUserProfile();
-        setProfile(data);
+        const response = await getUserProfile();
+        setProfile(response.data || {});
       } catch (err) {
-        setMessage('Failed to load profile');
+        setMessage(err.response?.data?.message || 'Failed to load profile');
       }
     }
     fetchProfile();
@@ -35,19 +35,19 @@ export default function UserProfile() {
       return;
     }
     try {
-      const data = await changePassword({ oldPassword, newPassword });
-      setMessage(data.message);
+      const response = await changePassword({ oldPassword, newPassword });
+      setMessage(response.data.message);
       setOldPassword('');
       setNewPassword('');
     } catch (err) {
-      setMessage(err.message || 'Error changing password');
+      setMessage(err.response?.data?.message || 'Error changing password');
     }
   };
 
   const handleForgotPassword = async () => {
     try {
-      const data = await requestPasswordReset({ email: profile.email });
-      setMessage(data.message);
+      const response = await requestPasswordReset({ email: profile.email });
+      setMessage(response.data.message);
     } catch (err) {
       setMessage('Failed to send password reset request');
     }
