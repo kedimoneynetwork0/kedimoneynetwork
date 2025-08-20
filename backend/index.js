@@ -13,7 +13,11 @@ const path = require('path');
 dotenv.config();
 
 const app = express();
-const db = new sqlite3.Database('./db.sqlite');
+// Use path.resolve to ensure the db path is always relative to this file's directory
+const db = new sqlite3.Database(path.resolve(__dirname, 'db.sqlite'));
+
+// Trust the first proxy hop (Render's load balancer)
+app.set('trust proxy', 1);
 
 const SECRET_KEY = process.env.JWT_SECRET || 'your_secret_key';
 

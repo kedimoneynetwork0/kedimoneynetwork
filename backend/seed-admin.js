@@ -5,7 +5,8 @@ const path = require('path');
 // Configure dotenv to find the .env file in this directory
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 
-const db = new sqlite3.Database('./db.sqlite');
+// Use path.resolve to ensure the db path is always relative to this file's directory
+const db = new sqlite3.Database(path.resolve(__dirname, 'db.sqlite'));
 
 // Use environment variables for security. Fallback for local dev.
 const adminEmail = process.env.ADMIN_EMAIL || 'kedimoneynetwork@gmail.com';
