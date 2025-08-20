@@ -17,37 +17,58 @@ export default function UserDashboard() {
   const [message, setMessage] = useState('');
   const [profile, setProfile] = useState({});
 
+  const fetchAllData = async () => {
+    try {
+      // Fetch all data in parallel for faster loading
+      const [
+        bonusRes,
+        dashboardRes,
+        profileRes,
+        stakesRes,
+        withdrawalsRes,
+      ] = await Promise.all([
+        getUserBonus(),
+        getUserDashboard(),
+        getUserProfile(),
+        getUserStakes(),
+        getUserWithdrawals(),
+      ]);
+
+      setBonus(bonusRes.data?.totalBonus || 0);
+      setTransactions(Array.isArray(dashboardRes.data?.transactions) ? dashboardRes.data.transactions : []);
+      setProfile(profileRes.data || {});
+      setStakes(Array.isArray(stakesRes.data?.stakes) ? stakesRes.data.stakes : []);
+      setWithdrawals(Array.isArray(withdrawalsRes.data?.withdrawals) ? withdrawalsRes.data.withdrawals : []);
+    } catch (error) {
+      console.error("Failed to fetch dashboard data:", error);
+      setMessage('Could not load dashboard data. Please try again later.');
+    }
+  };
+
   useEffect(() => {
-    const fetchAllData = async () => {
-      try {
-        // Fetch all data in parallel for faster loading
-        const [
-          bonusRes,
-          dashboardRes,
-          profileRes,
-          stakesRes,
-          withdrawalsRes,
-        ] = await Promise.all([
-          getUserBonus(),
-          getUserDashboard(),
-          getUserProfile(),
-          getUserStakes(),
-          getUserWithdrawals(),
-        ]);
-
-        setBonus(bonusRes.data?.totalBonus || 0);
-        setTransactions(Array.isArray(dashboardRes.data?.transactions) ? dashboardRes.data.transactions : []);
-        setProfile(profileRes.data || {});
-        setStakes(Array.isArray(stakesRes.data?.stakes) ? stakesRes.data.stakes : []);
-        setWithdrawals(Array.isArray(withdrawalsRes.data?.withdrawals) ? withdrawalsRes.data.withdrawals : []);
-      } catch (error) {
-        console.error("Failed to fetch dashboard data:", error);
-        setMessage('Could not load all dashboard data. Please try refreshing.');
-      }
-    };
-
     fetchAllData();
   }, []);
+
+  const refreshTransactions = async () => {
+    try {
+      const response = await getUserDashboard();
+      setTransactions(Array.isArray(response.data?.transactions) ? response.data.transactions : []);
+    } catch (error) {
+      console.error('Failed to refresh transactions:', error);
+      setMessage('Could not refresh transactions.');
+    }
+  };
+
+  const refreshStakesAndWithdrawals = async () => {
+    try {
+      const [withdrawalsRes, stakesRes] = await Promise.all([getUserWithdrawals(), getUserStakes()]);
+      setWithdrawals(Array.isArray(withdrawalsRes.data?.withdrawals) ? withdrawalsRes.data.withdrawals : []);
+      setStakes(Array.isArray(stakesRes.data?.stakes) ? stakesRes.data.stakes : []);
+    } catch (error) {
+      console.error('Failed to refresh stakes and withdrawals:', error);
+      setMessage('Could not refresh stakes and withdrawals.');
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -60,12 +81,9 @@ export default function UserDashboard() {
       setMessage('Transaction submitted for approval');
       setAmount('');
       setTxnId('');
-      
-      // Refresh transactions after submitting
-      const response = await getUserDashboard();
-      setTransactions(Array.isArray(response.data?.transactions) ? response.data.transactions : []);
+      await refreshTransactions();
     } catch (error) {
-      setMessage(error.message || 'Error submitting transaction');
+      setMessage(error.response?.data?.message || 'Error submitting transaction');
     }
   };
 
@@ -79,12 +97,9 @@ export default function UserDashboard() {
       await createStake({ amount: parseFloat(stakeAmount), stakePeriod: parseInt(stakePeriod) });
       setMessage('Stake deposit created successfully');
       setStakeAmount('');
-      
-      // Refresh stakes after submitting
-      const response = await getUserStakes();
-      setStakes(Array.isArray(response.data?.stakes) ? response.data.stakes : []);
+      await refreshStakesAndWithdrawals();
     } catch (error) {
-      setMessage(error.message || 'Error creating stake deposit');
+      setMessage(error.response?.data?.message || 'Error creating stake deposit');
     }
   };
 
@@ -98,16 +113,9 @@ export default function UserDashboard() {
       await requestWithdrawal({ stakeId: parseInt(withdrawalStakeId) });
       setMessage('Withdrawal request submitted successfully');
       setWithdrawalStakeId('');
-      
-      // Refresh withdrawals after submitting
-      const response = await getUserWithdrawals();
-      setWithdrawals(Array.isArray(response.data?.withdrawals) ? response.data.withdrawals : []);
-      
-      // Refresh stakes as well
-      const stakesResponse = await getUserStakes();
-      setStakes(Array.isArray(stakesResponse.data?.stakes) ? stakesResponse.data.stakes : []);
+      await refreshStakesAndWithdrawals();
     } catch (error) {
-      setMessage(error.message || 'Error requesting withdrawal');
+      setMessage(error.response?.data?.message || 'Error requesting withdrawal');
     }
   };
 

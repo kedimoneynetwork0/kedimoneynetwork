@@ -18,78 +18,42 @@ export default function AdminDashboard() {
   const [newsContent, setNewsContent] = useState('');
   const [newsMedia, setNewsMedia] = useState(null);
 
+  const fetchAllAdminData = async () => {
+    try {
+      const [
+        pendingUsersRes,
+        pendingTxnsRes,
+        allUsersRes,
+        allTxnsRes,
+        newsRes,
+        pendingWithdrawalsRes,
+        companyAssetsRes,
+      ] = await Promise.all([
+        getPendingUsers(),
+        getPendingTransactions(),
+        getAllUsers(),
+        getAllTransactions(),
+        getNews(),
+        getPendingWithdrawals(),
+        getCompanyAssets(),
+      ]);
+
+      setPendingUsers(Array.isArray(pendingUsersRes.data) ? pendingUsersRes.data : []);
+      setPendingTxns(Array.isArray(pendingTxnsRes.data) ? pendingTxnsRes.data : []);
+      setAllUsers(Array.isArray(allUsersRes.data) ? allUsersRes.data : []);
+      setAllTransactions(Array.isArray(allTxnsRes.data) ? allTxnsRes.data : []);
+      setNews(Array.isArray(newsRes.data) ? newsRes.data : []);
+      setPendingWithdrawals(Array.isArray(pendingWithdrawalsRes.data?.withdrawals) ? pendingWithdrawalsRes.data.withdrawals : []);
+      setCompanyAssets(companyAssetsRes.data);
+    } catch (error) {
+      console.error("Failed to fetch admin data:", error);
+      setMessage('Could not load all admin data. Please try refreshing.');
+    }
+  };
+
   useEffect(() => {
-    fetchPendingUsers();
-    fetchPendingTxns();
-    fetchAllUsers();
-    fetchAllTransactions();
-    fetchNews();
-    fetchPendingWithdrawals();
-    fetchCompanyAssets();
+    fetchAllAdminData();
   }, []);
-
-  const fetchPendingUsers = async () => {
-    try {
-      const response = await getPendingUsers();
-      setPendingUsers(Array.isArray(response.data) ? response.data : []);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const fetchPendingTxns = async () => {
-    try {
-      const response = await getPendingTransactions();
-      setPendingTxns(Array.isArray(response.data) ? response.data : []);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const fetchAllUsers = async () => {
-    try {
-      const response = await getAllUsers();
-      setAllUsers(Array.isArray(response.data) ? response.data : []);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const fetchAllTransactions = async () => {
-    try {
-      const response = await getAllTransactions();
-      setAllTransactions(Array.isArray(response.data) ? response.data : []);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const fetchNews = async () => {
-    try {
-      const response = await getNews();
-      setNews(Array.isArray(response.data) ? response.data : []);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const fetchPendingWithdrawals = async () => {
-    try {
-      const response = await getPendingWithdrawals();
-      setPendingWithdrawals(Array.isArray(response.data) ? response.data : []);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const fetchCompanyAssets = async () => {
-    try {
-      const response = await getCompanyAssets();
-      setCompanyAssets(response.data);
-    } catch (error) {
-      console.error(error);
-    }
-  };
 
   const handleApproveUser = async (id, approve) => {
     try {
@@ -98,7 +62,7 @@ export default function AdminDashboard() {
       fetchPendingUsers();
       fetchAllUsers(); // Refresh all users list
     } catch (error) {
-      setMessage('Error updating user status');
+      setMessage(error.response?.data?.message || 'Error updating user status');
     }
   };
 
@@ -109,7 +73,7 @@ export default function AdminDashboard() {
       fetchPendingTxns();
       fetchAllTransactions(); // Refresh all transactions list
     } catch (error) {
-      setMessage('Error updating transaction status');
+      setMessage(error.response?.data?.message || 'Error updating transaction status');
     }
   };
 
@@ -119,7 +83,7 @@ export default function AdminDashboard() {
       setMessage(`Withdrawal ${approve ? 'approved' : 'rejected'}`);
       fetchPendingWithdrawals(); // Refresh pending withdrawals list
     } catch (error) {
-      setMessage('Error updating withdrawal status');
+      setMessage(error.response?.data?.message || 'Error updating withdrawal status');
     }
   };
 
@@ -140,7 +104,7 @@ export default function AdminDashboard() {
       setNewsMedia(null);
       fetchNews(); // Refresh news list
     } catch (error) {
-      setMessage('Error creating news: ' + error.message);
+      setMessage(error.response?.data?.message || 'Error creating news');
     }
   };
 

@@ -4,8 +4,8 @@ const bodyParser = require('body-parser');
 const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const util = require('util');
 const dotenv = require('dotenv');
+const util = require('util');
 const rateLimit = require('express-rate-limit');
 const morgan = require('morgan');
 const multer = require('multer');
@@ -16,8 +16,9 @@ dotenv.config();
 const app = express();
 const db = new sqlite3.Database('./db.sqlite');
 
-// Promisify db.get and db.all for use with async/await
+// Promisify db methods for use with async/await
 const dbGet = util.promisify(db.get.bind(db));
+const dbAll = util.promisify(db.all.bind(db));
 
 const SECRET_KEY = process.env.JWT_SECRET || 'your_secret_key';
 
@@ -165,16 +166,10 @@ function authMiddleware(req, res, next) {
 
 // Admin middleware
 function adminMiddleware(req, res, next) {
-  const authHeader = req.headers['authorization'];
-  if (!authHeader) return res.status(401).json({ message: 'No token provided' });
-  
-  const token = authHeader.split(' ')[1];
-  if (!token) return res.status(401).json({ message: 'No token provided' });
-  
-  jwt.verify(token, SECRET_KEY, (err, decoded) => {
-    if (err) return res.status(401).json({ message: 'Invalid token' });
-    if (decoded.role !== 'admin') return res.status(403).json({ message: 'Access denied' });
-    req.user = decoded;
+  authMiddleware(req, res, () => {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Access denied' });
+    }
     next();
   });
 }
