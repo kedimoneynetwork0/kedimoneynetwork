@@ -18,6 +18,7 @@ export default function NewsSection() {
       setNews(newsData);
     } catch (err) {
       setError('Failed to load news');
+      setNews([]); // Ensure news is always an array even on error
       console.error(err);
     } finally {
       setLoading(false);
@@ -39,7 +40,7 @@ export default function NewsSection() {
         <p>No news available at the moment.</p>
       ) : (
         <div className="news-list">
-          {news.slice(0, 3).map((item) => (
+          {(Array.isArray(news) ? news : []).slice(0, 3).map((item) => (
             <div key={item.id} className="news-item">
               <h3>{item.title}</h3>
               <p className="news-content">{item.content}</p>
