@@ -59,8 +59,7 @@ export default function AdminDashboard() {
     try {
       await approveUser(id, approve);
       setMessage(`User ${approve ? 'approved' : 'rejected'}`);
-      fetchPendingUsers();
-      fetchAllUsers(); // Refresh all users list
+      await fetchAllAdminData(); // Refresh all data for consistency
     } catch (error) {
       setMessage(error.response?.data?.message || 'Error updating user status');
     }
@@ -70,8 +69,7 @@ export default function AdminDashboard() {
     try {
       await approveTransaction(id, approve);
       setMessage(`Transaction ${approve ? 'approved' : 'rejected'}`);
-      fetchPendingTxns();
-      fetchAllTransactions(); // Refresh all transactions list
+      await fetchAllAdminData(); // Refresh all data for consistency
     } catch (error) {
       setMessage(error.response?.data?.message || 'Error updating transaction status');
     }
@@ -81,7 +79,7 @@ export default function AdminDashboard() {
     try {
       await approveWithdrawal(id, approve);
       setMessage(`Withdrawal ${approve ? 'approved' : 'rejected'}`);
-      fetchPendingWithdrawals(); // Refresh pending withdrawals list
+      await fetchAllAdminData(); // Refresh all data for consistency
     } catch (error) {
       setMessage(error.response?.data?.message || 'Error updating withdrawal status');
     }
@@ -102,7 +100,7 @@ export default function AdminDashboard() {
       setNewsTitle('');
       setNewsContent('');
       setNewsMedia(null);
-      fetchNews(); // Refresh news list
+      await fetchAllAdminData(); // Refresh all data for consistency
     } catch (error) {
       setMessage(error.response?.data?.message || 'Error creating news');
     }
