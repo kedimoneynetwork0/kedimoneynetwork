@@ -18,35 +18,60 @@ export default function UserDashboard() {
   const [profile, setProfile] = useState({});
 
   useEffect(() => {
-    const fetchAllData = async () => {
+    async function fetchBonus() {
       try {
-        // Fetch all data in parallel for faster loading
-        const [
-          bonusRes,
-          dashboardRes,
-          profileRes,
-          stakesRes,
-          withdrawalsRes,
-        ] = await Promise.all([
-          getUserBonus(),
-          getUserDashboard(),
-          getUserProfile(),
-          getUserStakes(),
-          getUserWithdrawals(),
-        ]);
-
-        setBonus(bonusRes.data?.totalBonus || 0);
-        setTransactions(Array.isArray(dashboardRes.data?.transactions) ? dashboardRes.data.transactions : []);
-        setProfile(profileRes.data || {});
-        setStakes(Array.isArray(stakesRes.data?.stakes) ? stakesRes.data.stakes : []);
-        setWithdrawals(Array.isArray(withdrawalsRes.data?.withdrawals) ? withdrawalsRes.data.withdrawals : []);
+        const response = await getUserBonus();
+        setBonus(response.data?.totalBonus || 0);
       } catch (error) {
-        console.error("Failed to fetch dashboard data:", error);
-        setMessage('Could not load all dashboard data. Please try refreshing.');
+        console.error(error);
       }
-    };
+    }
 
-    fetchAllData();
+    async function fetchTransactions() {
+      try {
+        const response = await getUserDashboard();
+        setTransactions(Array.isArray(response.data?.transactions) ? response.data.transactions : []);
+      } catch (error) {
+        console.error(error);
+        setTransactions([]);
+      }
+    }
+
+    async function fetchProfile() {
+      try {
+        const response = await getUserProfile();
+        setProfile(response.data || {});
+      } catch (err) {
+        console.error(err);
+        setProfile({});
+      }
+    }
+
+    async function fetchStakes() {
+      try {
+        const response = await getUserStakes();
+        setStakes(Array.isArray(response.data?.stakes) ? response.data.stakes : []);
+      } catch (error) {
+        console.error(error);
+        setStakes([]);
+      }
+    }
+
+    async function fetchWithdrawals() {
+      try {
+        const response = await getUserWithdrawals();
+        setWithdrawals(Array.isArray(response.data?.withdrawals) ? response.data.withdrawals : []);
+      } catch (error) {
+        console.error(error);
+        setWithdrawals([]);
+      }
+    }
+
+    fetchBonus();
+    fetchTransactions();
+    fetchProfile();
+    fetchStakes();
+    fetchWithdrawals();
   }, []);
 
   const handleSubmit = async (e) => {

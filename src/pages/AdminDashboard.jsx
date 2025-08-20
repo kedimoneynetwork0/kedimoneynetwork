@@ -11,6 +11,7 @@ export default function AdminDashboard() {
   const [pendingWithdrawals, setPendingWithdrawals] = useState([]);
   const [companyAssets, setCompanyAssets] = useState(null);
   const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('pending'); // 'pending', 'history', 'news', 'withdrawals', or 'assets'
   
   // News form state
@@ -19,13 +20,42 @@ export default function AdminDashboard() {
   const [newsMedia, setNewsMedia] = useState(null);
 
   useEffect(() => {
-    fetchPendingUsers();
-    fetchPendingTxns();
-    fetchAllUsers();
-    fetchAllTransactions();
-    fetchNews();
-    fetchPendingWithdrawals();
-    fetchCompanyAssets();
+    const fetchAllAdminData = async () => {
+      setLoading(true);
+      try {
+        const [
+          pendingUsersRes,
+          pendingTxnsRes,
+          allUsersRes,
+          allTxnsRes,
+          newsRes,
+          pendingWithdrawalsRes,
+          companyAssetsRes,
+        ] = await Promise.all([
+          getPendingUsers(),
+          getPendingTransactions(),
+          getAllUsers(),
+          getAllTransactions(),
+          getNews(),
+          getPendingWithdrawals(),
+          getCompanyAssets(),
+        ]);
+
+        setPendingUsers(Array.isArray(pendingUsersRes.data) ? pendingUsersRes.data : []);
+        setPendingTxns(Array.isArray(pendingTxnsRes.data) ? pendingTxnsRes.data : []);
+        setAllUsers(Array.isArray(allUsersRes.data) ? allUsersRes.data : []);
+        setAllTransactions(Array.isArray(allTxnsRes.data) ? allTxnsRes.data : []);
+        setNews(Array.isArray(newsRes.data) ? newsRes.data : []);
+        setPendingWithdrawals(Array.isArray(pendingWithdrawalsRes.data?.withdrawals) ? pendingWithdrawalsRes.data.withdrawals : []);
+        setCompanyAssets(companyAssetsRes.data);
+      } catch (error) {
+        console.error("Failed to fetch admin dashboard data:", error);
+        setMessage('Could not load all dashboard data. Please try refreshing.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAllAdminData();
   }, []);
 
   const fetchPendingUsers = async () => {
@@ -76,7 +106,7 @@ export default function AdminDashboard() {
   const fetchPendingWithdrawals = async () => {
     try {
       const response = await getPendingWithdrawals();
-      setPendingWithdrawals(Array.isArray(response.data) ? response.data : []);
+      setPendingWithdrawals(Array.isArray(response.data?.withdrawals) ? response.data.withdrawals : []);
     } catch (error) {
       console.error(error);
     }
@@ -148,6 +178,15 @@ export default function AdminDashboard() {
     localStorage.clear();
     window.location.href = '/admin-login';
   };
+
+  if (loading) {
+    return (
+      <div>
+        <Header />
+        <div className="container"><h2>Loading Admin Dashboard...</h2></div>
+      </div>
+    );
+  }
 
   return (
     <div>
