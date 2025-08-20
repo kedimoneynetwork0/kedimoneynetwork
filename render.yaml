@@ -3,11 +3,15 @@ services:
     name: kedi-money-network
     env: node
     buildCommand: npm install && npm run build
-    startCommand: npm start
+    startCommand: node backend/seed-admin.js && npm start
     envVars:
       - key: NODE_VERSION
         value: 18.17.0
       - key: JWT_SECRET
         value: RwandaKediNetworkSuperSecretKey123!@
+      - key: ADMIN_EMAIL
+        value: kedimoneynetwork@gmail.com
+      - key: ADMIN_PASSWORD
+        value: kedi@123
       - key: PORT
         value: 10000

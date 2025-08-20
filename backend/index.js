@@ -47,16 +47,6 @@ const upload = multer({
 app.use(cors());
 app.use(bodyParser.json());
 app.use(morgan('combined'));
-app.use('/uploads', express.static('uploads'));
-// Serve frontend static files in production
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '..', 'dist')));
-  // Handle SPA routing - serve index.html for all non-API routes
-  app.get(/^\/(?!api).*$/, (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));
-  });
-}
-
 // Rate limiters
 const userLoginLimiter = rateLimit({
   windowMs: 15 * 1000,
@@ -782,6 +772,18 @@ app.put('/api/admin/transactions/:id/approve', adminMiddleware, (req, res) => {
       });
     });
   });
+
+// This block must come AFTER all other API routes
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+if (process.env.NODE_ENV === 'production') {
+  // Serve the static files from the React app
+  app.use(express.static(path.join(__dirname, '..', 'dist')));
+
+  // Handles any requests that don't match the API ones above
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));
+  });
+}
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
