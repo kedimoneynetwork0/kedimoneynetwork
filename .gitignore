@@ -1,7 +1,5 @@
 # Dependencies
 node_modules/
-dist/
-backend/node_modules
 
 # Environment variables
 .env
@@ -20,4 +18,3 @@ backend/node_modules
 
 # Windows
 Thumbs.db
-backend/.env
