@@ -7,23 +7,21 @@ export default function NewsSection() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    fetchNews();
+    const fetchNewsOnMount = async () => {
+      try {
+        const response = await getNews();
+        // Ensure we're working with an array
+        const newsData = Array.isArray(response.data) ? response.data : [];
+        setNews(newsData);
+      } catch (err) {
+        setError('Failed to load news');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchNewsOnMount();
   }, []);
-
-  const fetchNews = async () => {
-    try {
-      const response = await getNews();
-      // Ensure we're working with an array
-      const newsData = Array.isArray(response.data) ? response.data : [];
-      setNews(newsData);
-    } catch (err) {
-      setError('Failed to load news');
-      setNews([]); // Ensure news is always an array even on error
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (loading) {
     return <div className="news-section">Loading news...</div>;
@@ -36,11 +34,11 @@ export default function NewsSection() {
   return (
     <div className="news-section">
       <h2>Latest News</h2>
-      {!Array.isArray(news) || news.length === 0 ? (
+      {news.length === 0 ? (
         <p>No news available at the moment.</p>
       ) : (
         <div className="news-list">
-          {(Array.isArray(news) ? news : []).slice(0, 3).map((item) => (
+          {news.slice(0, 3).map((item) => (
             <div key={item.id} className="news-item">
               <h3>{item.title}</h3>
               <p className="news-content">{item.content}</p>

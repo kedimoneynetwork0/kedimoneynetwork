@@ -5,6 +5,7 @@ const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
+const util = require('util');
 const rateLimit = require('express-rate-limit');
 const morgan = require('morgan');
 const multer = require('multer');
@@ -14,6 +15,9 @@ dotenv.config();
 
 const app = express();
 const db = new sqlite3.Database('./db.sqlite');
+
+// Promisify db.get for use with async/await
+const dbGet = util.promisify(db.get.bind(db));
 
 const SECRET_KEY = process.env.JWT_SECRET || 'your_secret_key';
 
@@ -227,6 +231,10 @@ app.post('/api/auth/signup', async (req, res) => {
 // Login (user)
 app.post('/api/auth/login', userLoginLimiter, (req, res) => {
   const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ message: 'Email and password are required' });
+  }
 
   db.get(`SELECT * FROM users WHERE email = ?`, [email], async (err, user) => {
     if (err) return res.status(500).json({ message: 'Server error' });
@@ -742,45 +750,36 @@ app.put('/api/admin/transactions/:id/approve', adminMiddleware, (req, res) => {
 
   // Admin company assets route
   // Get company financial summary
-  app.get('/api/admin/company-assets', adminMiddleware, (req, res) => {
-    // Get total approved transactions
-    db.get(`SELECT SUM(amount) as totalTransactions FROM transactions WHERE status = 'approved'`, (err, transactionsRow) => {
-      if (err) return res.status(500).json({ message: 'Server error' });
-      
-      // Get total stakes
-      db.get(`SELECT SUM(amount) as totalStakes FROM stakes`, (err, stakesRow) => {
-        if (err) return res.status(500).json({ message: 'Server error' });
-        
-        // Get total withdrawals
-        db.get(`SELECT SUM(amount) as totalWithdrawals FROM withdrawals WHERE status = 'approved'`, (err, withdrawalsRow) => {
-          if (err) return res.status(500).json({ message: 'Server error' });
-          
-          // Get total bonuses
-          db.get(`SELECT SUM(amount) as totalBonuses FROM bonuses`, (err, bonusesRow) => {
-            if (err) return res.status(500).json({ message: 'Server error' });
-            
-            // Get total users
-            db.get(`SELECT COUNT(*) as totalUsers FROM users`, (err, usersRow) => {
-              if (err) return res.status(500).json({ message: 'Server error' });
-              
-              // Get approved users
-              db.get(`SELECT COUNT(*) as approvedUsers FROM users WHERE status = 'approved'`, (err, approvedUsersRow) => {
-                if (err) return res.status(500).json({ message: 'Server error' });
-                
-                res.json({
-                  totalTransactions: transactionsRow.totalTransactions || 0,
-                  totalStakes: stakesRow.totalStakes || 0,
-                  totalWithdrawals: withdrawalsRow.totalWithdrawals || 0,
-                  totalBonuses: bonusesRow.totalBonuses || 0,
-                  totalUsers: usersRow.totalUsers || 0,
-                  approvedUsers: approvedUsersRow.approvedUsers || 0
-                });
-              });
-            });
-          });
-        });
+  app.get('/api/admin/company-assets', adminMiddleware, async (req, res) => {
+    try {
+      const [
+        transactionsRow,
+        stakesRow,
+        withdrawalsRow,
+        bonusesRow,
+        usersRow,
+        approvedUsersRow,
+      ] = await Promise.all([
+        dbGet(`SELECT SUM(amount) as totalTransactions FROM transactions WHERE status = 'approved'`),
+        dbGet(`SELECT SUM(amount) as totalStakes FROM stakes`),
+        dbGet(`SELECT SUM(amount) as totalWithdrawals FROM withdrawals WHERE status = 'approved'`),
+        dbGet(`SELECT SUM(amount) as totalBonuses FROM bonuses`),
+        dbGet(`SELECT COUNT(*) as totalUsers FROM users`),
+        dbGet(`SELECT COUNT(*) as approvedUsers FROM users WHERE status = 'approved'`),
+      ]);
+
+      res.json({
+        totalTransactions: transactionsRow.totalTransactions || 0,
+        totalStakes: stakesRow.totalStakes || 0,
+        totalWithdrawals: withdrawalsRow.totalWithdrawals || 0,
+        totalBonuses: bonusesRow.totalBonuses || 0,
+        totalUsers: usersRow.totalUsers || 0,
+        approvedUsers: approvedUsersRow.approvedUsers || 0,
       });
-    });
+    } catch (err) {
+      console.error('Failed to get company assets:', err);
+      res.status(500).json({ message: 'Server error' });
+    }
   });
 
 const PORT = process.env.PORT || 4000;
