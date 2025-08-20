@@ -10,7 +10,10 @@ const multer = require('multer');
 const path = require('path');
 const { Pool } = require('pg');
 
-dotenv.config();
+// Only use dotenv for local development
+if (process.env.NODE_ENV !== 'production') {
+  dotenv.config();
+}
 
 const app = express();
 
@@ -210,16 +213,10 @@ function authMiddleware(req, res, next) {
 
 // Admin middleware
 function adminMiddleware(req, res, next) {
-  const authHeader = req.headers['authorization'];
-  if (!authHeader) return res.status(401).json({ message: 'No token provided' });
-  
-  const token = authHeader.split(' ')[1];
-  if (!token) return res.status(401).json({ message: 'No token provided' });
-  
-  jwt.verify(token, SECRET_KEY, (err, decoded) => {
-    if (err) return res.status(401).json({ message: 'Invalid token' });
-    if (decoded.role !== 'admin') return res.status(403).json({ message: 'Access denied' });
-    req.user = decoded;
+  authMiddleware(req, res, () => {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Access denied' });
+    }
     next();
   });
 }
