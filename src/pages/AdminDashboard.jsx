@@ -11,7 +11,6 @@ export default function AdminDashboard() {
   const [pendingWithdrawals, setPendingWithdrawals] = useState([]);
   const [companyAssets, setCompanyAssets] = useState(null);
   const [message, setMessage] = useState('');
-  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('pending'); // 'pending', 'history', 'news', 'withdrawals', or 'assets'
   
   // News form state
@@ -19,53 +18,87 @@ export default function AdminDashboard() {
   const [newsContent, setNewsContent] = useState('');
   const [newsMedia, setNewsMedia] = useState(null);
 
-  const fetchAllAdminData = async () => {
-    setLoading(true);
-    try {
-      const [
-        pendingUsersRes,
-        pendingTxnsRes,
-        allUsersRes,
-        allTxnsRes,
-        newsRes,
-        pendingWithdrawalsRes,
-        companyAssetsRes,
-      ] = await Promise.all([
-        getPendingUsers(),
-        getPendingTransactions(),
-        getAllUsers(),
-        getAllTransactions(),
-        getNews(),
-        getPendingWithdrawals(),
-        getCompanyAssets(),
-      ]);
+  useEffect(() => {
+    fetchPendingUsers();
+    fetchPendingTxns();
+    fetchAllUsers();
+    fetchAllTransactions();
+    fetchNews();
+    fetchPendingWithdrawals();
+    fetchCompanyAssets();
+  }, []);
 
-      setPendingUsers(Array.isArray(pendingUsersRes.data) ? pendingUsersRes.data : []);
-      setPendingTxns(Array.isArray(pendingTxnsRes.data) ? pendingTxnsRes.data : []);
-      setAllUsers(Array.isArray(allUsersRes.data) ? allUsersRes.data : []);
-      setAllTransactions(Array.isArray(allTxnsRes.data) ? allTxnsRes.data : []);
-      setNews(Array.isArray(newsRes.data) ? newsRes.data : []);
-      setPendingWithdrawals(Array.isArray(pendingWithdrawalsRes.data) ? pendingWithdrawalsRes.data : []);
-      setCompanyAssets(companyAssetsRes.data);
+  const fetchPendingUsers = async () => {
+    try {
+      const response = await getPendingUsers();
+      setPendingUsers(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
-      console.error("Failed to fetch admin data:", error);
-      setMessage('Could not load all admin data. Please try refreshing.');
-    } finally {
-      setLoading(false);
+      console.error(error);
     }
   };
 
-  useEffect(() => {
-    fetchAllAdminData();
-  }, []);
+  const fetchPendingTxns = async () => {
+    try {
+      const response = await getPendingTransactions();
+      setPendingTxns(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const fetchAllUsers = async () => {
+    try {
+      const response = await getAllUsers();
+      setAllUsers(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const fetchAllTransactions = async () => {
+    try {
+      const response = await getAllTransactions();
+      setAllTransactions(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const fetchNews = async () => {
+    try {
+      const response = await getNews();
+      setNews(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const fetchPendingWithdrawals = async () => {
+    try {
+      const response = await getPendingWithdrawals();
+      setPendingWithdrawals(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const fetchCompanyAssets = async () => {
+    try {
+      const response = await getCompanyAssets();
+      setCompanyAssets(response.data);
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   const handleApproveUser = async (id, approve) => {
     try {
       await approveUser(id, approve);
       setMessage(`User ${approve ? 'approved' : 'rejected'}`);
-      await fetchAllAdminData();
+      fetchPendingUsers();
+      fetchAllUsers(); // Refresh all users list
     } catch (error) {
-      setMessage(error.response?.data?.message || 'Error updating user status');
+      setMessage('Error updating user status');
     }
   };
 
@@ -73,9 +106,10 @@ export default function AdminDashboard() {
     try {
       await approveTransaction(id, approve);
       setMessage(`Transaction ${approve ? 'approved' : 'rejected'}`);
-      await fetchAllAdminData();
+      fetchPendingTxns();
+      fetchAllTransactions(); // Refresh all transactions list
     } catch (error) {
-      setMessage(error.response?.data?.message || 'Error updating transaction status');
+      setMessage('Error updating transaction status');
     }
   };
 
@@ -83,9 +117,9 @@ export default function AdminDashboard() {
     try {
       await approveWithdrawal(id, approve);
       setMessage(`Withdrawal ${approve ? 'approved' : 'rejected'}`);
-      await fetchAllAdminData();
+      fetchPendingWithdrawals(); // Refresh pending withdrawals list
     } catch (error) {
-      setMessage(error.response?.data?.message || 'Error updating withdrawal status');
+      setMessage('Error updating withdrawal status');
     }
   };
 
@@ -104,9 +138,9 @@ export default function AdminDashboard() {
       setNewsTitle('');
       setNewsContent('');
       setNewsMedia(null);
-      await fetchAllAdminData();
+      fetchNews(); // Refresh news list
     } catch (error) {
-      setMessage(error.response?.data?.message || 'Error creating news');
+      setMessage('Error creating news: ' + error.message);
     }
   };
 
@@ -114,15 +148,6 @@ export default function AdminDashboard() {
     localStorage.clear();
     window.location.href = '/admin-login';
   };
-
-  if (loading) {
-    return (
-      <div>
-        <Header />
-        <div className="container"><h2>Loading Admin Dashboard...</h2></div>
-      </div>
-    );
-  }
 
   return (
     <div>
