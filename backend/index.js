@@ -48,17 +48,25 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(morgan('combined'));
 app.use('/uploads', express.static('uploads'));
+// Serve frontend static files in production
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, '..', 'dist')));
+  // Handle SPA routing - serve index.html for all non-API routes
+  app.get(/^\/(?!api).*$/, (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));
+  });
+}
 
 // Rate limiters
 const userLoginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, 
+  windowMs: 15 * 1000,
   max: 5,
-  message: 'Too many login attempts from this IP, please try again after 15 minutes',
+  message: 'Too many login attempts from this IP, please try again after 15 seconds',
 });
 const adminLoginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, 
+  windowMs: 15 * 1000,
   max: 5,
-  message: 'Too many login attempts from this IP, please try again after 15 minutes',
+  message: 'Too many login attempts from this IP, please try again after 15 seconds',
 });
 
 // Create tables once with full schema
@@ -100,6 +108,29 @@ db.serialize(() => {
     userId INTEGER,
     email TEXT,
     requested_at TEXT DEFAULT (datetime('now'))
+  )`);
+db.run(`CREATE TABLE IF NOT EXISTS stakes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    amount INTEGER,
+    stake_period INTEGER, -- 30, 90, or 180 days
+    interest_rate REAL, -- Interest rate for this stake
+    start_date TEXT DEFAULT (datetime('now')),
+    end_date TEXT, -- Calculated end date based on stake_period
+    status TEXT DEFAULT 'active', -- active, completed, withdrawn
+    FOREIGN KEY (user_id) REFERENCES users (id)
+  )`);
+
+  db.run(`CREATE TABLE IF NOT EXISTS withdrawals (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    stake_id INTEGER,
+    amount INTEGER,
+    request_date TEXT DEFAULT (datetime('now')),
+    status TEXT DEFAULT 'pending', -- pending, approved, rejected
+    processed_date TEXT,
+    FOREIGN KEY (user_id) REFERENCES users (id),
+    FOREIGN KEY (stake_id) REFERENCES stakes (id)
   )`);
 
   db.run(`CREATE TABLE IF NOT EXISTS news (
@@ -546,6 +577,211 @@ app.put('/api/admin/transactions/:id/approve', adminMiddleware, (req, res) => {
     }
   });
 });
+
+// User stake routes
+  // Create stake deposit
+  app.post('/api/user/stakes', authMiddleware, (req, res) => {
+    const userId = req.user.id;
+    const { amount, stakePeriod } = req.body;
+    
+    // Validate input
+    if (!amount || !stakePeriod) {
+      return res.status(400).json({ message: 'Amount and stake period are required' });
+    }
+    
+    // Validate amount is a positive number
+    if (isNaN(amount) || amount <= 0) {
+      return res.status(400).json({ message: 'Amount must be a positive number' });
+    }
+    
+    // Validate stake period is one of the allowed values (30, 90, 180)
+    const allowedPeriods = [30, 90, 180];
+    if (!allowedPeriods.includes(stakePeriod)) {
+      return res.status(400).json({ message: 'Invalid stake period. Must be 30, 90, or 180 days' });
+    }
+    
+    // Calculate interest rate based on stake period (example rates)
+    let interestRate;
+    switch (stakePeriod) {
+      case 30:
+        interestRate = 0.05; // 5% for 30 days
+        break;
+      case 90:
+        interestRate = 0.15; // 15% for 90 days
+        break;
+      case 180:
+        interestRate = 0.30; // 30% for 180 days
+        break;
+      default:
+        interestRate = 0;
+    }
+    
+    // Calculate end date
+    const startDate = new Date();
+    const endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + stakePeriod);
+    
+    db.run(
+      `INSERT INTO stakes (user_id, amount, stake_period, interest_rate, end_date) VALUES (?, ?, ?, ?, ?)`,
+      [userId, amount, stakePeriod, interestRate, endDate.toISOString()],
+      function (err) {
+        if (err) return res.status(500).json({ message: 'Server error' });
+        res.json({ message: 'Stake deposit created successfully', id: this.lastID });
+      }
+    );
+  });
+
+  // Get user stakes
+  app.get('/api/user/stakes', authMiddleware, (req, res) => {
+    const userId = req.user.id;
+    
+    db.all(`SELECT * FROM stakes WHERE user_id = ? ORDER BY start_date DESC`, [userId], (err, rows) => {
+      if (err) return res.status(500).json({ message: 'Server error' });
+      res.json({ stakes: rows });
+    });
+  });
+
+  // Request withdrawal
+  app.post('/api/user/withdrawals', authMiddleware, (req, res) => {
+    const userId = req.user.id;
+    const { stakeId } = req.body;
+    
+    // Validate input
+    if (!stakeId) {
+      return res.status(400).json({ message: 'Stake ID is required' });
+    }
+    
+    // Check if stake exists and belongs to user
+    db.get(`SELECT * FROM stakes WHERE id = ? AND user_id = ?`, [stakeId, userId], (err, stake) => {
+      if (err) return res.status(500).json({ message: 'Server error' });
+      if (!stake) return res.status(404).json({ message: 'Stake not found' });
+      
+      // Check if stake has matured
+      const currentDate = new Date();
+      const endDate = new Date(stake.end_date);
+      if (currentDate < endDate) {
+        return res.status(400).json({ message: 'Stake has not matured yet' });
+      }
+      
+      // Check if stake is already withdrawn
+      if (stake.status === 'withdrawn') {
+        return res.status(400).json({ message: 'Stake already withdrawn' });
+      }
+      
+      // Calculate withdrawal amount (principal + interest)
+      const principal = stake.amount;
+      const interest = Math.floor(principal * stake.interest_rate);
+      const totalAmount = principal + interest;
+      
+      // Start a transaction to update stake status and create withdrawal record
+      db.serialize(() => {
+        // Update stake status to withdrawn
+        db.run(`UPDATE stakes SET status = 'withdrawn' WHERE id = ?`, [stakeId], (err) => {
+          if (err) return res.status(500).json({ message: 'Server error' });
+        });
+        
+        // Create withdrawal record
+        db.run(
+          `INSERT INTO withdrawals (user_id, stake_id, amount) VALUES (?, ?, ?)`,
+          [userId, stakeId, totalAmount],
+          function (err) {
+            if (err) return res.status(500).json({ message: 'Server error' });
+            res.json({ 
+              message: 'Withdrawal request submitted successfully', 
+              id: this.lastID,
+              amount: totalAmount
+            });
+          }
+        );
+      });
+    });
+  });
+
+  // Get user withdrawals
+  app.get('/api/user/withdrawals', authMiddleware, (req, res) => {
+    const userId = req.user.id;
+    
+    db.all(`SELECT * FROM withdrawals WHERE user_id = ? ORDER BY request_date DESC`, [userId], (err, rows) => {
+      if (err) return res.status(500).json({ message: 'Server error' });
+      res.json({ withdrawals: rows });
+    });
+  });
+
+  // Admin withdrawal routes
+  // Get pending withdrawals
+  app.get('/api/admin/withdrawals/pending', adminMiddleware, (req, res) => {
+    db.all(`SELECT w.*, u.email, s.amount as stake_amount, s.stake_period
+             FROM withdrawals w
+             JOIN users u ON w.user_id = u.id
+             JOIN stakes s ON w.stake_id = s.id
+             WHERE w.status = 'pending'
+             ORDER BY w.request_date DESC`, (err, rows) => {
+      if (err) return res.status(500).json({ message: 'Server error' });
+      res.json({ withdrawals: rows });
+    });
+  });
+
+  // Approve/reject withdrawal
+  app.put('/api/admin/withdrawals/:id/approve', adminMiddleware, (req, res) => {
+    const withdrawalId = req.params.id;
+    const { approve } = req.body;
+    
+    if (approve === undefined) {
+      return res.status(400).json({ message: 'Approve field is required' });
+    }
+    
+    const newStatus = approve ? 'approved' : 'rejected';
+    const processedDate = new Date().toISOString();
+    
+    db.run(`UPDATE withdrawals SET status = ?, processed_date = ? WHERE id = ?`, 
+      [newStatus, processedDate, withdrawalId], (err) => {
+      if (err) return res.status(500).json({ message: 'Server error' });
+      res.json({ message: `Withdrawal ${approve ? 'approved' : 'rejected'} successfully` });
+    });
+  });
+
+  // Admin company assets route
+  // Get company financial summary
+  app.get('/api/admin/company-assets', adminMiddleware, (req, res) => {
+    // Get total approved transactions
+    db.get(`SELECT SUM(amount) as totalTransactions FROM transactions WHERE status = 'approved'`, (err, transactionsRow) => {
+      if (err) return res.status(500).json({ message: 'Server error' });
+      
+      // Get total stakes
+      db.get(`SELECT SUM(amount) as totalStakes FROM stakes`, (err, stakesRow) => {
+        if (err) return res.status(500).json({ message: 'Server error' });
+        
+        // Get total withdrawals
+        db.get(`SELECT SUM(amount) as totalWithdrawals FROM withdrawals WHERE status = 'approved'`, (err, withdrawalsRow) => {
+          if (err) return res.status(500).json({ message: 'Server error' });
+          
+          // Get total bonuses
+          db.get(`SELECT SUM(amount) as totalBonuses FROM bonuses`, (err, bonusesRow) => {
+            if (err) return res.status(500).json({ message: 'Server error' });
+            
+            // Get total users
+            db.get(`SELECT COUNT(*) as totalUsers FROM users`, (err, usersRow) => {
+              if (err) return res.status(500).json({ message: 'Server error' });
+              
+              // Get approved users
+              db.get(`SELECT COUNT(*) as approvedUsers FROM users WHERE status = 'approved'`, (err, approvedUsersRow) => {
+                if (err) return res.status(500).json({ message: 'Server error' });
+                
+                res.json({
+                  totalTransactions: transactionsRow.totalTransactions || 0,
+                  totalStakes: stakesRow.totalStakes || 0,
+                  totalWithdrawals: withdrawalsRow.totalWithdrawals || 0,
+                  totalBonuses: bonusesRow.totalBonuses || 0,
+                  totalUsers: usersRow.totalUsers || 0,
+                  approvedUsers: approvedUsersRow.approvedUsers || 0
+                });
+              });
+            });
+          });
+        });
+      });
+    });
+  });
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {

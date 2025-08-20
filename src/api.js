@@ -1,13 +1,8 @@
 import axios from 'axios';
 
-// Get the API base URL from environment variables or use a default
-// In production, this should be your backend URL without the /api prefix
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:4000';
-
-// Create an axios instance with the base URL
-const api = axios.create({
-  baseURL: API_BASE,
-});
+// Create an axios instance with no base URL
+// In our new deployment, API is on the same domain as the frontend
+const api = axios.create();
 
 // Add a request interceptor to include the auth token
 api.interceptors.request.use((config) => {
@@ -25,12 +20,11 @@ export const getFullUrl = (path) => {
   if (path.startsWith('http')) {
     return path;
   }
-  // If path starts with /api, it's relative to the API base
-  if (path.startsWith('/api')) {
-    return `${API_BASE}${path}`;
-  }
-  // Otherwise, assume it's relative to the API base
-  return `${API_BASE}${path.startsWith('/') ? path : '/' + path}`;
+  // In our new deployment, API is on the same domain as the frontend
+  // Just return the path as is for relative URLs
+  const fullPath = path.startsWith('/') ? path : '/' + path;
+  // Decode URI components to handle encoded characters like %20
+  return decodeURIComponent(fullPath);
 };
 
 // Auth APIs
@@ -45,6 +39,16 @@ export const getUserProfile = () => api.get('/api/user/profile');
 export const createTransaction = (transactionData) => api.post('/api/transactions', transactionData);
 export const changePassword = (passwordData) => api.post('/api/user/change-password', passwordData);
 export const requestPasswordReset = (emailData) => api.post('/api/user/request-password-reset', emailData);
+// User Stake and Withdrawal APIs
+export const createStake = (stakeData) => api.post('/api/user/stakes', stakeData);
+export const getUserStakes = () => api.get('/api/user/stakes');
+export const requestWithdrawal = (withdrawalData) => api.post('/api/user/withdrawals', withdrawalData);
+export const getUserWithdrawals = () => api.get('/api/user/withdrawals');
+
+// Admin Withdrawal APIs
+export const getPendingWithdrawals = () => api.get('/api/admin/withdrawals/pending');
+export const approveWithdrawal = (id, approveData) => api.put(`/api/admin/withdrawals/${id}/approve`, approveData);
+export const getCompanyAssets = () => api.get('/api/admin/company-assets');
 
 // News APIs
 export const getNews = () => api.get('/api/news');
@@ -58,5 +62,5 @@ export const deleteNews = (id) => api.delete(`/api/admin/news/${id}`);
 export const getAllUsers = () => api.get('/api/admin/users');
 export const getUserTransactions = (id) => api.get(`/api/admin/users/${id}/transactions`);
 export const getAllTransactions = () => api.get('/api/admin/transactions');
-export const approveUser = (id, approveData) => api.put(`/api/admin/users/${id}/approve`, approveData);
-export const approveTransaction = (id, approveData) => api.put(`/api/admin/transactions/${id}/approve`, approveData);
+export const approveUser = (id, approveData) => api.put(`/api/admin/users/${id}/approve`, { approve: approveData });
+export const approveTransaction = (id, approveData) => api.put(`/api/admin/transactions/${id}/approve`, { approve: approveData });

@@ -1,21 +1,8 @@
 services:
   - type: web
-    name: kedi-money-frontend
-    env: static
-    buildCommand: npm install && npm run build
-    staticFiles:
-      - path: /
-        directory: dist
-    routes:
-      - type: spa
-        source: /
-    envVars:
-      - key: VITE_API_BASE
-        value: https://kedimoneynetwork-1.onrender.com
-  - type: web
-    name: kedi-money-backend
+    name: kedi-money-network
     env: node
-    buildCommand: cd backend && npm install
+    buildCommand: npm install && npm run build
     startCommand: npm start
     envVars:
       - key: NODE_VERSION

@@ -7,10 +7,11 @@
   ],
   "scripts": {
     "dev": "vite",
-    "start": "vite",
+    "start": "cd backend && node index.js",
     "build": "vite build",
     "backend": "cd backend && npm start",
-    "backend-install": "cd backend && npm install"
+    "backend-install": "cd backend && npm install",
+    "full-start": "npm run build && npm start"
   },
   "dependencies": {
     "react": "^18.2.0",

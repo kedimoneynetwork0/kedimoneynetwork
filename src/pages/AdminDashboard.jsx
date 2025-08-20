@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getPendingUsers, getPendingTransactions, getAllUsers, getAllTransactions, approveUser, approveTransaction, createNews, getNews, getFullUrl } from '../api';
+import { getPendingUsers, getPendingTransactions, getAllUsers, getAllTransactions, approveUser, approveTransaction, createNews, getNews, getFullUrl, getPendingWithdrawals, approveWithdrawal, getCompanyAssets } from '../api';
 import Header from '../components/Header';
 
 export default function AdminDashboard() {
@@ -8,8 +8,10 @@ export default function AdminDashboard() {
   const [allUsers, setAllUsers] = useState([]);
   const [allTransactions, setAllTransactions] = useState([]);
   const [news, setNews] = useState([]);
+  const [pendingWithdrawals, setPendingWithdrawals] = useState([]);
+  const [companyAssets, setCompanyAssets] = useState(null);
   const [message, setMessage] = useState('');
-  const [activeTab, setActiveTab] = useState('pending'); // 'pending', 'history', or 'news'
+  const [activeTab, setActiveTab] = useState('pending'); // 'pending', 'history', 'news', 'withdrawals', or 'assets'
   
   // News form state
   const [newsTitle, setNewsTitle] = useState('');
@@ -22,12 +24,14 @@ export default function AdminDashboard() {
     fetchAllUsers();
     fetchAllTransactions();
     fetchNews();
+    fetchPendingWithdrawals();
+    fetchCompanyAssets();
   }, []);
 
   const fetchPendingUsers = async () => {
     try {
-      const data = await getPendingUsers();
-      setPendingUsers(data);
+      const response = await getPendingUsers();
+      setPendingUsers(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error(error);
     }
@@ -35,8 +39,8 @@ export default function AdminDashboard() {
 
   const fetchPendingTxns = async () => {
     try {
-      const data = await getPendingTransactions();
-      setPendingTxns(data);
+      const response = await getPendingTransactions();
+      setPendingTxns(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error(error);
     }
@@ -44,8 +48,8 @@ export default function AdminDashboard() {
 
   const fetchAllUsers = async () => {
     try {
-      const data = await getAllUsers();
-      setAllUsers(data);
+      const response = await getAllUsers();
+      setAllUsers(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error(error);
     }
@@ -53,8 +57,8 @@ export default function AdminDashboard() {
 
   const fetchAllTransactions = async () => {
     try {
-      const data = await getAllTransactions();
-      setAllTransactions(data);
+      const response = await getAllTransactions();
+      setAllTransactions(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error(error);
     }
@@ -62,8 +66,26 @@ export default function AdminDashboard() {
 
   const fetchNews = async () => {
     try {
-      const data = await getNews();
-      setNews(data);
+      const response = await getNews();
+      setNews(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const fetchPendingWithdrawals = async () => {
+    try {
+      const response = await getPendingWithdrawals();
+      setPendingWithdrawals(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const fetchCompanyAssets = async () => {
+    try {
+      const response = await getCompanyAssets();
+      setCompanyAssets(response.data);
     } catch (error) {
       console.error(error);
     }
@@ -88,6 +110,16 @@ export default function AdminDashboard() {
       fetchAllTransactions(); // Refresh all transactions list
     } catch (error) {
       setMessage('Error updating transaction status');
+    }
+  };
+
+  const handleApproveWithdrawal = async (id, approve) => {
+    try {
+      await approveWithdrawal(id, approve);
+      setMessage(`Withdrawal ${approve ? 'approved' : 'rejected'}`);
+      fetchPendingWithdrawals(); // Refresh pending withdrawals list
+    } catch (error) {
+      setMessage('Error updating withdrawal status');
     }
   };
 
@@ -149,6 +181,18 @@ export default function AdminDashboard() {
           >
             News Management
           </button>
+          <button 
+            className={`tab-button ${activeTab === 'withdrawals' ? 'active' : ''}`}
+            onClick={() => setActiveTab('withdrawals')}
+          >
+            Withdrawal Management
+          </button>
+          <button 
+            className={`tab-button ${activeTab === 'assets' ? 'active' : ''}`}
+            onClick={() => setActiveTab('assets')}
+          >
+            Company Assets
+          </button>
         </div>
 
         {/* Pending Approvals Tab */}
@@ -159,32 +203,37 @@ export default function AdminDashboard() {
               {pendingUsers.length === 0 ? (
                 <p className="text-center">No pending users</p>
               ) : (
-                <ul className="transaction-list">
-                  {pendingUsers.map((user) => (
-                    <li key={user.id} className="transaction-item">
-                      <div className="transaction-details">
-                        <div className="transaction-detail">
-                          <span className="detail-label">Email</span>
-                          <span className="detail-value">{user.email}</span>
-                        </div>
-                      </div>
-                      <div className="action-buttons">
-                        <button
-                          onClick={() => handleApproveUser(user.id, true)}
-                          className="action-button"
-                        >
-                          Approve
-                        </button>
-                        <button
-                          onClick={() => handleApproveUser(user.id, false)}
-                          className="action-button danger"
-                        >
-                          Reject
-                        </button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+                <div className="table-container">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Email</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pendingUsers.map((user) => (
+                        <tr key={user.id}>
+                          <td>{user.email}</td>
+                          <td>
+                            <button
+                              onClick={() => handleApproveUser(user.id, true)}
+                              className="action-button"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => handleApproveUser(user.id, false)}
+                              className="action-button danger"
+                            >
+                              Reject
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
 
@@ -193,50 +242,51 @@ export default function AdminDashboard() {
               {pendingTxns.length === 0 ? (
                 <p className="text-center">No pending transactions</p>
               ) : (
-                <ul className="transaction-list">
-                  {pendingTxns.map((txn) => (
-                    <li key={txn.id} className="transaction-item">
-                      <div className="transaction-meta">
-                        <span className={`status-badge status-${txn.status.toLowerCase()}`}>
-                          {txn.status}
-                        </span>
-                        <span>{new Date(txn.created_at).toLocaleString()}</span>
-                      </div>
-                      <div className="transaction-details">
-                        <div className="transaction-detail">
-                          <span className="detail-label">User</span>
-                          <span className="detail-value">{txn.email}</span>
-                        </div>
-                        <div className="transaction-detail">
-                          <span className="detail-label">Type</span>
-                          <span className="detail-value">{txn.type}</span>
-                        </div>
-                        <div className="transaction-detail">
-                          <span className="detail-label">Amount</span>
-                          <span className="detail-value">{txn.amount} RWF</span>
-                        </div>
-                        <div className="transaction-detail">
-                          <span className="detail-label">Transaction ID</span>
-                          <span className="detail-value">{txn.txn_id}</span>
-                        </div>
-                      </div>
-                      <div className="action-buttons">
-                        <button
-                          onClick={() => handleApproveTxn(txn.id, true)}
-                          className="action-button"
-                        >
-                          Approve
-                        </button>
-                        <button
-                          onClick={() => handleApproveTxn(txn.id, false)}
-                          className="action-button danger"
-                        >
-                          Reject
-                        </button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+                <div className="table-container">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>User</th>
+                        <th>Type</th>
+                        <th>Amount</th>
+                        <th>Transaction ID</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pendingTxns.map((txn) => (
+                        <tr key={txn.id}>
+                          <td>{txn.email}</td>
+                          <td>{txn.type}</td>
+                          <td>{txn.amount} RWF</td>
+                          <td>{txn.txn_id}</td>
+                          <td>{new Date(txn.created_at).toLocaleString()}</td>
+                          <td>
+                            <span className={`status-badge status-${txn.status.toLowerCase()}`}>
+                              {txn.status}
+                            </span>
+                          </td>
+                          <td>
+                            <button
+                              onClick={() => handleApproveTxn(txn.id, true)}
+                              className="action-button"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => handleApproveTxn(txn.id, false)}
+                              className="action-button danger"
+                            >
+                              Reject
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
           </div>
@@ -250,32 +300,32 @@ export default function AdminDashboard() {
               {allUsers.length === 0 ? (
                 <p className="text-center">No users found</p>
               ) : (
-                <ul className="transaction-list">
-                  {allUsers.map((user) => (
-                    <li key={user.id} className="transaction-item">
-                      <div className="transaction-details">
-                        <div className="transaction-detail">
-                          <span className="detail-label">Name</span>
-                          <span className="detail-value">{user.firstname} {user.lastname}</span>
-                        </div>
-                        <div className="transaction-detail">
-                          <span className="detail-label">Email</span>
-                          <span className="detail-value">{user.email}</span>
-                        </div>
-                        <div className="transaction-detail">
-                          <span className="detail-label">Username</span>
-                          <span className="detail-value">{user.username}</span>
-                        </div>
-                        <div className="transaction-detail">
-                          <span className="detail-label">Status</span>
-                          <span className={`status-badge status-${user.status.toLowerCase()}`}>
-                            {user.status}
-                          </span>
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+                <div className="table-container">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Username</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {allUsers.map((user) => (
+                        <tr key={user.id}>
+                          <td>{user.firstname} {user.lastname}</td>
+                          <td>{user.email}</td>
+                          <td>{user.username}</td>
+                          <td>
+                            <span className={`status-badge status-${user.status.toLowerCase()}`}>
+                              {user.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
 
@@ -284,36 +334,36 @@ export default function AdminDashboard() {
               {allTransactions.length === 0 ? (
                 <p className="text-center">No transactions found</p>
               ) : (
-                <ul className="transaction-list">
-                  {allTransactions.map((txn) => (
-                    <li key={txn.id} className="transaction-item">
-                      <div className="transaction-meta">
-                        <span className={`status-badge status-${txn.status.toLowerCase()}`}>
-                          {txn.status}
-                        </span>
-                        <span>{new Date(txn.created_at).toLocaleString()}</span>
-                      </div>
-                      <div className="transaction-details">
-                        <div className="transaction-detail">
-                          <span className="detail-label">User</span>
-                          <span className="detail-value">{txn.email}</span>
-                        </div>
-                        <div className="transaction-detail">
-                          <span className="detail-label">Type</span>
-                          <span className="detail-value">{txn.type}</span>
-                        </div>
-                        <div className="transaction-detail">
-                          <span className="detail-label">Amount</span>
-                          <span className="detail-value">{txn.amount} RWF</span>
-                        </div>
-                        <div className="transaction-detail">
-                          <span className="detail-label">Transaction ID</span>
-                          <span className="detail-value">{txn.txn_id}</span>
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+                <div className="table-container">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>User</th>
+                        <th>Type</th>
+                        <th>Amount</th>
+                        <th>Transaction ID</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {allTransactions.map((txn) => (
+                        <tr key={txn.id}>
+                          <td>{txn.email}</td>
+                          <td>{txn.type}</td>
+                          <td>{txn.amount} RWF</td>
+                          <td>{txn.txn_id}</td>
+                          <td>{new Date(txn.created_at).toLocaleString()}</td>
+                          <td>
+                            <span className={`status-badge status-${txn.status.toLowerCase()}`}>
+                              {txn.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
           </div>
@@ -368,28 +418,135 @@ export default function AdminDashboard() {
               {news.length === 0 ? (
                 <p className="text-center">No news posted yet</p>
               ) : (
-                <ul className="transaction-list">
-                  {news.map((item) => (
-                    <li key={item.id} className="transaction-item">
-                      <h4>{item.title}</h4>
-                      <p>{item.content}</p>
-                      {item.media_url && item.media_type === 'image' && (
-                        <img src={getFullUrl(item.media_url)} alt="News" className="news-media" />
-                      )}
-                      {item.media_url && item.media_type === 'video' && (
-                        <video src={getFullUrl(item.media_url)} controls className="news-media" />
-                      )}
-                      {item.media_url && item.media_type === 'application' && (
-                        <a href={getFullUrl(item.media_url)} target="_blank" rel="noopener noreferrer" className="news-media-link">
-                          View PDF Document
-                        </a>
-                      )}
-                      <p className="text-muted">{new Date(item.created_at).toLocaleString()}</p>
-                    </li>
-                  ))}
-                </ul>
+                <div className="table-container">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Title</th>
+                        <th>Date</th>
+                        <th>Media</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {news.map((item) => (
+                        <tr key={item.id}>
+                          <td>{item.title}</td>
+                          <td>{new Date(item.created_at).toLocaleDateString()}</td>
+                          <td>
+                            {item.media_url && item.media_type === 'image' && (
+                              <img src={getFullUrl(item.media_url)} alt="News" className="news-media-thumb" />
+                            )}
+                            {item.media_url && item.media_type === 'video' && (
+                              <span>Video</span>
+                            )}
+                            {item.media_url && item.media_type === 'application' && (
+                              <span>PDF</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* Withdrawal Management Tab */}
+        {activeTab === 'withdrawals' && (
+          <div className="dashboard-card">
+            <h3>Pending Withdrawals</h3>
+            {pendingWithdrawals.length === 0 ? (
+              <p className="text-center">No pending withdrawals</p>
+            ) : (
+              <div className="table-container">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>User</th>
+                      <th>Stake Amount</th>
+                      <th>Stake Period</th>
+                      <th>Withdrawal Amount</th>
+                      <th>Request Date</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pendingWithdrawals.map((withdrawal) => (
+                      <tr key={withdrawal.id}>
+                        <td>{withdrawal.email}</td>
+                        <td>{withdrawal.stake_amount} RWF</td>
+                        <td>{withdrawal.stake_period} days</td>
+                        <td>{withdrawal.amount} RWF</td>
+                        <td>{new Date(withdrawal.request_date).toLocaleString()}</td>
+                        <td>
+                          <button
+                            onClick={() => handleApproveWithdrawal(withdrawal.id, true)}
+                            className="action-button"
+                          >
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => handleApproveWithdrawal(withdrawal.id, false)}
+                            className="action-button danger"
+                          >
+                            Reject
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Company Assets Tab */}
+        {activeTab === 'assets' && (
+          <div className="dashboard-card">
+            <h3>Company Assets</h3>
+            {companyAssets ? (
+              <div className="table-container">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Metric</th>
+                      <th>Value</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Total Approved Transactions</td>
+                      <td>{companyAssets.totalTransactions} RWF</td>
+                    </tr>
+                    <tr>
+                      <td>Total Stakes</td>
+                      <td>{companyAssets.totalStakes} RWF</td>
+                    </tr>
+                    <tr>
+                      <td>Total Withdrawals</td>
+                      <td>{companyAssets.totalWithdrawals} RWF</td>
+                    </tr>
+                    <tr>
+                      <td>Total Bonuses</td>
+                      <td>{companyAssets.totalBonuses} RWF</td>
+                    </tr>
+                    <tr>
+                      <td>Total Users</td>
+                      <td>{companyAssets.totalUsers}</td>
+                    </tr>
+                    <tr>
+                      <td>Approved Users</td>
+                      <td>{companyAssets.approvedUsers}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-center">Loading company assets...</p>
+            )}
           </div>
         )}
 
