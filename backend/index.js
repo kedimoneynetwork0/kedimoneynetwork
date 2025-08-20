@@ -47,8 +47,6 @@ const upload = multer({
 app.use(cors());
 app.use(bodyParser.json());
 app.use(morgan('combined'));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-// Rate limiters
 const userLoginLimiter = rateLimit({
   windowMs: 15 * 1000,
   max: 5,
@@ -774,8 +772,8 @@ app.put('/api/admin/transactions/:id/approve', adminMiddleware, (req, res) => {
     });
   });
 
-
 // This block should come AFTER all other API routes
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 if (process.env.NODE_ENV === 'production') {
   // Serve the static files from the React app
   app.use(express.static(path.join(__dirname, '..', 'dist')));
