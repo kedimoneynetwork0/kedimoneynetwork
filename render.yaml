@@ -2,7 +2,13 @@ services:
   - type: web
     name: kedi-money-network
     env: node
-    buildCommand: npm install && npm run build
+    region: singapore
+    plan: starter
+    buildCommand: |
+      echo "Installing dependencies..."
+      npm install
+      echo "Building application..."
+      npm run build
     startCommand: npm run start-sqlite
     envVars:
       - key: NODE_VERSION
@@ -13,3 +19,5 @@ services:
         value: AdminPass123!@#
       - key: PORT
         value: 10000
+      - key: NODE_ENV
+        value: production

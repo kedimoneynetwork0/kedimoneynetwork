@@ -3,12 +3,21 @@ node_modules/
 
 # Environment variables
 .env
+.env.production
 
 # Logs
 *.log
 
 # Database
 *.sqlite
+*.db
+backend/*.db
+backend/*.sqlite
+kedi_money_network.db
+
+# Build outputs
+dist/
+build/
 
 # IDE files
 .vscode/
@@ -18,3 +27,6 @@ node_modules/
 
 # Windows
 Thumbs.db
+
+# Uploads (should be handled by persistent storage in production)
+backend/uploads/
