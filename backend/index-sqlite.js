@@ -304,20 +304,47 @@ app.post('/api/auth/signup', async (req, res) => {
 // Login (user)
 app.post('/api/auth/login', userLoginLimiter, async (req, res) => {
   const { email, password } = req.body;
+
+  console.log('User login attempt for:', email);
+
+  if (!email || !password) {
+    console.log('Missing email or password');
+    return res.status(400).json({ message: 'Email and password are required' });
+  }
+
   try {
     const result = await query(`SELECT * FROM users WHERE email = ?`, [email]);
     const user = result.rows[0];
 
-    if (!user) return res.status(400).json({ message: 'Invalid credentials' });
-    if (user.status !== 'approved') return res.status(403).json({ message: 'User not approved yet' });
+    console.log('User found:', !!user);
+    if (user) {
+      console.log('User status:', user.status);
+      console.log('User role:', user.role);
+    }
+
+    if (!user) {
+      console.log('No user found with email:', email);
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
+    if (user.status !== 'approved') {
+      console.log('User not approved, status:', user.status);
+      return res.status(403).json({ message: 'User not approved yet' });
+    }
 
     const match = await bcrypt.compare(password, user.password);
-    if (!match) return res.status(400).json({ message: 'Invalid credentials' });
+    console.log('Password match result:', match);
+
+    if (!match) {
+      console.log('Password does not match for user:', email);
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
 
     const token = jwt.sign({ id: user.id, role: user.role }, SECRET_KEY, { expiresIn: '1h' });
-    res.json({ token, role: user.role, status: user.status });
+    console.log('User login successful for:', email);
+    res.json({ token, role: user.role, status: user.status, message: 'Login successful' });
   } catch (err) {
-    console.error(err);
+    console.error('User login error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -328,32 +355,37 @@ app.post('/api/auth/admin-login', adminLoginLimiter, async (req, res) => {
 
   console.log('Admin login attempt for:', email);
 
-  if (!email || !password) return res.status(400).json({ message: 'Email and password are required' });
-
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) return res.status(400).json({ message: 'Invalid email format' });
-
-  const passwordRegex = /^(?=.*[0-9])(?=.*[!@#$%^&*]).{8,}$/;
-  if (!passwordRegex.test(password)) return res.status(400).json({ message: 'Password does not meet complexity requirements' });
+  if (!email || !password) {
+    console.log('Missing email or password');
+    return res.status(400).json({ message: 'Email and password are required' });
+  }
 
   try {
     const result = await query(`SELECT * FROM users WHERE email = ? AND role = 'admin'`, [email]);
     const user = result.rows[0];
 
     console.log('Admin user found:', !!user);
-    console.log('User role:', user?.role);
-    console.log('User status:', user?.status);
+    if (user) {
+      console.log('User role:', user.role);
+      console.log('User status:', user.status);
+    }
 
-    if (!user) return res.status(401).json({ message: 'Invalid credentials' });
+    if (!user) {
+      console.log('No admin user found with email:', email);
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
 
     const match = await bcrypt.compare(password, user.password);
-    console.log('Password match:', match);
+    console.log('Password match result:', match);
 
-    if (!match) return res.status(401).json({ message: 'Invalid credentials' });
+    if (!match) {
+      console.log('Password does not match for user:', email);
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
 
     const token = jwt.sign({ id: user.id, role: user.role }, SECRET_KEY, { expiresIn: '1h' });
     console.log('Admin login successful for:', email);
-    res.json({ token });
+    res.json({ token, message: 'Login successful' });
   } catch (err) {
     console.error('Admin login error:', err);
     res.status(500).json({ message: 'Server error' });
@@ -1138,6 +1170,30 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Serve static files from the React app build directory
 app.use(express.static(path.join(__dirname, '..', 'dist')));
+
+// Debug endpoint to check admin user status
+app.get('/api/debug/admin-status', async (req, res) => {
+  try {
+    const result = await query(`SELECT id, email, role, status FROM users WHERE role = 'admin'`);
+    const adminUsers = result.rows;
+
+    const envCheck = {
+      ADMIN_EMAIL: process.env.ADMIN_EMAIL || 'kedimoneynetwork@gmail.com',
+      ADMIN_PASSWORD: !!process.env.ADMIN_PASSWORD,
+      JWT_SECRET: !!process.env.JWT_SECRET,
+      NODE_ENV: process.env.NODE_ENV
+    };
+
+    res.json({
+      adminUsers: adminUsers,
+      environment: envCheck,
+      totalUsers: (await query(`SELECT COUNT(*) as count FROM users`)).rows[0].count
+    });
+  } catch (err) {
+    console.error('Debug endpoint error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // Catch all handler: send back React's index.html file for client-side routing
 app.get('*', (req, res) => {

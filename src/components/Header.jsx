@@ -6,11 +6,7 @@ export default function Header() {
   return (
     <header style={{
       position: 'relative',
-      backgroundImage: 'url("../../ChatGPT Image Sep 4, 2025, 04_16_03 PM.png")',
-      backgroundRepeat: 'no-repeat',
-      backgroundPosition: 'center',
-      backgroundSize: '200px',
-      backgroundOpacity: '0.1'
+      backgroundColor: 'rgba(40, 167, 69, 0.9)'
     }}>
       <div style={{
         position: 'absolute',
@@ -18,11 +14,11 @@ export default function Header() {
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundImage: 'url("../../ChatGPT Image Sep 4, 2025, 04_16_03 PM.png")',
+        backgroundImage: 'url("/ChatGPT%20Image%20Sep%204,%202025,%2004_16_03%20PM.png")',
         backgroundRepeat: 'no-repeat',
         backgroundPosition: 'center',
-        backgroundSize: '200px',
-        opacity: '0.1',
+        backgroundSize: '300px',
+        opacity: '0.3',
         pointerEvents: 'none',
         zIndex: 0
       }}></div>
