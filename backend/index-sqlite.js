@@ -16,11 +16,16 @@ dotenv.config();
 const app = express();
 
 // SQLite Database setup
-const db = new sqlite3.Database('./kedi_money_network.db', (err) => {
+const dbPath = process.env.NODE_ENV === 'production'
+  ? './kedi_money_network.db'
+  : './kedi_money_network.db';
+
+const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
     console.error('Error opening SQLite database:', err.message);
+    console.error('Database path:', dbPath);
   } else {
-    console.log('Connected to SQLite database.');
+    console.log('Connected to SQLite database at:', dbPath);
   }
 });
 
@@ -193,6 +198,10 @@ async function seedAdmin() {
   const adminEmail = process.env.ADMIN_EMAIL || 'kedimoneynetwork@gmail.com';
   const adminPassword = process.env.ADMIN_PASSWORD;
 
+  console.log('Seeding admin user...');
+  console.log('Admin Email:', adminEmail);
+  console.log('Admin Password set:', !!adminPassword);
+
   if (!adminPassword) {
     console.error('Error: ADMIN_PASSWORD environment variable is not set.');
     return;
@@ -204,6 +213,7 @@ async function seedAdmin() {
     const res = await query(`SELECT * FROM users WHERE email = ? AND role = 'admin'`, [adminEmail]);
     const row = res.rows[0];
     if (row) {
+      console.log('Admin user already exists');
       return;
     }
 
@@ -212,7 +222,7 @@ async function seedAdmin() {
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       ['Admin', 'User', '0000000000', adminEmail, 'admin', hash, null, '0000000000', 'admin', 'approved']
     );
-    console.log(`Admin user seeded: ${adminEmail}`);
+    console.log(`Admin user seeded successfully: ${adminEmail}`);
   } catch (err) {
     console.error('Error seeding admin user:', err.message);
   }
@@ -316,6 +326,8 @@ app.post('/api/auth/login', userLoginLimiter, async (req, res) => {
 app.post('/api/auth/admin-login', adminLoginLimiter, async (req, res) => {
   const { email, password } = req.body;
 
+  console.log('Admin login attempt for:', email);
+
   if (!email || !password) return res.status(400).json({ message: 'Email and password are required' });
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -328,15 +340,22 @@ app.post('/api/auth/admin-login', adminLoginLimiter, async (req, res) => {
     const result = await query(`SELECT * FROM users WHERE email = ? AND role = 'admin'`, [email]);
     const user = result.rows[0];
 
+    console.log('Admin user found:', !!user);
+    console.log('User role:', user?.role);
+    console.log('User status:', user?.status);
+
     if (!user) return res.status(401).json({ message: 'Invalid credentials' });
 
     const match = await bcrypt.compare(password, user.password);
+    console.log('Password match:', match);
+
     if (!match) return res.status(401).json({ message: 'Invalid credentials' });
 
     const token = jwt.sign({ id: user.id, role: user.role }, SECRET_KEY, { expiresIn: '1h' });
+    console.log('Admin login successful for:', email);
     res.json({ token });
   } catch (err) {
-    console.error(err);
+    console.error('Admin login error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 });
