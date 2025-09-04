@@ -15,6 +15,7 @@ export default function Signup() {
     referralId: '',
     idNumber: '',
   });
+  const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState('');
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -44,7 +45,7 @@ export default function Signup() {
   };
 
   return (
-    <div>
+    <div className="relative">
       <Header />
       <HeroSection />
       <div className="container">
@@ -95,15 +96,22 @@ export default function Signup() {
               className="w-full p-2 border border-gray-300 rounded"
             />
           </div>
-          <div className="mb-4">
-            <input 
-              type="password" 
-              name="password" 
-              placeholder="Password" 
-              onChange={handleChange} 
-              required 
-              className="w-full p-2 border border-gray-300 rounded"
+          <div className="mb-4 relative">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              name="password"
+              placeholder="Password"
+              onChange={handleChange}
+              required
+              className="w-full p-2 border border-gray-300 rounded pr-10"
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            >
+              {showPassword ? '🙈' : '👁️'}
+            </button>
           </div>
           <div className="mb-4">
             <input 

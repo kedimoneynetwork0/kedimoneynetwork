@@ -3,11 +3,13 @@ services:
     name: kedi-money-network
     env: node
     buildCommand: npm install && npm run build
-    startCommand: npm start
+    startCommand: npm run start-sqlite
     envVars:
       - key: NODE_VERSION
         value: 18.17.0
       - key: JWT_SECRET
-        value: RwandaKediNetworkSuperSecretKey123!@
+        value: RwandaKediNetworkSuperSecretKey123!@#
+      - key: ADMIN_PASSWORD
+        value: AdminPass123!@#
       - key: PORT
         value: 10000

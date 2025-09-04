@@ -1,4 +1,24 @@
 /* Container */
+.container {
+  position: relative;
+}
+
+.container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url('../../ChatGPT Image Sep 4, 2025, 04_16_03 PM.png');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 50%;
+  opacity: 0.1;
+  pointer-events: none;
+  z-index: -1;
+}
+
 form {
   background: white;
   padding: 2rem;
@@ -6,6 +26,8 @@ form {
   border-radius: 10px;
   box-shadow: 0 4px 15px rgba(0,0,0,0.1);
   max-width: 500px;
+  position: relative;
+  z-index: 1;
 }
 
 /* Input fields */

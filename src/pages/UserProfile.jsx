@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getUserProfile, changePassword, requestPasswordReset } from '../api';
+import { getUserProfile, changePassword, requestPasswordReset, uploadProfilePicture, getFullUrl } from '../api';
 import Header from '../components/Header';
 
 export default function UserProfile() {
@@ -11,9 +11,11 @@ export default function UserProfile() {
     username: '',
     referralId: '',
     idNumber: '',
+    profilePicture: '',
   });
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [selectedFile, setSelectedFile] = useState(null);
   const [message, setMessage] = useState('');
 
   useEffect(() => {
@@ -54,6 +56,33 @@ export default function UserProfile() {
     }
   };
 
+  const handleFileChange = (e) => {
+    setSelectedFile(e.target.files[0]);
+  };
+
+  const handleUploadProfilePicture = async (e) => {
+    e.preventDefault();
+    if (!selectedFile) {
+      setMessage('Please select a file to upload');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('profilePicture', selectedFile);
+
+    try {
+      const response = await uploadProfilePicture(formData);
+      setMessage(response.data.message);
+      // Update profile with new picture
+      setProfile(prev => ({ ...prev, profilePicture: response.data.profilePicture }));
+      setSelectedFile(null);
+      // Reset file input
+      document.getElementById('profilePicture').value = '';
+    } catch (err) {
+      setMessage(err.response?.data?.message || 'Failed to upload profile picture');
+    }
+  };
+
   return (
     <div>
       <Header />
@@ -62,6 +91,64 @@ export default function UserProfile() {
         
         <div className="dashboard-card">
           <h3>Profile Information</h3>
+
+          {/* Profile Picture Section */}
+          <div className="profile-picture-section" style={{ textAlign: 'center', marginBottom: '20px' }}>
+            <div style={{ marginBottom: '10px' }}>
+              {profile.profilePicture ? (
+                <img
+                  src={getFullUrl(profile.profilePicture)}
+                  alt="Profile"
+                  style={{
+                    width: '100px',
+                    height: '100px',
+                    borderRadius: '50%',
+                    objectFit: 'cover',
+                    border: '2px solid #007bff'
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: '100px',
+                    height: '100px',
+                    borderRadius: '50%',
+                    backgroundColor: '#e9ecef',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto',
+                    border: '2px solid #007bff'
+                  }}
+                >
+                  <span style={{ fontSize: '36px', color: '#6c757d' }}>
+                    {profile.firstname?.charAt(0)?.toUpperCase() || '?'}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <form onSubmit={handleUploadProfilePicture} style={{ marginBottom: '20px' }}>
+              <div className="form-group">
+                <label htmlFor="profilePicture">Upload Profile Picture</label>
+                <input
+                  id="profilePicture"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  style={{ marginBottom: '10px' }}
+                />
+              </div>
+              <button
+                type="submit"
+                className="action-button"
+                disabled={!selectedFile}
+              >
+                Upload Picture
+              </button>
+            </form>
+          </div>
+
           <div className="transaction-details">
             <div className="transaction-detail">
               <span className="detail-label">First Name</span>

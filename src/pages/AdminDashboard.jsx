@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getPendingUsers, getPendingTransactions, getAllUsers, getAllTransactions, approveUser, approveTransaction, createNews, getNews, getFullUrl, getPendingWithdrawals, approveWithdrawal, getCompanyAssets } from '../api';
+import { getPendingUsers, getPendingTransactions, getAllUsers, getAllTransactions, approveUser, approveTransaction, createNews, updateNews, deleteNews, getNews, getFullUrl, getPendingWithdrawals, approveWithdrawal, getCompanyAssets, getUserDetails } from '../api';
 import Header from '../components/Header';
 
 export default function AdminDashboard() {
@@ -11,12 +11,15 @@ export default function AdminDashboard() {
   const [pendingWithdrawals, setPendingWithdrawals] = useState([]);
   const [companyAssets, setCompanyAssets] = useState(null);
   const [message, setMessage] = useState('');
-  const [activeTab, setActiveTab] = useState('pending'); // 'pending', 'history', 'news', 'withdrawals', or 'assets'
+  const [activeTab, setActiveTab] = useState('pending'); // 'pending', 'history', 'news', 'withdrawals', 'assets', or 'user-details'
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [userDetails, setUserDetails] = useState(null);
   
   // News form state
   const [newsTitle, setNewsTitle] = useState('');
   const [newsContent, setNewsContent] = useState('');
   const [newsMedia, setNewsMedia] = useState(null);
+  const [editingNews, setEditingNews] = useState(null);
 
   useEffect(() => {
     fetchPendingUsers();
@@ -132,16 +135,66 @@ export default function AdminDashboard() {
       if (newsMedia) {
         formData.append('media', newsMedia);
       }
-      
-      await createNews(formData);
-      setMessage('News created successfully');
+
+      if (editingNews) {
+        await updateNews(editingNews.id, formData);
+        setMessage('News updated successfully');
+      } else {
+        await createNews(formData);
+        setMessage('News created successfully');
+      }
+
       setNewsTitle('');
       setNewsContent('');
       setNewsMedia(null);
+      setEditingNews(null);
       fetchNews(); // Refresh news list
     } catch (error) {
-      setMessage('Error creating news: ' + error.message);
+      setMessage('Error saving news: ' + error.message);
     }
+  };
+
+  const handleEditNews = (newsItem) => {
+    setNewsTitle(newsItem.title);
+    setNewsContent(newsItem.content);
+    setNewsMedia(null); // Reset media when editing
+    setEditingNews(newsItem);
+  };
+
+  const handleDeleteNews = async (newsId) => {
+    if (window.confirm('Are you sure you want to delete this news item?')) {
+      try {
+        await deleteNews(newsId);
+        setMessage('News deleted successfully');
+        fetchNews(); // Refresh news list
+      } catch (error) {
+        setMessage('Error deleting news: ' + error.message);
+      }
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setNewsTitle('');
+    setNewsContent('');
+    setNewsMedia(null);
+    setEditingNews(null);
+  };
+
+  const handleViewUserDetails = async (user) => {
+    try {
+      const response = await getUserDetails(user.id);
+      setSelectedUser(user);
+      setUserDetails(response.data);
+      setActiveTab('user-details');
+    } catch (error) {
+      setMessage('Error loading user details: ' + error.message);
+    }
+  };
+
+  const handleBackToUsers = () => {
+    setSelectedUser(null);
+    setUserDetails(null);
+    setActiveTab('history');
   };
 
   const handleLogout = () => {
@@ -187,12 +240,20 @@ export default function AdminDashboard() {
           >
             Withdrawal Management
           </button>
-          <button 
+          <button
             className={`tab-button ${activeTab === 'assets' ? 'active' : ''}`}
             onClick={() => setActiveTab('assets')}
           >
             Company Assets
           </button>
+          {selectedUser && (
+            <button
+              className={`tab-button ${activeTab === 'user-details' ? 'active' : ''}`}
+              onClick={() => setActiveTab('user-details')}
+            >
+              User Details
+            </button>
+          )}
         </div>
 
         {/* Pending Approvals Tab */}
@@ -313,7 +374,15 @@ export default function AdminDashboard() {
                     <tbody>
                       {allUsers.map((user) => (
                         <tr key={user.id}>
-                          <td>{user.firstname} {user.lastname}</td>
+                          <td>
+                            <button
+                              onClick={() => handleViewUserDetails(user)}
+                              className="action-button"
+                              style={{ padding: '4px 8px', fontSize: '12px' }}
+                            >
+                              {user.firstname} {user.lastname}
+                            </button>
+                          </td>
                           <td>{user.email}</td>
                           <td>{user.username}</td>
                           <td>
@@ -373,7 +442,7 @@ export default function AdminDashboard() {
         {activeTab === 'news' && (
           <div className="dashboard-grid">
             <div className="dashboard-card">
-              <h3>Create News</h3>
+              <h3>{editingNews ? 'Edit News' : 'Create News'}</h3>
               <form onSubmit={handleCreateNews}>
                 <div className="form-group">
                   <label htmlFor="newsTitle">Title</label>
@@ -406,10 +475,26 @@ export default function AdminDashboard() {
                     className="form-control"
                     accept="image/*,video/*,application/pdf"
                   />
+                  {editingNews && (
+                    <small className="text-muted">
+                      Leave empty to keep existing media, or select new file to replace
+                    </small>
+                  )}
                 </div>
-                <button type="submit" className="action-button">
-                  Post News
-                </button>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button type="submit" className="action-button">
+                    {editingNews ? 'Update News' : 'Post News'}
+                  </button>
+                  {editingNews && (
+                    <button
+                      type="button"
+                      onClick={handleCancelEdit}
+                      className="action-button secondary"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
               </form>
             </div>
 
@@ -425,6 +510,7 @@ export default function AdminDashboard() {
                         <th>Title</th>
                         <th>Date</th>
                         <th>Media</th>
+                        <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -442,6 +528,25 @@ export default function AdminDashboard() {
                             {item.media_url && item.media_type === 'application' && (
                               <span>PDF</span>
                             )}
+                            {!item.media_url && (
+                              <span>No media</span>
+                            )}
+                          </td>
+                          <td>
+                            <button
+                              onClick={() => handleEditNews(item)}
+                              className="action-button"
+                              style={{ marginRight: '5px', padding: '4px 8px', fontSize: '12px' }}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteNews(item.id)}
+                              className="action-button danger"
+                              style={{ padding: '4px 8px', fontSize: '12px' }}
+                            >
+                              Delete
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -547,6 +652,233 @@ export default function AdminDashboard() {
             ) : (
               <p className="text-center">Loading company assets...</p>
             )}
+          </div>
+        )}
+
+        {/* User Details Tab */}
+        {activeTab === 'user-details' && userDetails && (
+          <div>
+            <div className="dashboard-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3>User Details: {userDetails.user.firstname} {userDetails.user.lastname}</h3>
+                <button onClick={handleBackToUsers} className="action-button secondary">
+                  Back to Users
+                </button>
+              </div>
+
+              {/* User Profile Picture */}
+              <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                {userDetails.user.profilePicture ? (
+                  <img
+                    src={getFullUrl(userDetails.user.profilePicture)}
+                    alt="Profile"
+                    style={{
+                      width: '100px',
+                      height: '100px',
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                      border: '2px solid #007bff'
+                    }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: '100px',
+                      height: '100px',
+                      borderRadius: '50%',
+                      backgroundColor: '#e9ecef',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      margin: '0 auto',
+                      border: '2px solid #007bff'
+                    }}
+                  >
+                    <span style={{ fontSize: '36px', color: '#6c757d' }}>
+                      {userDetails.user.firstname?.charAt(0)?.toUpperCase() || '?'}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* User Basic Information */}
+              <div className="transaction-details">
+                <div className="transaction-detail">
+                  <span className="detail-label">Full Name</span>
+                  <span className="detail-value">{userDetails.user.firstname} {userDetails.user.lastname}</span>
+                </div>
+                <div className="transaction-detail">
+                  <span className="detail-label">Email</span>
+                  <span className="detail-value">{userDetails.user.email}</span>
+                </div>
+                <div className="transaction-detail">
+                  <span className="detail-label">Username</span>
+                  <span className="detail-value">{userDetails.user.username}</span>
+                </div>
+                <div className="transaction-detail">
+                  <span className="detail-label">Phone</span>
+                  <span className="detail-value">{userDetails.user.phone}</span>
+                </div>
+                <div className="transaction-detail">
+                  <span className="detail-label">ID Number</span>
+                  <span className="detail-value">{userDetails.user.idNumber}</span>
+                </div>
+                <div className="transaction-detail">
+                  <span className="detail-label">Referral ID</span>
+                  <span className="detail-value">{userDetails.user.referralId || 'N/A'}</span>
+                </div>
+                <div className="transaction-detail">
+                  <span className="detail-label">Role</span>
+                  <span className="detail-value">{userDetails.user.role}</span>
+                </div>
+                <div className="transaction-detail">
+                  <span className="detail-label">Status</span>
+                  <span className="detail-value">
+                    <span className={`status-badge status-${userDetails.user.status.toLowerCase()}`}>
+                      {userDetails.user.status}
+                    </span>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* User Transactions */}
+            <div className="dashboard-card">
+              <h3>User Transactions ({userDetails.transactions.length})</h3>
+              {userDetails.transactions.length === 0 ? (
+                <p className="text-center">No transactions found</p>
+              ) : (
+                <div className="table-container">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Type</th>
+                        <th>Amount</th>
+                        <th>Transaction ID</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {userDetails.transactions.map((txn) => (
+                        <tr key={txn.id}>
+                          <td>{txn.type}</td>
+                          <td>{txn.amount} RWF</td>
+                          <td>{txn.txn_id}</td>
+                          <td>
+                            <span className={`status-badge status-${txn.status.toLowerCase()}`}>
+                              {txn.status}
+                            </span>
+                          </td>
+                          <td>{new Date(txn.created_at).toLocaleString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* User Stakes */}
+            <div className="dashboard-card">
+              <h3>User Stakes ({userDetails.stakes.length})</h3>
+              {userDetails.stakes.length === 0 ? (
+                <p className="text-center">No stakes found</p>
+              ) : (
+                <div className="table-container">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Amount</th>
+                        <th>Period</th>
+                        <th>Interest Rate</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {userDetails.stakes.map((stake) => (
+                        <tr key={stake.id}>
+                          <td>{stake.amount} RWF</td>
+                          <td>{stake.stake_period} days</td>
+                          <td>{(stake.interest_rate * 100)}%</td>
+                          <td>{new Date(stake.start_date).toLocaleDateString()}</td>
+                          <td>{new Date(stake.end_date).toLocaleDateString()}</td>
+                          <td>
+                            <span className={`status-badge status-${stake.status}`}>
+                              {stake.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* User Withdrawals */}
+            <div className="dashboard-card">
+              <h3>User Withdrawals ({userDetails.withdrawals.length})</h3>
+              {userDetails.withdrawals.length === 0 ? (
+                <p className="text-center">No withdrawals found</p>
+              ) : (
+                <div className="table-container">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Amount</th>
+                        <th>Request Date</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {userDetails.withdrawals.map((withdrawal) => (
+                        <tr key={withdrawal.id}>
+                          <td>{withdrawal.amount} RWF</td>
+                          <td>{new Date(withdrawal.request_date).toLocaleString()}</td>
+                          <td>
+                            <span className={`status-badge status-${withdrawal.status}`}>
+                              {withdrawal.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* User Bonuses */}
+            <div className="dashboard-card">
+              <h3>User Bonuses ({userDetails.bonuses.length})</h3>
+              {userDetails.bonuses.length === 0 ? (
+                <p className="text-center">No bonuses found</p>
+              ) : (
+                <div className="table-container">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Amount</th>
+                        <th>Description</th>
+                        <th>Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {userDetails.bonuses.map((bonus) => (
+                        <tr key={bonus.id}>
+                          <td>{bonus.amount} RWF</td>
+                          <td>{bonus.description}</td>
+                          <td>{new Date(bonus.created_at).toLocaleString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
         )}
 

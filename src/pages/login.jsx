@@ -6,6 +6,7 @@ import Header from '../components/Header';
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
@@ -36,7 +37,7 @@ export default function Login() {
   };
 
   return (
-    <div>
+    <div className="relative">
       <Header />
       <div className="container">
         <form onSubmit={handleSubmit} className="max-w-md mx-auto p-6 bg-white rounded shadow">
@@ -50,14 +51,21 @@ export default function Login() {
               className="w-full p-2 border border-gray-300 rounded"
             />
           </div>
-          <div className="mb-4">
-            <input 
-              type="password" 
-              placeholder="Password" 
-              onChange={e => setPassword(e.target.value)} 
-              required 
-              className="w-full p-2 border border-gray-300 rounded"
+          <div className="mb-4 relative">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              placeholder="Password"
+              onChange={e => setPassword(e.target.value)}
+              required
+              className="w-full p-2 border border-gray-300 rounded pr-10"
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            >
+              {showPassword ? '🙈' : '👁️'}
+            </button>
           </div>
           <button 
             type="submit" 
@@ -71,6 +79,11 @@ export default function Login() {
           {error && <p className="text-red-600 mt-4 text-center">{error}</p>}
         </form>
       </div>
+      <img
+        src="/uploads/1756994307932-KEDI Money Network Logo (3).png"
+        alt="Watermark"
+        className="absolute bottom-4 right-4 w-32 h-32 opacity-20 pointer-events-none"
+      />
     </div>
   );
 }

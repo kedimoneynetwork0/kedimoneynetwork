@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import Button from '../components/Button';
-import { getUserBonus, getUserDashboard, getUserProfile, createTransaction, createStake, getUserStakes, requestWithdrawal, getUserWithdrawals } from '../api';
+import { getUserBonus, getUserDashboard, getUserProfile, createTransaction, createStake, getUserStakes, requestWithdrawal, getUserWithdrawals, getFullUrl, getUserMessages, markMessageAsRead } from '../api';
 import Header from '../components/Header';
+import { FaInbox } from 'react-icons/fa';
 
 export default function UserDashboard() {
   const [bonus, setBonus] = useState(0);
@@ -16,6 +17,9 @@ export default function UserDashboard() {
   const [withdrawalStakeId, setWithdrawalStakeId] = useState('');
   const [message, setMessage] = useState('');
   const [profile, setProfile] = useState({});
+  const [messages, setMessages] = useState([]);
+  const [showInbox, setShowInbox] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     async function fetchBonus() {
@@ -67,11 +71,25 @@ export default function UserDashboard() {
       }
     }
 
+    async function fetchMessages() {
+      try {
+        const response = await getUserMessages();
+        const userMessages = Array.isArray(response.data?.messages) ? response.data.messages : [];
+        setMessages(userMessages);
+        setUnreadCount(userMessages.filter(msg => !msg.is_read).length);
+      } catch (error) {
+        console.error(error);
+        setMessages([]);
+        setUnreadCount(0);
+      }
+    }
+
     fetchBonus();
     fetchTransactions();
     fetchProfile();
     fetchStakes();
     fetchWithdrawals();
+    fetchMessages();
   }, []);
 
   const handleSubmit = async (e) => {
@@ -141,17 +159,20 @@ export default function UserDashboard() {
     window.location.href = '/login';
   };
 
-  // Calculate estimated balance (bonus + active stakes)
+  // Calculate estimated balance (from database + bonus + active stakes)
   const calculateEstimatedBalance = () => {
-    let balance = bonus;
-    
+    let balance = profile.estimated_balance || 0;
+
+    // Add referral bonus
+    balance += bonus;
+
     // Add principal amount of active stakes
     stakes.forEach(stake => {
       if (stake.status === 'active') {
         balance += stake.amount;
       }
     });
-    
+
     return balance;
   };
 
@@ -166,7 +187,79 @@ export default function UserDashboard() {
     <div>
       <Header />
       <div className="container">
-        <h2>User Dashboard</h2>
+        <div className="dashboard-welcome" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            {profile.profilePicture ? (
+              <img
+                src={getFullUrl(profile.profilePicture)}
+                alt="Profile"
+                style={{
+                  width: '60px',
+                  height: '60px',
+                  borderRadius: '50%',
+                  objectFit: 'cover',
+                  marginRight: '15px',
+                  border: '2px solid #007bff'
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  width: '60px',
+                  height: '60px',
+                  borderRadius: '50%',
+                  backgroundColor: '#e9ecef',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginRight: '15px',
+                  border: '2px solid #007bff'
+                }}
+              >
+                <span style={{ fontSize: '24px', color: '#6c757d' }}>
+                  {profile.firstname?.charAt(0)?.toUpperCase() || '?'}
+                </span>
+              </div>
+            )}
+            <div>
+              <h2 style={{ margin: '0' }}>Welcome back, {profile.firstname}!</h2>
+              <p style={{ margin: '5px 0 0 0', color: '#6c757d' }}>{profile.email}</p>
+            </div>
+          </div>
+          <div className="inbox-container" style={{ position: 'relative' }}>
+            <button
+              onClick={() => setShowInbox(!showInbox)}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '24px',
+                color: '#28a745',
+                position: 'relative'
+              }}
+            >
+              <FaInbox />
+              {unreadCount > 0 && (
+                <span style={{
+                  position: 'absolute',
+                  top: '-8px',
+                  right: '-8px',
+                  backgroundColor: '#dc3545',
+                  color: 'white',
+                  borderRadius: '50%',
+                  width: '20px',
+                  height: '20px',
+                  fontSize: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
         
         <div className="dashboard-grid">
           <div className="dashboard-card">
@@ -403,7 +496,110 @@ export default function UserDashboard() {
             </div>
           )}
         </div>
-        
+
+        {/* Inbox Modal */}
+        {showInbox && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000
+          }}>
+            <div style={{
+              backgroundColor: 'white',
+              borderRadius: '8px',
+              padding: '20px',
+              maxWidth: '600px',
+              width: '90%',
+              maxHeight: '80vh',
+              overflow: 'auto'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h3 style={{ margin: 0 }}>Inbox</h3>
+                <button
+                  onClick={() => setShowInbox(false)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    fontSize: '20px',
+                    cursor: 'pointer',
+                    color: '#6c757d'
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+
+              {messages.length === 0 ? (
+                <p style={{ textAlign: 'center', color: '#6c757d' }}>No messages yet</p>
+              ) : (
+                <div>
+                  {messages.map((msg) => (
+                    <div
+                      key={msg.id}
+                      style={{
+                        border: '1px solid #e9ecef',
+                        borderRadius: '8px',
+                        padding: '15px',
+                        marginBottom: '15px',
+                        backgroundColor: msg.is_read ? '#f8f9fa' : '#fff3cd'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                        <div>
+                          <h4 style={{ margin: '0 0 5px 0', color: '#28a745' }}>{msg.subject}</h4>
+                          <small style={{ color: '#6c757d' }}>
+                            From: {msg.admin_firstname} {msg.admin_lastname} • {new Date(msg.created_at).toLocaleString()}
+                          </small>
+                        </div>
+                        {!msg.is_read && (
+                          <button
+                            onClick={async () => {
+                              try {
+                                await markMessageAsRead(msg.id);
+                                // Update local state
+                                setMessages(messages.map(m =>
+                                  m.id === msg.id ? { ...m, is_read: 1 } : m
+                                ));
+                                setUnreadCount(prev => Math.max(0, prev - 1));
+                              } catch (error) {
+                                console.error('Error marking message as read:', error);
+                              }
+                            }}
+                            style={{
+                              backgroundColor: '#28a745',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '4px',
+                              padding: '4px 8px',
+                              fontSize: '12px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Mark as Read
+                          </button>
+                        )}
+                      </div>
+                      <p style={{ margin: 0, lineHeight: '1.5' }}>{msg.message}</p>
+                      {msg.activity_type && (
+                        <small style={{ color: '#6c757d', marginTop: '10px', display: 'block' }}>
+                          Related to: {msg.activity_type} #{msg.activity_id}
+                        </small>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="text-center">
           <button
             onClick={handleLogout}

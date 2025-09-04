@@ -39,6 +39,11 @@ export const getUserProfile = () => api.get('/api/user/profile');
 export const createTransaction = (transactionData) => api.post('/api/transactions', transactionData);
 export const changePassword = (passwordData) => api.post('/api/user/change-password', passwordData);
 export const requestPasswordReset = (emailData) => api.post('/api/user/request-password-reset', emailData);
+export const uploadProfilePicture = (formData) => api.post('/api/user/upload-profile-picture', formData, {
+  headers: {
+    'Content-Type': 'multipart/form-data',
+  },
+});
 // User Stake and Withdrawal APIs
 export const createStake = (stakeData) => api.post('/api/user/stakes', stakeData);
 export const getUserStakes = () => api.get('/api/user/stakes');
@@ -53,6 +58,12 @@ export const getCompanyAssets = () => api.get('/api/admin/company-assets');
 // News APIs
 export const getNews = () => api.get('/api/news');
 
+// Message APIs
+export const getUserMessages = () => api.get('/api/user/messages');
+export const markMessageAsRead = (id) => api.put(`/api/user/messages/${id}/read`);
+export const sendMessageToUser = (messageData) => api.post('/api/admin/messages', messageData);
+export const getUserMessagesAdmin = (id) => api.get(`/api/admin/users/${id}/messages`);
+
 // Admin APIs
 export const getPendingUsers = () => api.get('/api/admin/pending-users');
 export const getPendingTransactions = () => api.get('/api/admin/pending-transactions');
@@ -64,3 +75,4 @@ export const getUserTransactions = (id) => api.get(`/api/admin/users/${id}/trans
 export const getAllTransactions = () => api.get('/api/admin/transactions');
 export const approveUser = (id, approveData) => api.put(`/api/admin/users/${id}/approve`, { approve: approveData });
 export const approveTransaction = (id, approveData) => api.put(`/api/admin/transactions/${id}/approve`, { approve: approveData });
+export const getUserDetails = (id) => api.get(`/api/admin/users/${id}/details`);
