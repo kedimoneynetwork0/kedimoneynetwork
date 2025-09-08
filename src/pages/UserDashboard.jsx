@@ -3,6 +3,7 @@ import Button from '../components/Button';
 import { getUserBonus, getUserDashboard, getUserProfile, createTransaction, createStake, getUserStakes, requestWithdrawal, getUserWithdrawals, getFullUrl, getUserMessages, markMessageAsRead } from '../api';
 import Header from '../components/Header';
 import { FaInbox } from 'react-icons/fa';
+import './user-dashboard.css';
 
 export default function UserDashboard() {
   const [bonus, setBonus] = useState(0);

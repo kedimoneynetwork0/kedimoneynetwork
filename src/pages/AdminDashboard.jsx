@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { getPendingUsers, getPendingTransactions, getAllUsers, getAllTransactions, approveUser, approveTransaction, createNews, updateNews, deleteNews, getNews, getFullUrl, getPendingWithdrawals, approveWithdrawal, getCompanyAssets, getUserDetails } from '../api';
 import Header from '../components/Header';
+import './admin-dashboard.css';
 
 export default function AdminDashboard() {
   const [pendingUsers, setPendingUsers] = useState([]);
@@ -205,36 +206,28 @@ export default function AdminDashboard() {
   return (
     <div>
       <Header />
-      <div className="container">
+      <div className="sidebar">
         <h2>Admin Dashboard</h2>
-
-        {message && (
-          <div className={`message ${message.includes('Error') || message.includes('error') ? 'error' : 'success'}`}>
-            {message}
-          </div>
-        )}
-
-        {/* Tab Navigation */}
         <div className="tabs">
-          <button 
+          <button
             className={`tab-button ${activeTab === 'pending' ? 'active' : ''}`}
             onClick={() => setActiveTab('pending')}
           >
             Pending Approvals
           </button>
-          <button 
+          <button
             className={`tab-button ${activeTab === 'history' ? 'active' : ''}`}
             onClick={() => setActiveTab('history')}
           >
             Transaction History
           </button>
-          <button 
+          <button
             className={`tab-button ${activeTab === 'news' ? 'active' : ''}`}
             onClick={() => setActiveTab('news')}
           >
             News Management
           </button>
-          <button 
+          <button
             className={`tab-button ${activeTab === 'withdrawals' ? 'active' : ''}`}
             onClick={() => setActiveTab('withdrawals')}
           >
@@ -254,7 +247,21 @@ export default function AdminDashboard() {
               User Details
             </button>
           )}
+          <button
+            className="logout-button"
+            onClick={handleLogout}
+          >
+            Logout
+          </button>
         </div>
+      </div>
+      <div className="main-content">
+        <div className="container">
+          {message && (
+            <div className={`message ${message.includes('Error') || message.includes('error') ? 'error' : 'success'}`}>
+              {message}
+            </div>
+          )}
 
         {/* Pending Approvals Tab */}
         {activeTab === 'pending' && (
@@ -882,13 +889,6 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        <div className="text-center">
-          <button
-            onClick={handleLogout}
-            className="danger"
-          >
-            Logout
-          </button>
         </div>
       </div>
     </div>
