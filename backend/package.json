@@ -2,9 +2,9 @@
   "name": "kedi-money-backend",
   "version": "1.0.0",
   "description": "Backend for Kedi Money Network",
-  "main": "index-sqlite.js",
+  "main": "index.js",
   "scripts": {
-    "start": "node index-sqlite.js",
+    "start": "node index.js",
     "migrate": "node migrate-data.js",
     "test": "jest --detectOpenHandles --forceExit"
   },
@@ -21,8 +21,7 @@
     "jsonwebtoken": "^9.0.0",
     "morgan": "^1.10.0",
     "multer": "^2.0.2",
-    "pg": "^8.16.3",
-    "sqlite3": "^5.1.7"
+    "pg": "^8.16.3"
   },
   "devDependencies": {
     "jest": "^29.7.0",

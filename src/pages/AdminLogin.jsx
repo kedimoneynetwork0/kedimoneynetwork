@@ -6,6 +6,7 @@ import Header from '../components/Header';
 export default function AdminLogin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
@@ -49,14 +50,23 @@ export default function AdminLogin() {
             required
             className="mb-4 p-2 border border-gray-300 rounded w-full"
           />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="mb-4 p-2 border border-gray-300 rounded w-full"
-          />
+          <div className="mb-4 relative">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="w-full p-2 border border-gray-300 rounded pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            >
+              {showPassword ? '🙈' : '👁️'}
+            </button>
+          </div>
           {error && <p className="text-red-600 mb-4">{error}</p>}
           <button
             type="submit"

@@ -1,32 +1,123 @@
-# Kedi Money Network
+# KEDI BUSINESS & AGRI FUNDS
 
-## Deployment to Render
+A comprehensive financial management platform built with React, Node.js, and PostgreSQL.
 
-To deploy this application as a static site on Render, follow these steps:
+## 🚀 Features
 
+- ✅ **User Management**: Registration, authentication, and profile management
+- ✅ **Financial Transactions**: Tree plans, savings, and loan management
+- ✅ **Staking System**: Investment staking with interest calculations
+- ✅ **Admin Dashboard**: Complete administrative control
+- ✅ **News Management**: Dynamic news posting and management
+- ✅ **File Uploads**: Profile pictures and media uploads
+- ✅ **Real-time Notifications**: User messaging system
+- ✅ **Responsive Design**: Mobile-first approach with Tailwind CSS
+
+## 🗄️ Database Migration: SQLite → PostgreSQL
+
+**IMPORTANT**: This application has been migrated from SQLite to PostgreSQL for production deployment on Render.
+
+### What's Changed:
+- ✅ Database connection updated to PostgreSQL
+- ✅ All SQL queries converted to PostgreSQL syntax
+- ✅ Environment variables configured for Render
+- ✅ Automatic table creation and seeding
+- ✅ Production-ready database schema
+
+### Quick Setup:
+1. **Create PostgreSQL database on Render**
+2. **Copy the DATABASE_URL from Render dashboard**
+3. **Set environment variables in your Render web service**
+4. **Deploy!** The app will automatically create tables and seed admin user
+
+## 📋 Deployment to Render
+
+### Step 1: Create PostgreSQL Database
 1. Go to [Render Dashboard](https://dashboard.render.com/)
-2. Click "New +" and select "Static Site"
-3. Connect your GitHub repository or use the existing repository URL
-4. Set the following configuration:
-   - Build Command: `cd frontend && npm install && npm run build`
-   - Publish Directory: `frontend/dist`
-5. Click "Create Static Site"
+2. Click "New +" → "PostgreSQL"
+3. Configure:
+   - Name: `kedi-money-network-db`
+   - Database: `kedi_money_network`
+   - Choose your region
+4. Copy the **External Database URL**
 
-## Environment Variables
+### Step 2: Deploy Backend (Web Service)
+1. Click "New +" → "Web Service"
+2. Connect your GitHub repository
+3. Set configuration:
+   - **Runtime**: Node.js
+   - **Build Command**: `npm install`
+   - **Start Command**: `node index.js`
+4. Set environment variables:
+   ```
+   DATABASE_URL=postgresql://user:pass@host:port/db
+   JWT_SECRET=your_super_secret_jwt_key
+   ADMIN_EMAIL=kedimoneynetwork@gmail.com
+   ADMIN_PASSWORD=your_secure_password
+   NODE_ENV=production
+   ```
 
-For the frontend to communicate with the backend, you may need to set the `VITE_API_BASE` environment variable in Render:
-- Key: `VITE_API_BASE`
-- Value: The URL of your backend API (e.g., `https://your-backend-url.onrender.com/api`)
+### Step 3: Deploy Frontend (Static Site)
+1. Click "New +" → "Static Site"
+2. Connect your GitHub repository
+3. Set configuration:
+   - **Build Command**: `npm install && npm run build`
+   - **Publish Directory**: `dist`
+4. Set environment variable:
+   ```
+   VITE_API_BASE=https://your-backend-service.onrender.com/api
+   ```
 
-## Backend Deployment
+## 🔧 Local Development
 
-For the backend, you can deploy it as a web service on Render with the following settings:
-- Runtime: Node.js
-- Build Command: `npm install`
-- Start Command: `node index.js`
-- Environment Variables:
-  - `PORT`: `10000` (or any port Render assigns)
-  - `JWT_SECRET`: Your JWT secret key
+### Prerequisites
+- Node.js 16+
+- PostgreSQL (local or Docker)
+
+### Setup
+```bash
+# Install dependencies
+npm install
+cd backend && npm install
+
+# Set up environment variables
+cp backend/.env.example backend/.env
+# Edit backend/.env with your database URL
+
+# Start development servers
+npm run dev          # Frontend on :5173
+cd backend && npm start  # Backend on :4000
+```
+
+### Docker PostgreSQL (Recommended)
+```bash
+docker run --name kedi-postgres \
+  -e POSTGRES_DB=kedi_money_network \
+  -e POSTGRES_USER=kedi_user \
+  -e POSTGRES_PASSWORD=kedi_password \
+  -p 5432:5432 \
+  -d postgres:13
+```
+
+## 📊 Database Schema
+
+The application automatically creates these tables:
+- `users` - User accounts and profiles
+- `transactions` - Financial transactions
+- `stakes` - Investment stakes
+- `withdrawals` - Withdrawal requests
+- `bonuses` - Referral bonuses
+- `news` - News articles
+- `messages` - User notifications
+
+## 🔒 Security Features
+
+- JWT authentication with expiration
+- Password hashing with bcrypt
+- Rate limiting on login endpoints
+- Input validation and sanitization
+- CORS protection
+- File upload restrictions
 
 ## Local Development
 
@@ -44,31 +135,46 @@ npm install
 npm start
 ```
 
-## Database Migration
+## 🐛 Troubleshooting
 
-If you've fixed the news table issue, you'll need to run the migration script:
-```bash
-cd backend
-node migrate-news-table.js
-```
+### Database Connection Issues
+- Verify `DATABASE_URL` format: `postgresql://user:password@host:port/database`
+- Ensure PostgreSQL database is running and accessible
+- Check Render database credentials are correct
 
-## Common Issues
+### Build Issues
+- Clear npm cache: `npm cache clean --force`
+- Delete node_modules and reinstall: `rm -rf node_modules && npm install`
+- Check Node.js version compatibility
 
-### Case-sensitive file names
-If you encounter an error like "Could not resolve './pages/Signup' from 'src/App.jsx'", it's likely due to case-sensitive file names. Make sure the import statement in `App.jsx` matches the actual file name case:
+### File Upload Issues
+- Ensure `uploads/` directory exists in backend
+- Check file permissions for uploads directory
+- Verify multer configuration for file types
 
-```javascript
-// Correct import (lowercase 's')
-import Signup from './pages/signup';
-```
+### Authentication Issues
+- Verify JWT_SECRET is set and matches between frontend/backend
+- Check token expiration (1 hour default)
+- Ensure CORS is properly configured
 
-Also, ensure there's only one signup component file in the `frontend/src/pages` directory with the correct case.
+## 📚 Additional Resources
 
-Similarly, if you encounter an error like "Could not resolve '../Api' from 'src/pages/UserProfile.jsx'", it's due to the same issue with the API file. Make sure all import statements for the API file use the correct case:
+- [PostgreSQL Setup Guide](./POSTGRESQL_SETUP.md) - Detailed database setup instructions
+- [Render Deployment Docs](https://docs.render.com/) - Official Render documentation
+- [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS framework used
 
-```javascript
-// Correct import (lowercase 'a')
-import { getUserProfile, changePassword, requestPasswordReset } from '../api';
-```
+## 🤝 Contributing
 
-Also, ensure there's only one API file in the `frontend/src` directory with the correct case (`api.js`).
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the ISC License.
+
+---
+
+**Built with ❤️ for the KEDI Money Network community**

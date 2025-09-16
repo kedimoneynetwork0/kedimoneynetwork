@@ -13,6 +13,20 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Add a response interceptor for better error handling
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Token expired or invalid
+      localStorage.removeItem('token');
+      localStorage.removeItem('role');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
 // Helper function to get full URL for media files
 export const getFullUrl = (path) => {
   if (!path) return '';
@@ -76,3 +90,7 @@ export const getAllTransactions = () => api.get('/api/admin/transactions');
 export const approveUser = (id, approveData) => api.put(`/api/admin/users/${id}/approve`, { approve: approveData });
 export const approveTransaction = (id, approveData) => api.put(`/api/admin/transactions/${id}/approve`, { approve: approveData });
 export const getUserDetails = (id) => api.get(`/api/admin/users/${id}/details`);
+
+// Download APIs
+export const downloadUsersCSV = () => api.get('/api/admin/download/users', { responseType: 'blob' });
+export const downloadTransactionsCSV = () => api.get('/api/admin/download/transactions', { responseType: 'blob' });

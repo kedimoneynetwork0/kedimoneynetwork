@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { getPendingUsers, getPendingTransactions, getAllUsers, getAllTransactions, approveUser, approveTransaction, createNews, updateNews, deleteNews, getNews, getFullUrl, getPendingWithdrawals, approveWithdrawal, getCompanyAssets, getUserDetails } from '../api';
+import { Link } from 'react-router-dom';
+import { getPendingUsers, getPendingTransactions, getAllUsers, getAllTransactions, approveUser, approveTransaction, createNews, updateNews, deleteNews, getNews, getFullUrl, getPendingWithdrawals, approveWithdrawal, getCompanyAssets, getUserDetails, downloadUsersCSV, downloadTransactionsCSV } from '../api';
 import Header from '../components/Header';
 import './admin-dashboard.css';
 
@@ -203,6 +204,43 @@ export default function AdminDashboard() {
     window.location.href = '/admin-login';
   };
 
+  // Download functions
+  const handleDownloadUsers = async () => {
+    try {
+      const response = await downloadUsersCSV();
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `kedi_users_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      setMessage('Users list downloaded successfully');
+    } catch (error) {
+      setMessage('Error downloading users list');
+      console.error('Download error:', error);
+    }
+  };
+
+  const handleDownloadTransactions = async () => {
+    try {
+      const response = await downloadTransactionsCSV();
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `kedi_transactions_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      setMessage('Transaction history downloaded successfully');
+    } catch (error) {
+      setMessage('Error downloading transaction history');
+      console.error('Download error:', error);
+    }
+  };
+
   return (
     <div>
       <Header />
@@ -364,7 +402,16 @@ export default function AdminDashboard() {
         {activeTab === 'history' && (
           <div className="dashboard-grid">
             <div className="dashboard-card">
-              <h3>All Users</h3>
+              <div className="flex justify-between items-center mb-4">
+                <h3>All Users</h3>
+                <button
+                  onClick={handleDownloadUsers}
+                  className="action-button"
+                  style={{ padding: '8px 16px', fontSize: '14px' }}
+                >
+                  📥 Download CSV
+                </button>
+              </div>
               {allUsers.length === 0 ? (
                 <p className="text-center">No users found</p>
               ) : (
@@ -406,7 +453,16 @@ export default function AdminDashboard() {
             </div>
 
             <div className="dashboard-card">
-              <h3>All Transactions</h3>
+              <div className="flex justify-between items-center mb-4">
+                <h3>All Transactions</h3>
+                <button
+                  onClick={handleDownloadTransactions}
+                  className="action-button"
+                  style={{ padding: '8px 16px', fontSize: '14px' }}
+                >
+                  📥 Download CSV
+                </button>
+              </div>
               {allTransactions.length === 0 ? (
                 <p className="text-center">No transactions found</p>
               ) : (

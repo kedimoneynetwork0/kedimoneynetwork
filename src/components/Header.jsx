@@ -1,95 +1,51 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import '../pages/home.css';
 
 export default function Header() {
-  const location = useLocation();
-  const token = localStorage.getItem('token');
-  const role = localStorage.getItem('role');
-
-  // Check if user is on dashboard page
-  const isDashboard = location.pathname === '/user-dashboard' || location.pathname === '/admin-dashboard';
-  const isLoggedIn = token && role;
-
-  // Show hero section only on home page when not logged in
-  const showHeroSection = location.pathname === '/' || location.pathname === '/home';
-
   return (
-    <>
-      {/* Back Arrow Button for Dashboard */}
-      {isLoggedIn && isDashboard && (
-        <div className="back-arrow-container">
-          <Link to="/home" className="back-arrow-button">
-            ←
-          </Link>
-        </div>
-      )}
-
-      {/* Header */}
-      <header style={{
-        position: 'relative',
-        backgroundColor: 'rgba(40, 167, 69, 0.9)'
-      }}>
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundImage: 'url("/ChatGPT%20Image%20Sep%204,%202025,%2004_16_03%20PM.png")',
-          backgroundRepeat: 'no-repeat',
-          backgroundPosition: 'center',
-          backgroundSize: '300px',
-          opacity: '0.3',
-          pointerEvents: 'none',
-          zIndex: 0
-        }}></div>
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <h1>KEDI BUSINESS & AGRI FUNDS</h1>
-          <nav>
-            <Link to="/home">Ahabanza</Link>
-            <Link to="/about">Ibyerekeye</Link>
-            {!isLoggedIn && (
-              <>
-                <Link to="/signup">Sign up</Link>
-                <Link to="/login">Sign in</Link>
-                <Link to="/admin-login">Admin</Link>
-              </>
-            )}
-            {isLoggedIn && (
-              <button
-                onClick={() => {
-                  localStorage.clear();
-                  window.location.href = '/';
-                }}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'white',
-                  cursor: 'pointer',
-                  fontSize: '16px',
-                  padding: '10px 15px',
-                  borderRadius: '5px',
-                  transition: 'background-color 0.3s'
-                }}
-                onMouseOver={(e) => e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'}
-                onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
-              >
-                Logout
-              </button>
-            )}
+    <header className="relative bg-green-600 bg-opacity-90 shadow-lg">
+      <div className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30 pointer-events-none z-0"
+           style={{ backgroundImage: 'url("/ChatGPT%20Image%20Sep%204,%202025,%2004_16_03%20PM.png")' }}></div>
+      <div className="relative z-10 container mx-auto px-4 py-4">
+        <div className="flex flex-col md:flex-row justify-between items-center">
+          <h1 className="text-white text-xl md:text-2xl font-bold mb-4 md:mb-0 text-center md:text-left">
+            KEDI BUSINESS & AGRI FUNDS
+          </h1>
+          <nav className="flex flex-wrap justify-center md:justify-end space-x-4">
+            <Link
+              to="/home"
+              className="text-white hover:text-green-200 transition duration-200 px-3 py-2 rounded-md hover:bg-white hover:bg-opacity-10"
+            >
+              Ahabanza
+            </Link>
+            <Link
+              to="/about"
+              className="text-white hover:text-green-200 transition duration-200 px-3 py-2 rounded-md hover:bg-white hover:bg-opacity-10"
+            >
+              Ibyerekeye
+            </Link>
+            <Link
+              to="/signup"
+              className="bg-white text-green-600 hover:bg-green-50 transition duration-200 px-4 py-2 rounded-md font-medium"
+            >
+              Sign up
+            </Link>
+            <Link
+              to="/login"
+              className="text-white hover:text-green-200 transition duration-200 px-3 py-2 rounded-md hover:bg-white hover:bg-opacity-10"
+            >
+              Sign in
+            </Link>
+            <Link
+              to="/admin-login"
+              className="text-white hover:text-green-200 transition duration-200 px-3 py-2 rounded-md hover:bg-white hover:bg-opacity-10 text-sm"
+            >
+              Admin
+            </Link>
           </nav>
         </div>
-      </header>
-
-      {/* Hero Section - Only show on home page when not logged in */}
-      {showHeroSection && !isLoggedIn && (
-        <div className="hero-section">
-          <h2>Bika neza, zigama neza, utere imbere</h2>
-          <p>Uburyo bushya bwo kwizigamira no gufashanya</p>
-          <button><Link to="/signup">Tangira</Link></button>
-        </div>
-      )}
-    </>
+      </div>
+    </header>
   );
 }

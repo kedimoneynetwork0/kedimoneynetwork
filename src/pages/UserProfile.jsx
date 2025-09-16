@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { getUserProfile, changePassword, requestPasswordReset, uploadProfilePicture, getFullUrl } from '../api';
 import Header from '../components/Header';
+import BackArrow from '../components/BackArrow';
 
 export default function UserProfile() {
   const [profile, setProfile] = useState({
@@ -86,6 +87,7 @@ export default function UserProfile() {
   return (
     <div>
       <Header />
+      <BackArrow />
       <div className="container">
         <h2>Your Profile</h2>
         
