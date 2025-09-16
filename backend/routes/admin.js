@@ -337,6 +337,7 @@ router.get('/company-assets', adminMiddleware, async (req, res) => {
   try {
     const queries = [
       query(`SELECT SUM(amount) as totalTransactions FROM transactions WHERE status = 'approved'`),
+      query(`SELECT SUM(amount) as totalSavings FROM transactions WHERE status = 'approved' AND type = 'saving'`),
       query(`SELECT SUM(amount) as totalStakes FROM stakes`),
       query(`SELECT SUM(amount) as totalWithdrawals FROM withdrawals WHERE status = 'approved'`),
       query(`SELECT SUM(amount) as totalBonuses FROM bonuses`),
@@ -348,11 +349,12 @@ router.get('/company-assets', adminMiddleware, async (req, res) => {
 
     res.json({
       totalTransactions: results[0].rows[0].totalTransactions || 0,
-      totalStakes: results[1].rows[0].totalStakes || 0,
-      totalWithdrawals: results[2].rows[0].totalWithdrawals || 0,
-      totalBonuses: results[3].rows[0].totalBonuses || 0,
-      totalUsers: results[4].rows[0].totalUsers || 0,
-      approvedUsers: results[5].rows[0].approvedUsers || 0,
+      totalSavings: results[1].rows[0].totalSavings || 0,
+      totalStakes: results[2].rows[0].totalStakes || 0,
+      totalWithdrawals: results[3].rows[0].totalWithdrawals || 0,
+      totalBonuses: results[4].rows[0].totalBonuses || 0,
+      totalUsers: results[5].rows[0].totalUsers || 0,
+      approvedUsers: results[6].rows[0].approvedUsers || 0,
     });
   } catch (err) {
     console.error('Failed to get company assets:', err);
