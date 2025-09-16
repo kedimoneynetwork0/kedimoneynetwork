@@ -143,7 +143,7 @@ async function seedAdmin() {
   const hash = await bcrypt.hash(adminPassword, 10);
 
   try {
-    const res = await query(`SELECT * FROM users WHERE email = ? AND role = 'admin'`, [adminEmail]);
+    const res = await query(`SELECT * FROM users WHERE email = $1 AND role = $2`, [adminEmail, 'admin']);
     const row = res.rows[0];
     if (row) {
       console.log('Admin user already exists');
