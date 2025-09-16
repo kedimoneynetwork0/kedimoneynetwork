@@ -1,18 +1,31 @@
 services:
+  - type: pgsql
+    name: kedi-money-network-db
+    region: singapore
+    plan: starter
   - type: web
     name: kedi-money-network
     env: node
     region: singapore
     plan: starter
-    buildCommand: npm install && npm run build
-    startCommand: npm run start-sqlite
+    buildCommand: |
+      npm install
+      npm run build
+      cd backend && npm install
+    startCommand: npm run full-start
     envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: kedi-money-network-db
+          property: connectionString
       - key: NODE_VERSION
         value: 18.17.0
       - key: JWT_SECRET
         value: RwandaKediNetworkSuperSecretKey123!@#
       - key: ADMIN_PASSWORD
         value: AdminPass123!@#
+      - key: ADMIN_EMAIL
+        value: kedimoneynetwork@gmail.com
       - key: PORT
         value: 10000
       - key: NODE_ENV
