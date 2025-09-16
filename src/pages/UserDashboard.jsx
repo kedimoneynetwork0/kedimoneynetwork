@@ -295,7 +295,7 @@ export default function UserDashboard() {
         <div className="dashboard-grid">
           <div className="dashboard-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-              <h3>Real Balance</h3>
+              <h3>💰 Wallet</h3>
               <button
                 onClick={async () => {
                   try {
@@ -332,17 +332,47 @@ export default function UserDashboard() {
             </div>
             <div className="bonus-display">
               <p className="bonus-amount">{realBalance} RWF</p>
-              <p className="bonus-text">Total real balance (approved transactions + interest + bonuses - withdrawals)</p>
-              <div style={{ marginTop: '10px', fontSize: '12px', color: '#666' }}>
-                <div>Approved Transactions: {transactions.filter(t => t.status === 'approved').reduce((sum, t) => sum + t.amount, 0)} RWF</div>
-                <div>Referral Bonus: {bonus} RWF</div>
-                <div>Active Stakes: {stakes.filter(s => s.status === 'active').reduce((sum, s) => sum + s.amount, 0)} RWF</div>
-                <div>Stake Interest: {stakes.filter(s => {
-                  const currentDate = new Date();
-                  const endDate = new Date(s.end_date);
-                  return s.status === 'active' && currentDate >= endDate;
-                }).reduce((sum, s) => sum + (s.amount * s.interest_rate), 0)} RWF</div>
-                <div>Processed Withdrawals: {withdrawals.filter(w => w.status === 'approved').reduce((sum, w) => sum + w.amount, 0)} RWF</div>
+              <p className="bonus-text">Total wallet balance (all approved financial activities)</p>
+
+              <div style={{ marginTop: '15px', fontSize: '13px', color: '#555', borderTop: '1px solid #eee', paddingTop: '10px' }}>
+                <h4 style={{ margin: '0 0 10px 0', color: '#28a745', fontSize: '14px' }}>📊 Wallet Breakdown</h4>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '10px' }}>
+                  <div style={{ backgroundColor: '#e8f5e8', padding: '8px', borderRadius: '4px', border: '1px solid #c3e6c3' }}>
+                    <strong style={{ color: '#28a745' }}>💵 Deposits</strong><br/>
+                    {transactions.filter(t => t.status === 'approved').reduce((sum, t) => sum + t.amount, 0)} RWF
+                  </div>
+                  <div style={{ backgroundColor: '#fff3cd', padding: '8px', borderRadius: '4px', border: '1px solid #ffeaa7' }}>
+                    <strong style={{ color: '#856404' }}>🎁 Bonuses</strong><br/>
+                    {bonus} RWF
+                  </div>
+                  <div style={{ backgroundColor: '#d1ecf1', padding: '8px', borderRadius: '4px', border: '1px solid #bee5eb' }}>
+                    <strong style={{ color: '#0c5460' }}>📈 Stakes</strong><br/>
+                    {stakes.filter(s => s.status === 'active').reduce((sum, s) => sum + s.amount, 0)} RWF
+                  </div>
+                  <div style={{ backgroundColor: '#d4edda', padding: '8px', borderRadius: '4px', border: '1px solid #c3e6cb' }}>
+                    <strong style={{ color: '#155724' }}>💰 Interest</strong><br/>
+                    {stakes.filter(s => {
+                      const currentDate = new Date();
+                      const endDate = new Date(s.end_date);
+                      return s.status === 'active' && currentDate >= endDate;
+                    }).reduce((sum, s) => sum + (s.amount * s.interest_rate), 0)} RWF
+                  </div>
+                </div>
+
+                <div style={{ backgroundColor: '#f8d7da', padding: '8px', borderRadius: '4px', border: '1px solid #f5c6cb', marginTop: '8px' }}>
+                  <strong style={{ color: '#721c24' }}>💸 Withdrawals</strong><br/>
+                  -{withdrawals.filter(w => w.status === 'approved').reduce((sum, w) => sum + w.amount, 0)} RWF
+                </div>
+
+                <div style={{ marginTop: '10px', padding: '8px', backgroundColor: '#f8f9fa', borderRadius: '4px', border: '1px solid #dee2e6' }}>
+                  <strong style={{ color: '#495057' }}>📋 Summary</strong><br/>
+                  <small style={{ color: '#6c757d' }}>
+                    {transactions.filter(t => t.status === 'approved').length} approved transactions •
+                    {stakes.filter(s => s.status === 'active').length} active stakes •
+                    {withdrawals.filter(w => w.status === 'approved').length} processed withdrawals
+                  </small>
+                </div>
               </div>
             </div>
           </div>
