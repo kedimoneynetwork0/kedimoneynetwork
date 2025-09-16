@@ -63,7 +63,18 @@ router.put('/users/:id/approve', adminMiddleware, async (req, res) => {
 
 router.get('/users', adminMiddleware, async (req, res) => {
   try {
-    const result = await query(`SELECT id, firstname, lastname, email, username, status, profile_picture FROM users ORDER BY id DESC`);
+    const { search } = req.query;
+    let queryStr = `SELECT id, firstname, lastname, email, username, status, profile_picture FROM users`;
+    let params = [];
+
+    if (search) {
+      queryStr += ` WHERE firstname ILIKE $1 OR lastname ILIKE $1 OR email ILIKE $1 OR username ILIKE $1 OR CAST(id AS TEXT) ILIKE $1`;
+      params = [`%${search}%`];
+    }
+
+    queryStr += ` ORDER BY id DESC`;
+
+    const result = await query(queryStr, params);
     const rows = result.rows;
     res.json(rows);
   } catch (err) {

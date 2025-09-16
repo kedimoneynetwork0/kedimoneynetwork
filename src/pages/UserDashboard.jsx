@@ -22,6 +22,7 @@ export default function UserDashboard() {
   const [messages, setMessages] = useState([]);
   const [showInbox, setShowInbox] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [realBalance, setRealBalance] = useState(0);
 
   useEffect(() => {
     async function fetchBonus() {
@@ -94,6 +95,12 @@ export default function UserDashboard() {
     fetchMessages();
   }, []);
 
+  // Update real balance whenever relevant data changes
+  useEffect(() => {
+    const newBalance = calculateRealBalance();
+    setRealBalance(newBalance);
+  }, [transactions, bonus, stakes, withdrawals, profile]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!amount || !txnId) {
@@ -161,21 +168,43 @@ export default function UserDashboard() {
     window.location.href = '/login';
   };
 
-  // Calculate estimated balance (from database + bonus + active stakes)
-  const calculateEstimatedBalance = () => {
-    let balance = profile.estimated_balance || 0;
+  // Calculate real balance based on approved transactions, stakes, and withdrawals
+  const calculateRealBalance = () => {
+    let balance = 0;
+
+    // Add approved transactions (deposits/investments)
+    transactions.forEach(txn => {
+      if (txn.status === 'approved') {
+        balance += txn.amount;
+      }
+    });
 
     // Add referral bonus
     balance += bonus;
 
-    // Add principal amount of active stakes
+    // Add stake principals and calculate interest for matured stakes
     stakes.forEach(stake => {
       if (stake.status === 'active') {
-        balance += stake.amount;
+        balance += stake.amount; // Principal amount
+
+        // Calculate interest for matured stakes
+        const currentDate = new Date();
+        const endDate = new Date(stake.end_date);
+        if (currentDate >= endDate) {
+          const interest = stake.amount * stake.interest_rate;
+          balance += interest;
+        }
       }
     });
 
-    return balance;
+    // Subtract processed withdrawals
+    withdrawals.forEach(withdrawal => {
+      if (withdrawal.status === 'approved') {
+        balance -= withdrawal.amount;
+      }
+    });
+
+    return Math.max(0, balance); // Ensure balance doesn't go negative
   };
 
   // Filter stakes that can be withdrawn (matured and not yet withdrawn)
@@ -265,10 +294,56 @@ export default function UserDashboard() {
         
         <div className="dashboard-grid">
           <div className="dashboard-card">
-            <h3>Estimated Balance</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <h3>Real Balance</h3>
+              <button
+                onClick={async () => {
+                  try {
+                    // Refresh all data
+                    const [bonusRes, dashboardRes, profileRes, stakesRes, withdrawalsRes] = await Promise.all([
+                      getUserBonus(),
+                      getUserDashboard(),
+                      getUserProfile(),
+                      getUserStakes(),
+                      getUserWithdrawals()
+                    ]);
+
+                    setBonus(bonusRes.data?.totalBonus || 0);
+                    setTransactions(Array.isArray(dashboardRes.data?.transactions) ? dashboardRes.data.transactions : []);
+                    setProfile(profileRes.data || {});
+                    setStakes(Array.isArray(stakesRes.data?.stakes) ? stakesRes.data.stakes : []);
+                    setWithdrawals(Array.isArray(withdrawalsRes.data?.withdrawals) ? withdrawalsRes.data.withdrawals : []);
+                  } catch (error) {
+                    console.error('Error refreshing balance:', error);
+                  }
+                }}
+                style={{
+                  backgroundColor: '#28a745',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  padding: '4px 8px',
+                  fontSize: '12px',
+                  cursor: 'pointer'
+                }}
+              >
+                🔄 Refresh
+              </button>
+            </div>
             <div className="bonus-display">
-              <p className="bonus-amount">{calculateEstimatedBalance()} RWF</p>
-              <p className="bonus-text">Total estimated balance</p>
+              <p className="bonus-amount">{realBalance} RWF</p>
+              <p className="bonus-text">Total real balance (approved transactions + interest + bonuses - withdrawals)</p>
+              <div style={{ marginTop: '10px', fontSize: '12px', color: '#666' }}>
+                <div>Approved Transactions: {transactions.filter(t => t.status === 'approved').reduce((sum, t) => sum + t.amount, 0)} RWF</div>
+                <div>Referral Bonus: {bonus} RWF</div>
+                <div>Active Stakes: {stakes.filter(s => s.status === 'active').reduce((sum, s) => sum + s.amount, 0)} RWF</div>
+                <div>Stake Interest: {stakes.filter(s => {
+                  const currentDate = new Date();
+                  const endDate = new Date(s.end_date);
+                  return s.status === 'active' && currentDate >= endDate;
+                }).reduce((sum, s) => sum + (s.amount * s.interest_rate), 0)} RWF</div>
+                <div>Processed Withdrawals: {withdrawals.filter(w => w.status === 'approved').reduce((sum, w) => sum + w.amount, 0)} RWF</div>
+              </div>
             </div>
           </div>
           

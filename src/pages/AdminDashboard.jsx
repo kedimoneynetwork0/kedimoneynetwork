@@ -16,6 +16,8 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('pending'); // 'pending', 'history', 'news', 'withdrawals', 'assets', or 'user-details'
   const [selectedUser, setSelectedUser] = useState(null);
   const [userDetails, setUserDetails] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showHeader, setShowHeader] = useState(true);
   
   // News form state
   const [newsTitle, setNewsTitle] = useState('');
@@ -204,6 +206,38 @@ export default function AdminDashboard() {
     window.location.href = '/admin-login';
   };
 
+  // Filtered data based on search term
+  const filteredPendingUsers = pendingUsers.filter(user =>
+    user.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredAllUsers = allUsers.filter(user =>
+    (user.firstname + ' ' + user.lastname).toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.username.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredPendingTxns = pendingTxns.filter(txn =>
+    txn.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    txn.txn_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    txn.type.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredAllTransactions = allTransactions.filter(txn =>
+    txn.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    txn.txn_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    txn.type.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredNews = news.filter(item =>
+    item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.content.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredPendingWithdrawals = pendingWithdrawals.filter(withdrawal =>
+    withdrawal.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   // Download functions
   const handleDownloadUsers = async () => {
     try {
@@ -243,7 +277,7 @@ export default function AdminDashboard() {
 
   return (
     <div>
-      <Header />
+      {showHeader && <Header />}
       <div className="sidebar">
         <h2>Admin Dashboard</h2>
         <div className="tabs">
@@ -295,19 +329,40 @@ export default function AdminDashboard() {
       </div>
       <div className="main-content">
         <div className="container">
-          {message && (
-            <div className={`message ${message.includes('Error') || message.includes('error') ? 'error' : 'success'}`}>
-              {message}
-            </div>
-          )}
+           {message && (
+             <div className={`message ${message.includes('Error') || message.includes('error') ? 'error' : 'success'}`}>
+               {message}
+             </div>
+           )}
+
+           {/* Search and Header Toggle Controls */}
+           <div className="dashboard-controls" style={{ marginBottom: '20px', display: 'flex', gap: '10px', alignItems: 'center' }}>
+             <div style={{ flex: 1 }}>
+               <input
+                 type="text"
+                 placeholder="Search..."
+                 value={searchTerm}
+                 onChange={(e) => setSearchTerm(e.target.value)}
+                 className="form-control"
+                 style={{ width: '100%', padding: '8px 12px', border: '1px solid #ddd', borderRadius: '4px' }}
+               />
+             </div>
+             <button
+               onClick={() => setShowHeader(!showHeader)}
+               className="action-button"
+               style={{ padding: '8px 16px', fontSize: '14px' }}
+             >
+               {showHeader ? 'Hide Header' : 'Show Header'}
+             </button>
+           </div>
 
         {/* Pending Approvals Tab */}
         {activeTab === 'pending' && (
           <div className="dashboard-grid">
             <div className="dashboard-card">
               <h3>Pending Users</h3>
-              {pendingUsers.length === 0 ? (
-                <p className="text-center">No pending users</p>
+              {filteredPendingUsers.length === 0 ? (
+                <p className="text-center">{searchTerm ? 'No matching pending users' : 'No pending users'}</p>
               ) : (
                 <div className="table-container">
                   <table className="data-table">
@@ -318,7 +373,7 @@ export default function AdminDashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {pendingUsers.map((user) => (
+                      {filteredPendingUsers.map((user) => (
                         <tr key={user.id}>
                           <td>{user.email}</td>
                           <td>
@@ -345,8 +400,8 @@ export default function AdminDashboard() {
 
             <div className="dashboard-card">
               <h3>Pending Transactions</h3>
-              {pendingTxns.length === 0 ? (
-                <p className="text-center">No pending transactions</p>
+              {filteredPendingTxns.length === 0 ? (
+                <p className="text-center">{searchTerm ? 'No matching pending transactions' : 'No pending transactions'}</p>
               ) : (
                 <div className="table-container">
                   <table className="data-table">
@@ -362,7 +417,7 @@ export default function AdminDashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {pendingTxns.map((txn) => (
+                      {filteredPendingTxns.map((txn) => (
                         <tr key={txn.id}>
                           <td>{txn.email}</td>
                           <td>{txn.type}</td>
@@ -412,8 +467,8 @@ export default function AdminDashboard() {
                   📥 Download CSV
                 </button>
               </div>
-              {allUsers.length === 0 ? (
-                <p className="text-center">No users found</p>
+              {filteredAllUsers.length === 0 ? (
+                <p className="text-center">{searchTerm ? 'No matching users found' : 'No users found'}</p>
               ) : (
                 <div className="table-container">
                   <table className="data-table">
@@ -426,7 +481,7 @@ export default function AdminDashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {allUsers.map((user) => (
+                      {filteredAllUsers.map((user) => (
                         <tr key={user.id}>
                           <td>
                             <button
@@ -463,8 +518,8 @@ export default function AdminDashboard() {
                   📥 Download CSV
                 </button>
               </div>
-              {allTransactions.length === 0 ? (
-                <p className="text-center">No transactions found</p>
+              {filteredAllTransactions.length === 0 ? (
+                <p className="text-center">{searchTerm ? 'No matching transactions found' : 'No transactions found'}</p>
               ) : (
                 <div className="table-container">
                   <table className="data-table">
@@ -479,7 +534,7 @@ export default function AdminDashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {allTransactions.map((txn) => (
+                      {filteredAllTransactions.map((txn) => (
                         <tr key={txn.id}>
                           <td>{txn.email}</td>
                           <td>{txn.type}</td>
@@ -563,8 +618,8 @@ export default function AdminDashboard() {
 
             <div className="dashboard-card">
               <h3>Existing News</h3>
-              {news.length === 0 ? (
-                <p className="text-center">No news posted yet</p>
+              {filteredNews.length === 0 ? (
+                <p className="text-center">{searchTerm ? 'No matching news found' : 'No news posted yet'}</p>
               ) : (
                 <div className="table-container">
                   <table className="data-table">
@@ -577,7 +632,7 @@ export default function AdminDashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {news.map((item) => (
+                      {filteredNews.map((item) => (
                         <tr key={item.id}>
                           <td>{item.title}</td>
                           <td>{new Date(item.created_at).toLocaleDateString()}</td>
@@ -625,8 +680,8 @@ export default function AdminDashboard() {
         {activeTab === 'withdrawals' && (
           <div className="dashboard-card">
             <h3>Pending Withdrawals</h3>
-            {pendingWithdrawals.length === 0 ? (
-              <p className="text-center">No pending withdrawals</p>
+            {filteredPendingWithdrawals.length === 0 ? (
+              <p className="text-center">{searchTerm ? 'No matching pending withdrawals' : 'No pending withdrawals'}</p>
             ) : (
               <div className="table-container">
                 <table className="data-table">
@@ -641,7 +696,7 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {pendingWithdrawals.map((withdrawal) => (
+                    {filteredPendingWithdrawals.map((withdrawal) => (
                       <tr key={withdrawal.id}>
                         <td>{withdrawal.email}</td>
                         <td>{withdrawal.stake_amount} RWF</td>
