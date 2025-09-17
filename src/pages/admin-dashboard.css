@@ -721,3 +721,133 @@ button:hover,
     font-size: 0.9rem;
   }
 }
+
+/* Enhanced Mobile Responsiveness */
+.mobile-menu-btn {
+  display: none !important;
+}
+
+.sidebar-overlay {
+  display: none !important;
+}
+
+.sidebar-close-btn {
+  display: none !important;
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.tab-text {
+  display: inline;
+}
+
+/* Tablet and Mobile Styles */
+@media (max-width: 1023px) {
+  .mobile-menu-btn {
+    display: block !important;
+  }
+
+  .sidebar-overlay {
+    display: block !important;
+  }
+
+  .sidebar-close-btn {
+    display: block !important;
+  }
+
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100vh;
+    z-index: 1000;
+  }
+
+  .sidebar.sidebar-open {
+    transform: translateX(0);
+  }
+
+  .main-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+    padding-top: 80px; /* Space for mobile menu button */
+  }
+
+  .container {
+    padding-top: 20px;
+  }
+}
+
+@media (max-width: 767px) {
+  .sidebar {
+    width: 260px;
+  }
+
+  .tab-text {
+    display: inline;
+    font-size: 0.9rem;
+  }
+
+  .tab-button {
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .mobile-menu-btn {
+    top: 15px !important;
+    left: 15px !important;
+    padding: 10px !important;
+  }
+
+  .main-content {
+    padding-top: 70px !important;
+  }
+}
+
+@media (max-width: 479px) {
+  .sidebar {
+    width: 240px;
+  }
+
+  .tab-text {
+    font-size: 0.85rem;
+  }
+
+  .mobile-menu-btn {
+    top: 10px !important;
+    left: 10px !important;
+    padding: 8px !important;
+  }
+
+  .main-content {
+    padding-top: 60px !important;
+  }
+}
+
+/* Desktop Styles */
+@media (min-width: 1024px) {
+  .sidebar {
+    position: fixed !important;
+    transform: translateX(0) !important;
+  }
+
+  .main-content {
+    margin-left: 280px !important;
+    width: calc(100vw - 280px) !important;
+    padding-top: 30px !important;
+  }
+
+  .mobile-menu-btn,
+  .sidebar-overlay,
+  .sidebar-close-btn {
+    display: none !important;
+  }
+}

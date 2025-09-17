@@ -241,9 +241,47 @@ const KediAdminDashboard = () => {
 
   return (
     <div>
+      {/* Mobile Menu Button */}
+      <button
+        className="mobile-menu-btn"
+        onClick={toggleSidebar}
+        style={{
+          position: 'fixed',
+          top: '20px',
+          left: '20px',
+          zIndex: '1001',
+          backgroundColor: '#2e8b57',
+          color: 'white',
+          border: 'none',
+          padding: '12px',
+          borderRadius: '8px',
+          cursor: 'pointer',
+          display: 'none',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.2)'
+        }}
+      >
+        <FaBars size={20} />
+      </button>
+
       {/* Sidebar */}
-      <div className="sidebar">
-        <h2>KEDI BUSINESS & AGRI FUNDS</h2>
+      <div className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
+        <div className="sidebar-header">
+          <h2>KEDI BUSINESS & AGRI FUNDS</h2>
+          <button
+            className="sidebar-close-btn"
+            onClick={toggleSidebar}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'white',
+              fontSize: '24px',
+              cursor: 'pointer',
+              display: 'none'
+            }}
+          >
+            <FaTimes />
+          </button>
+        </div>
         <div className="tabs">
           {navigationItems.map((item) => (
             <button
@@ -252,7 +290,7 @@ const KediAdminDashboard = () => {
               onClick={() => showSection(item.id)}
             >
               <item.icon className="mr-2" />
-              {item.label}
+              <span className="tab-text">{item.label}</span>
             </button>
           ))}
           <button
@@ -260,10 +298,28 @@ const KediAdminDashboard = () => {
             onClick={logout}
           >
             <FaSignOutAlt className="mr-2" />
-            Logout
+            <span className="tab-text">Logout</span>
           </button>
         </div>
       </div>
+
+      {/* Mobile Overlay */}
+      {sidebarOpen && (
+        <div
+          className="sidebar-overlay"
+          onClick={toggleSidebar}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            zIndex: '999',
+            display: 'none'
+          }}
+        ></div>
+      )}
 
       {/* Main Content */}
       <div className="main-content">
