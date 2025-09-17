@@ -5,33 +5,21 @@
  * Balance = (Total Deposits + Total Referral Bonus + Total Stakes Interest) - (Total Withdrawals + Loan Repayments)
  */
 export const calculateBalance = (transactions = [], stakes = [], referralBonus = 0) => {
-  let totalDeposits = 0;
-  let totalWithdrawals = 0;
-  let totalLoanRepayments = 0;
-  let totalStakesInterest = 0;
+  // Use the improved deposit calculation logic
+  const totalDeposits = calculateTotalDeposits(transactions);
+  const totalWithdrawals = calculateTotalWithdrawals(transactions);
 
-  // Calculate from transactions
-  transactions.forEach(txn => {
-    if (txn.status === 'approved') {
-      if (txn.type === 'tree_plan' || txn.type === 'saving') {
-        totalDeposits += txn.amount;
-      } else if (txn.type === 'withdrawal') {
-        totalWithdrawals += txn.amount;
-      } else if (txn.type === 'loan') {
-        totalLoanRepayments += txn.amount;
-      }
-    }
-  });
+  // Calculate loan repayments (separate from withdrawals)
+  const totalLoanRepayments = transactions
+    .filter(txn => txn.status === 'approved' && txn.type === 'loan')
+    .reduce((total, txn) => total + (txn.amount || 0), 0);
 
   // Calculate stakes interest
-  stakes.forEach(stake => {
-    if (stake.status === 'active') {
-      const interest = stake.amount * stake.interest_rate * (stake.stake_period / 365); // Daily interest
-      totalStakesInterest += interest;
-    }
-  });
+  const totalStakesInterest = calculateStakesInterest(stakes);
 
+  // Balance calculation: Deposits + Referral Bonus + Stakes Interest - Withdrawals - Loan Repayments
   const balance = totalDeposits + referralBonus + totalStakesInterest - totalWithdrawals - totalLoanRepayments;
+
   return Math.max(0, balance); // Ensure balance doesn't go negative
 };
 
@@ -75,6 +63,75 @@ export const getRecentTransactions = (transactions = [], limit = 10) => {
 };
 
 /**
+ * Calculate total deposits from approved transactions
+ * Simple addition logic: 500 + 1000 = 1500
+ *
+ * @param {Array} transactions - Array of transaction objects
+ * @returns {number} Total sum of all approved deposits
+ *
+ * @example
+ * const transactions = [
+ *   { type: 'tree_plan', amount: 500, status: 'approved' },
+ *   { type: 'saving', amount: 1000, status: 'approved' },
+ *   { type: 'withdrawal', amount: 200, status: 'approved' }
+ * ];
+ * calculateTotalDeposits(transactions); // Returns 1500
+ */
+export const calculateTotalDeposits = (transactions = []) => {
+  return transactions
+    .filter(txn => txn.status === 'approved' && isDepositType(txn.type))
+    .reduce((total, txn) => total + (txn.amount || 0), 0);
+};
+
+/**
+ * Calculate total withdrawals from approved transactions
+ */
+export const calculateTotalWithdrawals = (transactions = []) => {
+  return transactions
+    .filter(txn => txn.status === 'approved' && txn.type === 'withdrawal')
+    .reduce((total, txn) => total + (txn.amount || 0), 0);
+};
+
+/**
+ * Check if transaction type is a deposit
+ */
+export const isDepositType = (type) => {
+  const depositTypes = ['tree_plan', 'saving', 'deposit', 'investment'];
+  return depositTypes.includes(type);
+};
+
+/**
+ * Get deposit breakdown by type
+ * Returns: { tree_plan: 500, saving: 1000, total: 1500 }
+ */
+export const getDepositBreakdown = (transactions = []) => {
+  const breakdown = {};
+
+  transactions
+    .filter(txn => txn.status === 'approved' && isDepositType(txn.type))
+    .forEach(txn => {
+      if (!breakdown[txn.type]) {
+        breakdown[txn.type] = 0;
+      }
+      breakdown[txn.type] += txn.amount || 0;
+    });
+
+  // Calculate total
+  breakdown.total = Object.values(breakdown).reduce((sum, amount) => sum + amount, 0);
+
+  return breakdown;
+};
+
+/**
+ * Simple deposit sum function (as requested: 500 + 1000 = 1500)
+ */
+export const sumDeposits = (transactions = []) => {
+  return transactions
+    .filter(txn => txn.status === 'approved' && isDepositType(txn.type))
+    .reduce((sum, txn) => sum + (txn.amount || 0), 0);
+};
+
+/**
  * Calculate admin dashboard metrics
  */
 export const calculateAdminMetrics = (users = [], transactions = [], stakes = []) => {
@@ -86,19 +143,9 @@ export const calculateAdminMetrics = (users = [], transactions = [], stakes = []
   const approvedTransactions = transactions.filter(txn => txn.status === 'approved').length;
   const pendingTransactions = transactions.filter(txn => txn.status === 'pending').length;
 
-  // Calculate revenue from approved transactions
-  let totalDeposits = 0;
-  let totalWithdrawals = 0;
-
-  transactions.forEach(txn => {
-    if (txn.status === 'approved') {
-      if (txn.type === 'tree_plan' || txn.type === 'saving') {
-        totalDeposits += txn.amount;
-      } else if (txn.type === 'withdrawal') {
-        totalWithdrawals += txn.amount;
-      }
-    }
-  });
+  // Simple and clear deposit/withdrawal calculations
+  const totalDeposits = calculateTotalDeposits(transactions);
+  const totalWithdrawals = calculateTotalWithdrawals(transactions);
 
   const totalRevenue = totalDeposits - totalWithdrawals;
   const totalStakesAmount = calculateTotalStakes(stakes);
@@ -208,5 +255,34 @@ export const getUserStats = (user, transactions = [], stakes = []) => {
     maturedStakes: maturedStakes.length,
     totalStakesValue: calculateTotalStakes(activeStakes),
     estimatedInterest: calculateStakesInterest(activeStakes)
+  };
+};
+
+/**
+ * Demo function to test deposit calculation logic
+ * Example: 500 + 1000 = 1500
+ */
+export const testDepositCalculation = () => {
+  const sampleTransactions = [
+    { type: 'tree_plan', amount: 500, status: 'approved' },
+    { type: 'saving', amount: 1000, status: 'approved' },
+    { type: 'withdrawal', amount: 200, status: 'approved' },
+    { type: 'tree_plan', amount: 300, status: 'pending' } // This won't be included
+  ];
+
+  const totalDeposits = calculateTotalDeposits(sampleTransactions);
+  const breakdown = getDepositBreakdown(sampleTransactions);
+
+  console.log('Deposit Calculation Test:');
+  console.log('Sample transactions:', sampleTransactions);
+  console.log('Total deposits (500 + 1000):', totalDeposits); // Should be 1500
+  console.log('Deposit breakdown:', breakdown);
+  // Expected: { tree_plan: 500, saving: 1000, total: 1500 }
+
+  return {
+    totalDeposits,
+    breakdown,
+    expected: 1500,
+    correct: totalDeposits === 1500
   };
 };
