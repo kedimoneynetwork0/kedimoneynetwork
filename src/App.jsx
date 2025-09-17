@@ -5,6 +5,7 @@ import Login from './pages/login';
 import Signup from './pages/signup';
 import UserDashboard from './pages/UserDashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import KediAdminDashboard from './pages/KediAdminDashboard';
 import UserProfile from './pages/UserProfile';
 import AdminLogin from './pages/AdminLogin';
 import NewsDetail from './pages/NewsDetail';
@@ -36,6 +37,7 @@ function App() {
           {token && role === 'admin' && (
             <>
               <Route path="/admin-dashboard" element={<AdminDashboard />} />
+              <Route path="/kedi-admin-dashboard" element={<KediAdminDashboard />} />
             </>
           )}
 
