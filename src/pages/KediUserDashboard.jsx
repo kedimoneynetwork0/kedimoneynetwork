@@ -13,6 +13,15 @@ import {
   markMessageAsRead,
   getFullUrl
 } from '../api';
+import {
+  calculateBalance,
+  calculateReferralBonus,
+  calculateStakesInterest,
+  calculateTotalStakes,
+  getRecentTransactions,
+  getUserStats,
+  formatCurrency
+} from '../utils/calculations';
 
 const KediUserDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -93,13 +102,24 @@ const KediUserDashboard = () => {
 
       // Update user profile data
       const profile = profileRes.data || {};
+      const transactions = dashboardRes.data?.transactions || [];
+      const stakes = stakesRes.data?.stakes || [];
+
+      // Calculate referral bonus (mock: 5,000 RWF per referral)
+      const referralCount = profile.referralId ? 1 : 0; // Simple mock calculation
+      const referralBonus = calculateReferralBonus(referralCount);
+
+      // Calculate balance using the new calculation logic
+      const calculatedBalance = calculateBalance(transactions, stakes, referralBonus);
+
       setUserData({
         name: `${profile.firstname || ''} ${profile.lastname || ''}`.trim() || 'User',
         email: profile.email || '',
         avatar: profile.firstname?.charAt(0)?.toUpperCase() || 'U',
-        balance: profile.estimated_balance || 0,
-        bonus: bonusRes.data?.totalBonus || 0,
-        profilePicture: profile.profile_picture || ''
+        balance: calculatedBalance,
+        bonus: referralBonus,
+        profilePicture: profile.profile_picture || '',
+        stats: getUserStats(profile, transactions, stakes)
       });
 
       // Update other data
@@ -477,7 +497,7 @@ const KediUserDashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {transactions.slice(0, 3).map((txn) => (
+                    {getRecentTransactions(transactions, 3).map((txn) => (
                       <tr key={txn.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200">
                         <td className="py-3 px-4 text-gray-800">{new Date(txn.created_at).toLocaleDateString()}</td>
                         <td className="py-3 px-4 text-gray-800">{txn.type}</td>
@@ -498,25 +518,30 @@ const KediUserDashboard = () => {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-gray-200">
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Amount</th>
+                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Principal</th>
                       <th className="text-left py-3 px-4 font-semibold text-gray-700">Duration</th>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Interest Rate</th>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Start Date</th>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700">End Date</th>
+                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Rate</th>
+                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Interest</th>
+                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Total Value</th>
                       <th className="text-left py-3 px-4 font-semibold text-gray-700">Status</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {stakes.filter(stake => stake.status === 'active').map((stake) => (
-                      <tr key={stake.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200">
-                        <td className="py-3 px-4 text-gray-800 font-medium">{formatCurrency(stake.amount)} RWF</td>
-                        <td className="py-3 px-4 text-gray-800">{stake.stake_period} days</td>
-                        <td className="py-3 px-4 text-gray-800">{(stake.interest_rate * 100)}%</td>
-                        <td className="py-3 px-4 text-gray-800">{new Date(stake.start_date).toLocaleDateString()}</td>
-                        <td className="py-3 px-4 text-gray-800">{new Date(stake.end_date).toLocaleDateString()}</td>
-                        <td className="py-3 px-4">{getStatusBadge(stake.status)}</td>
-                      </tr>
-                    ))}
+                    {stakes.filter(stake => stake.status === 'active').map((stake) => {
+                      const interestEarned = stake.amount * stake.interest_rate * (stake.stake_period / 365);
+                      const totalValue = stake.amount + interestEarned;
+
+                      return (
+                        <tr key={stake.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200">
+                          <td className="py-3 px-4 text-gray-800 font-medium">{formatCurrency(stake.amount)} RWF</td>
+                          <td className="py-3 px-4 text-gray-800">{stake.stake_period} days</td>
+                          <td className="py-3 px-4 text-gray-800">{(stake.interest_rate * 100)}%</td>
+                          <td className="py-3 px-4 text-gray-800">{formatCurrency(interestEarned)} RWF</td>
+                          <td className="py-3 px-4 text-gray-800 font-medium text-green-600">{formatCurrency(totalValue)} RWF</td>
+                          <td className="py-3 px-4">{getStatusBadge(stake.status)}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

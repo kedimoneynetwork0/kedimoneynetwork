@@ -3,7 +3,7 @@ import {
   FaBars, FaTimes, FaTachometerAlt, FaUsers, FaClock, FaExchangeAlt,
   FaChartLine, FaBullhorn, FaCog, FaSignOutAlt, FaUser, FaCheck,
   FaTimes as FaReject, FaEye, FaPlus, FaLeaf, FaChevronDown,
-  FaUserCheck, FaUserClock, FaMoneyBillWave, FaCoins
+  FaUserCheck, FaUserClock, FaMoneyBillWave, FaCoins, FaFilter
 } from 'react-icons/fa';
 import {
   getPendingUsers,
@@ -18,6 +18,13 @@ import {
   getNews,
   getFullUrl
 } from '../api';
+import {
+  calculateAdminMetrics,
+  filterTransactions,
+  getTransactionTypes,
+  getTransactionStatuses,
+  formatCurrency
+} from '../utils/calculations';
 
 const KediAdminDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -40,6 +47,12 @@ const KediAdminDashboard = () => {
   const [allUsers, setAllUsers] = useState([]);
   const [companyAssets, setCompanyAssets] = useState(null);
   const [news, setNews] = useState([]);
+
+  // Filtering states
+  const [transactionFilters, setTransactionFilters] = useState({
+    type: 'all',
+    status: 'all'
+  });
 
   // Form states
   const [newsForm, setNewsForm] = useState({
@@ -92,18 +105,29 @@ const KediAdminDashboard = () => {
         getNews()
       ]);
 
-      // Update stats
+      // Mock stakes data for calculations (in real app this would come from API)
+      const mockStakesData = [];
+
+      // Update stats using calculation functions
       const pendingUsersData = pendingUsersRes.data || [];
       const allUsersData = allUsersRes.data || [];
       const transactionsData = transactionsRes.data || [];
+      const stakesData = stakesRes?.data?.stakes || [];
       const assetsData = assetsRes.data || {};
       const newsData = newsRes.data || [];
 
+      // Calculate admin metrics using the calculation functions
+      const adminMetrics = calculateAdminMetrics(allUsersData, transactionsData, mockStakesData);
+
       setStats({
-        totalUsers: allUsersData.length,
-        pendingUsers: pendingUsersData.length,
-        totalTransactions: transactionsData.length,
-        totalRevenue: assetsData.assets?.totalAssets || 0
+        totalUsers: adminMetrics.totalUsers,
+        pendingUsers: adminMetrics.pendingUsers,
+        totalTransactions: adminMetrics.totalTransactions,
+        totalRevenue: adminMetrics.totalRevenue,
+        totalDeposits: adminMetrics.totalDeposits,
+        totalWithdrawals: adminMetrics.totalWithdrawals,
+        approvedUsers: adminMetrics.approvedUsers,
+        totalStakesAmount: adminMetrics.totalStakesAmount
       });
 
       // Update data states
@@ -554,7 +578,30 @@ const KediAdminDashboard = () => {
         {currentSection === 'transactions' && (
           <div className="p-4 md:p-8">
             <div className="bg-white p-6 rounded-xl shadow-lg">
-              <h2 className="text-2xl font-bold text-gray-800 mb-6">All Transactions</h2>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-800">All Transactions</h2>
+                <div className="flex items-center space-x-4">
+                  <FaFilter className="text-gray-500" />
+                  <select
+                    value={transactionFilters.type}
+                    onChange={(e) => setTransactionFilters({...transactionFilters, type: e.target.value})}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  >
+                    {getTransactionTypes().map(type => (
+                      <option key={type.value} value={type.value}>{type.label}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={transactionFilters.status}
+                    onChange={(e) => setTransactionFilters({...transactionFilters, status: e.target.value})}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  >
+                    {getTransactionStatuses().map(status => (
+                      <option key={status.value} value={status.value}>{status.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
 
               <div className="overflow-x-auto">
                 <table className="w-full">
@@ -569,7 +616,7 @@ const KediAdminDashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {allTransactions.map((txn) => (
+                    {filterTransactions(allTransactions, transactionFilters.type, transactionFilters.status).map((txn) => (
                       <tr key={txn.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200">
                         <td className="py-3 px-4 text-gray-800">{new Date(txn.created_at).toLocaleDateString()}</td>
                         <td className="py-3 px-4 text-gray-800">{txn.email}</td>
@@ -598,9 +645,103 @@ const KediAdminDashboard = () => {
                     ))}
                   </tbody>
                 </table>
-                {allTransactions.length === 0 && (
-                  <p className="text-center text-gray-500 py-8">No transactions found</p>
+                {filterTransactions(allTransactions, transactionFilters.type, transactionFilters.status).length === 0 && (
+                  <p className="text-center text-gray-500 py-8">No transactions found matching the filters</p>
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Revenue Report Section */}
+        {currentSection === 'revenue' && (
+          <div className="p-4 md:p-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Revenue Summary Cards */}
+              <div className="bg-white p-6 rounded-xl shadow-lg">
+                <h2 className="text-2xl font-bold text-gray-800 mb-6">Revenue Summary</h2>
+
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center p-4 bg-green-50 rounded-lg">
+                    <div>
+                      <p className="text-sm text-green-600 font-medium">Total Deposits</p>
+                      <p className="text-2xl font-bold text-green-800">{formatCurrency(stats.totalDeposits || 0)} RWF</p>
+                    </div>
+                    <FaMoneyBillWave className="text-3xl text-green-500" />
+                  </div>
+
+                  <div className="flex justify-between items-center p-4 bg-red-50 rounded-lg">
+                    <div>
+                      <p className="text-sm text-red-600 font-medium">Total Withdrawals</p>
+                      <p className="text-2xl font-bold text-red-800">{formatCurrency(stats.totalWithdrawals || 0)} RWF</p>
+                    </div>
+                    <FaMoneyBillWave className="text-3xl text-red-500" />
+                  </div>
+
+                  <div className="flex justify-between items-center p-4 bg-blue-50 rounded-lg">
+                    <div>
+                      <p className="text-sm text-blue-600 font-medium">Net Revenue</p>
+                      <p className={`text-2xl font-bold ${stats.totalRevenue >= 0 ? 'text-blue-800' : 'text-red-800'}`}>
+                        {formatCurrency(stats.totalRevenue || 0)} RWF
+                      </p>
+                    </div>
+                    <FaChartLine className={`text-3xl ${stats.totalRevenue >= 0 ? 'text-blue-500' : 'text-red-500'}`} />
+                  </div>
+
+                  <div className="flex justify-between items-center p-4 bg-purple-50 rounded-lg">
+                    <div>
+                      <p className="text-sm text-purple-600 font-medium">Active Stakes Value</p>
+                      <p className="text-2xl font-bold text-purple-800">{formatCurrency(stats.totalStakesAmount || 0)} RWF</p>
+                    </div>
+                    <FaCoins className="text-3xl text-purple-500" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Revenue Chart Placeholder */}
+              <div className="bg-white p-6 rounded-xl shadow-lg">
+                <h2 className="text-2xl font-bold text-gray-800 mb-6">Revenue Analytics</h2>
+
+                <div className="text-center py-12">
+                  <FaChartLine className="text-6xl text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600 text-lg mb-2">Interactive revenue chart will be displayed here.</p>
+                  <p className="text-gray-500 text-sm">Chart.js or Recharts integration can be added for visual analytics.</p>
+
+                  {/* Simple Bar Chart Representation */}
+                  <div className="mt-8 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-700">Deposits</span>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-32 bg-green-200 rounded-full h-4">
+                          <div className="bg-green-600 h-4 rounded-full" style={{width: '70%'}}></div>
+                        </div>
+                        <span className="text-sm text-gray-600">{formatCurrency(stats.totalDeposits || 0)}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-700">Withdrawals</span>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-32 bg-red-200 rounded-full h-4">
+                          <div className="bg-red-600 h-4 rounded-full" style={{width: '30%'}}></div>
+                        </div>
+                        <span className="text-sm text-gray-600">{formatCurrency(stats.totalWithdrawals || 0)}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-700">Net Revenue</span>
+                      <div className="flex items-center space-x-2">
+                        <div className={`w-32 rounded-full h-4 ${stats.totalRevenue >= 0 ? 'bg-blue-200' : 'bg-orange-200'}`}>
+                          <div className={`h-4 rounded-full ${stats.totalRevenue >= 0 ? 'bg-blue-600' : 'bg-orange-600'}`} style={{width: '50%'}}></div>
+                        </div>
+                        <span className={`text-sm ${stats.totalRevenue >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
+                          {formatCurrency(stats.totalRevenue || 0)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
