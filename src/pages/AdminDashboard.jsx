@@ -423,7 +423,7 @@ export default function AdminDashboard() {
                           <td>{txn.type}</td>
                           <td>{txn.amount} RWF</td>
                           <td>{txn.txn_id}</td>
-                          <td>{new Date(txn.created_at).toLocaleString()}</td>
+                          <td>{new Date(txn.created_at).toLocaleString('en-RW', { timeZone: 'Africa/Kigali' })}</td>
                           <td>
                             <span className={`status-badge status-${txn.status.toLowerCase()}`}>
                               {txn.status}
@@ -540,7 +540,7 @@ export default function AdminDashboard() {
                           <td>{txn.type}</td>
                           <td>{txn.amount} RWF</td>
                           <td>{txn.txn_id}</td>
-                          <td>{new Date(txn.created_at).toLocaleString()}</td>
+                          <td>{new Date(txn.created_at).toLocaleString('en-RW', { timeZone: 'Africa/Kigali' })}</td>
                           <td>
                             <span className={`status-badge status-${txn.status.toLowerCase()}`}>
                               {txn.status}
@@ -635,7 +635,7 @@ export default function AdminDashboard() {
                       {filteredNews.map((item) => (
                         <tr key={item.id}>
                           <td>{item.title}</td>
-                          <td>{new Date(item.created_at).toLocaleDateString()}</td>
+                          <td>{new Date(item.created_at).toLocaleDateString('en-RW', { timeZone: 'Africa/Kigali' })}</td>
                           <td>
                             {item.media_url && item.media_type === 'image' && (
                               <img src={getFullUrl(item.media_url)} alt="News" className="news-media-thumb" />
@@ -702,7 +702,7 @@ export default function AdminDashboard() {
                         <td>{withdrawal.stake_amount} RWF</td>
                         <td>{withdrawal.stake_period} days</td>
                         <td>{withdrawal.amount} RWF</td>
-                        <td>{new Date(withdrawal.request_date).toLocaleString()}</td>
+                        <td>{new Date(withdrawal.request_date).toLocaleString('en-RW', { timeZone: 'Africa/Kigali' })}</td>
                         <td>
                           <button
                             onClick={() => handleApproveWithdrawal(withdrawal.id, true)}
@@ -888,7 +888,7 @@ export default function AdminDashboard() {
                               {txn.status}
                             </span>
                           </td>
-                          <td>{new Date(txn.created_at).toLocaleString()}</td>
+                          <td>{new Date(txn.created_at).toLocaleString('en-RW', { timeZone: 'Africa/Kigali' })}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -921,8 +921,8 @@ export default function AdminDashboard() {
                           <td>{stake.amount} RWF</td>
                           <td>{stake.stake_period} days</td>
                           <td>{(stake.interest_rate * 100)}%</td>
-                          <td>{new Date(stake.start_date).toLocaleDateString()}</td>
-                          <td>{new Date(stake.end_date).toLocaleDateString()}</td>
+                          <td>{new Date(stake.start_date).toLocaleDateString('en-RW', { timeZone: 'Africa/Kigali' })}</td>
+                          <td>{new Date(stake.end_date).toLocaleDateString('en-RW', { timeZone: 'Africa/Kigali' })}</td>
                           <td>
                             <span className={`status-badge status-${stake.status}`}>
                               {stake.status}
@@ -955,7 +955,7 @@ export default function AdminDashboard() {
                       {userDetails.withdrawals.map((withdrawal) => (
                         <tr key={withdrawal.id}>
                           <td>{withdrawal.amount} RWF</td>
-                          <td>{new Date(withdrawal.request_date).toLocaleString()}</td>
+                          <td>{new Date(withdrawal.request_date).toLocaleString('en-RW', { timeZone: 'Africa/Kigali' })}</td>
                           <td>
                             <span className={`status-badge status-${withdrawal.status}`}>
                               {withdrawal.status}
@@ -989,7 +989,7 @@ export default function AdminDashboard() {
                         <tr key={bonus.id}>
                           <td>{bonus.amount} RWF</td>
                           <td>{bonus.description}</td>
-                          <td>{new Date(bonus.created_at).toLocaleString()}</td>
+                          <td>{new Date(bonus.created_at).toLocaleString('en-RW', { timeZone: 'Africa/Kigali' })}</td>
                         </tr>
                       ))}
                     </tbody>
