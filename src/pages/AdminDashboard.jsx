@@ -733,12 +733,14 @@ export default function AdminDashboard() {
             <div className="dashboard-card">
               <h3>💰 Financial Overview</h3>
               {companyAssets ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {/* Assets */}
                   <div className="bg-green-50 p-4 rounded-lg border border-green-200">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm text-green-600 font-medium">Total Transactions</p>
-                        <p className="text-2xl font-bold text-green-800">{companyAssets.totalTransactions || 0} RWF</p>
+                        <p className="text-sm text-green-600 font-medium">Total Assets</p>
+                        <p className="text-2xl font-bold text-green-800">{(companyAssets.assets?.totalAssets || 0).toLocaleString()} RWF</p>
+                        <p className="text-xs text-green-600 mt-1">User balances + Active stakes + Transactions</p>
                       </div>
                       <div className="text-green-500">
                         <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -748,25 +750,65 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  {/* Liabilities */}
+                  <div className="bg-red-50 p-4 rounded-lg border border-red-200">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm text-blue-600 font-medium">Total Savings</p>
-                        <p className="text-2xl font-bold text-blue-800">{companyAssets.totalSavings || 0} RWF</p>
+                        <p className="text-sm text-red-600 font-medium">Total Liabilities</p>
+                        <p className="text-2xl font-bold text-red-800">{(companyAssets.liabilities?.totalLiabilities || 0).toLocaleString()} RWF</p>
+                        <p className="text-xs text-red-600 mt-1">Withdrawals + Bonuses paid</p>
                       </div>
-                      <div className="text-blue-500">
+                      <div className="text-red-500">
                         <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                         </svg>
                       </div>
                     </div>
                   </div>
 
+                  {/* Net Assets */}
+                  <div className={`p-4 rounded-lg border ${companyAssets.netAssets >= 0 ? 'bg-blue-50 border-blue-200' : 'bg-orange-50 border-orange-200'}`}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className={`text-sm font-medium ${companyAssets.netAssets >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>Net Assets</p>
+                        <p className={`text-2xl font-bold ${companyAssets.netAssets >= 0 ? 'text-blue-800' : 'text-orange-800'}`}>
+                          {companyAssets.netAssets?.toLocaleString() || 0} RWF
+                        </p>
+                        <p className={`text-xs mt-1 ${companyAssets.netAssets >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
+                          Assets - Liabilities
+                        </p>
+                      </div>
+                      <div className={companyAssets.netAssets >= 0 ? 'text-blue-500' : 'text-orange-500'}>
+                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* User Balances */}
+                  <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-indigo-600 font-medium">User Balances</p>
+                        <p className="text-2xl font-bold text-indigo-800">{(companyAssets.assets?.totalUserBalances || 0).toLocaleString()} RWF</p>
+                        <p className="text-xs text-indigo-600 mt-1">Approved users' estimated balances</p>
+                      </div>
+                      <div className="text-indigo-500">
+                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Active Stakes */}
                   <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm text-purple-600 font-medium">Total Stakes</p>
-                        <p className="text-2xl font-bold text-purple-800">{companyAssets.totalStakes || 0} RWF</p>
+                        <p className="text-sm text-purple-600 font-medium">Active Stakes</p>
+                        <p className="text-2xl font-bold text-purple-800">{(companyAssets.assets?.totalActiveStakes || 0).toLocaleString()} RWF</p>
+                        <p className="text-xs text-purple-600 mt-1">Money invested in active stakes</p>
                       </div>
                       <div className="text-purple-500">
                         <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -776,15 +818,17 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                  {/* Pending Withdrawals */}
+                  <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm text-orange-600 font-medium">Total Bonuses</p>
-                        <p className="text-2xl font-bold text-orange-800">{companyAssets.totalBonuses || 0} RWF</p>
+                        <p className="text-sm text-yellow-600 font-medium">Pending Withdrawals</p>
+                        <p className="text-2xl font-bold text-yellow-800">{(companyAssets.liabilities?.totalPendingWithdrawals || 0).toLocaleString()} RWF</p>
+                        <p className="text-xs text-yellow-600 mt-1">Outstanding withdrawal requests</p>
                       </div>
-                      <div className="text-orange-500">
+                      <div className="text-yellow-500">
                         <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
                     </div>
@@ -802,12 +846,13 @@ export default function AdminDashboard() {
             <div className="dashboard-card">
               <h3>👥 User Statistics</h3>
               {companyAssets ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-200">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm text-indigo-600 font-medium">Total Users</p>
-                        <p className="text-2xl font-bold text-indigo-800">{companyAssets.totalUsers || 0}</p>
+                        <p className="text-2xl font-bold text-indigo-800">{companyAssets.users?.totalUsers || 0}</p>
+                        <p className="text-xs text-indigo-600 mt-1">All registered users</p>
                       </div>
                       <div className="text-indigo-500">
                         <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -821,10 +866,10 @@ export default function AdminDashboard() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm text-teal-600 font-medium">Approved Users</p>
-                        <p className="text-2xl font-bold text-teal-800">{companyAssets.approvedUsers || 0}</p>
+                        <p className="text-2xl font-bold text-teal-800">{companyAssets.users?.approvedUsers || 0}</p>
                         <p className="text-xs text-teal-600 mt-1">
-                          {companyAssets.totalUsers > 0
-                            ? `${Math.round((companyAssets.approvedUsers / companyAssets.totalUsers) * 100)}% approval rate`
+                          {companyAssets.users?.totalUsers > 0
+                            ? `${Math.round((companyAssets.users.approvedUsers / companyAssets.users.totalUsers) * 100)}% approval rate`
                             : '0% approval rate'
                           }
                         </p>
@@ -832,6 +877,21 @@ export default function AdminDashboard() {
                       <div className="text-teal-500">
                         <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-green-600 font-medium">Active Users</p>
+                        <p className="text-2xl font-bold text-green-800">{companyAssets.users?.activeUsers || 0}</p>
+                        <p className="text-xs text-green-600 mt-1">Users with positive balance</p>
+                      </div>
+                      <div className="text-green-500">
+                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                         </svg>
                       </div>
                     </div>
@@ -847,17 +907,20 @@ export default function AdminDashboard() {
 
             {/* Transaction Summary */}
             <div className="dashboard-card">
-              <h3>📊 Transaction Summary</h3>
+              <h3>📊 Assets & Liabilities Breakdown</h3>
               {companyAssets ? (
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Metric
+                          Category
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Amount (RWF)
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Type
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Status
@@ -865,38 +928,36 @@ export default function AdminDashboard() {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      <tr>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          Approved Transactions
+                      {/* Assets */}
+                      <tr className="bg-green-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-900">
+                          User Balances
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {companyAssets.totalTransactions || 0}
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-green-900 font-semibold">
+                          {(companyAssets.assets?.totalUserBalances || 0).toLocaleString()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                            Active
+                            Asset
                           </span>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          Savings Deposits
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {companyAssets.totalSavings || 0}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                            Growing
+                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                            Available
                           </span>
                         </td>
                       </tr>
-                      <tr>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          Investment Stakes
+                      <tr className="bg-green-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-900">
+                          Active Stakes
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {companyAssets.totalStakes || 0}
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-green-900 font-semibold">
+                          {(companyAssets.assets?.totalActiveStakes || 0).toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                            Asset
+                          </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
@@ -904,29 +965,97 @@ export default function AdminDashboard() {
                           </span>
                         </td>
                       </tr>
-                      <tr>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          Processed Withdrawals
+                      <tr className="bg-green-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-900">
+                          Approved Transactions
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {companyAssets.totalWithdrawals || 0}
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-green-900 font-semibold">
+                          {(companyAssets.assets?.totalApprovedTransactions || 0).toLocaleString()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">
-                            Completed
+                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                            Asset
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                            Processed
                           </span>
                         </td>
                       </tr>
-                      <tr>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          Referral Bonuses
+
+                      {/* Liabilities */}
+                      <tr className="bg-red-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-900">
+                          Approved Withdrawals
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {companyAssets.totalBonuses || 0}
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-red-900 font-semibold">
+                          {(companyAssets.liabilities?.totalApprovedWithdrawals || 0).toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                            Liability
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">
+                            Paid
+                          </span>
+                        </td>
+                      </tr>
+                      <tr className="bg-red-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-900">
+                          Pending Withdrawals
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-red-900 font-semibold">
+                          {(companyAssets.liabilities?.totalPendingWithdrawals || 0).toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                            Liability
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                            Pending
+                          </span>
+                        </td>
+                      </tr>
+                      <tr className="bg-red-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-900">
+                          Bonuses Paid
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-red-900 font-semibold">
+                          {(companyAssets.liabilities?.totalBonuses || 0).toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                            Liability
+                          </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
                             Paid
+                          </span>
+                        </td>
+                      </tr>
+
+                      {/* Summary */}
+                      <tr className="bg-gray-100 font-semibold">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
+                          NET POSITION
+                        </td>
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm font-bold ${companyAssets.netAssets >= 0 ? 'text-green-800' : 'text-red-800'}`}>
+                          {companyAssets.netAssets?.toLocaleString() || 0}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${companyAssets.netAssets >= 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                            {companyAssets.netAssets >= 0 ? 'Surplus' : 'Deficit'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                            Current
                           </span>
                         </td>
                       </tr>
@@ -945,21 +1074,52 @@ export default function AdminDashboard() {
             <div className="dashboard-card">
               <h3>🏦 Net Asset Position</h3>
               {companyAssets ? (
-                <div className="bg-gradient-to-r from-green-50 to-blue-50 p-6 rounded-lg border border-green-200">
+                <div className={`p-6 rounded-lg border ${companyAssets.netAssets >= 0 ? 'bg-gradient-to-r from-green-50 to-blue-50 border-green-200' : 'bg-gradient-to-r from-red-50 to-orange-50 border-red-200'}`}>
                   <div className="text-center">
-                    <div className="text-3xl font-bold text-green-800 mb-2">
-                      {((companyAssets.totalTransactions || 0) +
-                        (companyAssets.totalSavings || 0) +
-                        (companyAssets.totalStakes || 0) -
-                        (companyAssets.totalWithdrawals || 0)).toLocaleString()} RWF
+                    <div className={`text-3xl font-bold mb-2 ${companyAssets.netAssets >= 0 ? 'text-green-800' : 'text-red-800'}`}>
+                      {companyAssets.netAssets?.toLocaleString() || 0} RWF
                     </div>
-                    <p className="text-green-600 font-medium">Total Company Assets</p>
+                    <p className={`font-medium ${companyAssets.netAssets >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {companyAssets.netAssets >= 0 ? 'Positive Net Assets' : 'Negative Net Assets'}
+                    </p>
+
+                    {/* Asset to Liability Ratio */}
+                    <div className="mt-4 p-3 bg-white bg-opacity-50 rounded-lg">
+                      <p className="text-sm text-gray-700">
+                        <span className="font-semibold">Asset-to-Liability Ratio:</span> {companyAssets.summary?.assetToLiabilityRatio || 'N/A'}
+                      </p>
+                      <p className="text-xs text-gray-600 mt-1">
+                        {companyAssets.summary?.assetToLiabilityRatio !== 'N/A' && parseFloat(companyAssets.summary.assetToLiabilityRatio) >= 1
+                          ? 'Healthy financial position (Assets ≥ Liabilities)'
+                          : 'Monitor financial position closely'
+                        }
+                      </p>
+                    </div>
+
                     <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
                       <div className="text-green-700">
-                        <span className="font-semibold">Inflows:</span> {((companyAssets.totalTransactions || 0) + (companyAssets.totalSavings || 0) + (companyAssets.totalStakes || 0)).toLocaleString()} RWF
+                        <span className="font-semibold">Total Assets:</span><br />
+                        {(companyAssets.assets?.totalAssets || 0).toLocaleString()} RWF
                       </div>
                       <div className="text-red-600">
-                        <span className="font-semibold">Outflows:</span> {(companyAssets.totalWithdrawals || 0).toLocaleString()} RWF
+                        <span className="font-semibold">Total Liabilities:</span><br />
+                        {(companyAssets.liabilities?.totalLiabilities || 0).toLocaleString()} RWF
+                      </div>
+                    </div>
+
+                    {/* Key Metrics */}
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                      <div className="bg-white bg-opacity-50 p-2 rounded">
+                        <span className="font-semibold text-indigo-700">User Balances:</span><br />
+                        {(companyAssets.assets?.totalUserBalances || 0).toLocaleString()} RWF
+                      </div>
+                      <div className="bg-white bg-opacity-50 p-2 rounded">
+                        <span className="font-semibold text-purple-700">Active Stakes:</span><br />
+                        {(companyAssets.assets?.totalActiveStakes || 0).toLocaleString()} RWF
+                      </div>
+                      <div className="bg-white bg-opacity-50 p-2 rounded">
+                        <span className="font-semibold text-yellow-700">Pending Withdrawals:</span><br />
+                        {(companyAssets.liabilities?.totalPendingWithdrawals || 0).toLocaleString()} RWF
                       </div>
                     </div>
                   </div>

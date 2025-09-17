@@ -343,33 +343,105 @@ router.get('/users/:id/messages', adminMiddleware, async (req, res) => {
   }
 });
 
-// Company assets
+// Company assets calculation
 router.get('/company-assets', adminMiddleware, async (req, res) => {
   try {
+    // Calculate various asset components
     const queries = [
-      query(`SELECT SUM(amount) as totalTransactions FROM transactions WHERE status = 'approved'`),
-      query(`SELECT SUM(amount) as totalSavings FROM transactions WHERE status = 'approved' AND type = 'saving'`),
-      query(`SELECT SUM(amount) as totalStakes FROM stakes`),
-      query(`SELECT SUM(amount) as totalWithdrawals FROM withdrawals WHERE status = 'approved'`),
-      query(`SELECT SUM(amount) as totalBonuses FROM bonuses`),
+      // Total user balances (assets)
+      query(`SELECT COALESCE(SUM(estimated_balance), 0) as totalUserBalances FROM users WHERE status = 'approved'`),
+
+      // Total active stakes (assets - money invested by users)
+      query(`SELECT COALESCE(SUM(amount), 0) as totalActiveStakes FROM stakes WHERE status = 'active'`),
+
+      // Total approved transactions (deposits/investments)
+      query(`SELECT COALESCE(SUM(amount), 0) as totalApprovedTransactions FROM transactions WHERE status = 'approved'`),
+
+      // Total approved withdrawals (liabilities - money owed to users)
+      query(`SELECT COALESCE(SUM(amount), 0) as totalApprovedWithdrawals FROM withdrawals WHERE status = 'approved'`),
+
+      // Total pending withdrawals (liabilities - money that will be paid out)
+      query(`SELECT COALESCE(SUM(amount), 0) as totalPendingWithdrawals FROM withdrawals WHERE status = 'pending'`),
+
+      // Total bonuses paid (liabilities)
+      query(`SELECT COALESCE(SUM(amount), 0) as totalBonuses FROM bonuses`),
+
+      // User statistics
       query(`SELECT COUNT(*) as totalUsers FROM users`),
       query(`SELECT COUNT(*) as approvedUsers FROM users WHERE status = 'approved'`),
+      query(`SELECT COUNT(*) as activeUsers FROM users WHERE status = 'approved' AND estimated_balance > 0`),
+
+      // Transaction statistics
+      query(`SELECT COUNT(*) as totalTransactions FROM transactions`),
+      query(`SELECT COUNT(*) as approvedTransactions FROM transactions WHERE status = 'approved'`),
+      query(`SELECT COUNT(*) as pendingTransactions FROM transactions WHERE status = 'pending'`),
     ];
 
     const results = await Promise.all(queries);
 
+    // Extract values from results
+    const totalUserBalances = parseFloat(results[0].rows[0].totalUserBalances) || 0;
+    const totalActiveStakes = parseFloat(results[1].rows[0].totalActiveStakes) || 0;
+    const totalApprovedTransactions = parseFloat(results[2].rows[0].totalApprovedTransactions) || 0;
+    const totalApprovedWithdrawals = parseFloat(results[3].rows[0].totalApprovedWithdrawals) || 0;
+    const totalPendingWithdrawals = parseFloat(results[4].rows[0].totalPendingWithdrawals) || 0;
+    const totalBonuses = parseFloat(results[5].rows[0].totalBonuses) || 0;
+
+    // Calculate company assets
+    // Assets = User balances + Active stakes + Approved transactions
+    const totalAssets = totalUserBalances + totalActiveStakes + totalApprovedTransactions;
+
+    // Liabilities = Approved withdrawals + Pending withdrawals + Bonuses paid
+    const totalLiabilities = totalApprovedWithdrawals + totalPendingWithdrawals + totalBonuses;
+
+    // Net assets = Assets - Liabilities
+    const netAssets = totalAssets - totalLiabilities;
+
     res.json({
-      totalTransactions: results[0].rows[0].totalTransactions || 0,
-      totalSavings: results[1].rows[0].totalSavings || 0,
-      totalStakes: results[2].rows[0].totalStakes || 0,
-      totalWithdrawals: results[3].rows[0].totalWithdrawals || 0,
-      totalBonuses: results[4].rows[0].totalBonuses || 0,
-      totalUsers: results[5].rows[0].totalUsers || 0,
-      approvedUsers: results[6].rows[0].approvedUsers || 0,
+      // Asset breakdown
+      assets: {
+        totalUserBalances,
+        totalActiveStakes,
+        totalApprovedTransactions,
+        totalAssets
+      },
+
+      // Liability breakdown
+      liabilities: {
+        totalApprovedWithdrawals,
+        totalPendingWithdrawals,
+        totalBonuses,
+        totalLiabilities
+      },
+
+      // Net position
+      netAssets,
+
+      // User statistics
+      users: {
+        totalUsers: results[6].rows[0].totalUsers || 0,
+        approvedUsers: results[7].rows[0].approvedUsers || 0,
+        activeUsers: results[8].rows[0].activeUsers || 0
+      },
+
+      // Transaction statistics
+      transactions: {
+        totalTransactions: results[9].rows[0].totalTransactions || 0,
+        approvedTransactions: results[10].rows[0].approvedTransactions || 0,
+        pendingTransactions: results[11].rows[0].pendingTransactions || 0
+      },
+
+      // Summary
+      summary: {
+        totalAssets,
+        totalLiabilities,
+        netAssets,
+        assetToLiabilityRatio: totalLiabilities > 0 ? (totalAssets / totalLiabilities).toFixed(2) : 'N/A'
+      }
     });
   } catch (err) {
-    console.error('Failed to get company assets:', err);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Failed to calculate company assets:', err);
+    res.status(500).json({ message: 'Server error calculating company assets' });
   }
 });
 
