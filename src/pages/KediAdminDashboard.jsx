@@ -55,6 +55,8 @@ const KediAdminDashboard = () => {
     status: 'all'
   });
 
+  const [userSearchTerm, setUserSearchTerm] = useState('');
+
   // Form states
   const [newsForm, setNewsForm] = useState({
     title: '',
@@ -239,6 +241,21 @@ const KediAdminDashboard = () => {
       </span>
     );
   };
+
+  // Filter users based on search term
+  const filteredUsers = allUsers.filter(user => {
+    if (!userSearchTerm) return true;
+
+    const searchLower = userSearchTerm.toLowerCase();
+    return (
+      user.firstname?.toLowerCase().includes(searchLower) ||
+      user.lastname?.toLowerCase().includes(searchLower) ||
+      user.email?.toLowerCase().includes(searchLower) ||
+      user.phone?.toLowerCase().includes(searchLower) ||
+      user.idNumber?.toLowerCase().includes(searchLower) ||
+      user.id?.toString().includes(searchLower)
+    );
+  });
 
   return (
     <div>
@@ -520,13 +537,33 @@ const KediAdminDashboard = () => {
                 </div>
               </div>
 
+              {/* Search and Filter */}
+              <div className="mb-4">
+                <div className="flex items-center space-x-4">
+                  <div className="flex-1">
+                    <input
+                      type="text"
+                      placeholder="Search by name, email, phone, or ID number..."
+                      value={userSearchTerm}
+                      onChange={(e) => setUserSearchTerm(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    {filteredUsers.length} of {allUsers.length} users
+                  </div>
+                </div>
+              </div>
+
               <div className="table-container">
                 <table className="data-table">
                   <thead>
                     <tr>
+                      <th>ID</th>
                       <th>Name</th>
                       <th>Email</th>
                       <th>Phone</th>
+                      <th>ID Number</th>
                       <th>Status</th>
                       <th>Role</th>
                       <th>Balance</th>
@@ -534,13 +571,19 @@ const KediAdminDashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {allUsers.map((user) => (
+                    {filteredUsers.map((user) => (
                       <tr key={user.id}>
+                        <td className="font-medium text-gray-600">
+                          {user.id}
+                        </td>
                         <td className="font-medium">
                           {user.firstname} {user.lastname}
                         </td>
                         <td>{user.email}</td>
                         <td>{user.phone || 'N/A'}</td>
+                        <td className="font-mono text-sm">
+                          {user.idNumber || 'N/A'}
+                        </td>
                         <td>{getStatusBadge(user.status)}</td>
                         <td>
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -585,9 +628,13 @@ const KediAdminDashboard = () => {
                     ))}
                   </tbody>
                 </table>
-                {allUsers.length === 0 && (
+                {allUsers.length === 0 ? (
                   <p className="text-center text-gray-500 py-8">No users found</p>
-                )}
+                ) : filteredUsers.length === 0 ? (
+                  <p className="text-center text-gray-500 py-8">
+                    No users match your search criteria: "{userSearchTerm}"
+                  </p>
+                ) : null}
               </div>
             </div>
           </div>
@@ -1088,7 +1135,11 @@ const KediAdminDashboard = () => {
                         </div>
                         <div className="flex justify-between">
                           <span className="font-medium text-gray-600">ID Number:</span>
-                          <span>{allUsers[0]?.idNumber || 'N/A'}</span>
+                          <span className="font-mono text-sm">{allUsers[0]?.idNumber || 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium text-gray-600">User ID:</span>
+                          <span className="font-mono text-sm">{allUsers[0]?.id}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="font-medium text-gray-600">Referral ID:</span>
