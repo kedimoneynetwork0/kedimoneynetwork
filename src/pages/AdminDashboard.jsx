@@ -728,48 +728,249 @@ export default function AdminDashboard() {
 
         {/* Company Assets Tab */}
         {activeTab === 'assets' && (
-          <div className="dashboard-card">
-            <h3>Company Assets</h3>
-            {companyAssets ? (
-              <div className="table-container">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Metric</th>
-                      <th>Value</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td>Total Approved Transactions</td>
-                      <td>{companyAssets.totalTransactions} RWF</td>
-                    </tr>
-                    <tr>
-                      <td>Total Stakes</td>
-                      <td>{companyAssets.totalStakes} RWF</td>
-                    </tr>
-                    <tr>
-                      <td>Total Withdrawals</td>
-                      <td>{companyAssets.totalWithdrawals} RWF</td>
-                    </tr>
-                    <tr>
-                      <td>Total Bonuses</td>
-                      <td>{companyAssets.totalBonuses} RWF</td>
-                    </tr>
-                    <tr>
-                      <td>Total Users</td>
-                      <td>{companyAssets.totalUsers}</td>
-                    </tr>
-                    <tr>
-                      <td>Approved Users</td>
-                      <td>{companyAssets.approvedUsers}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <p className="text-center">Loading company assets...</p>
-            )}
+          <div className="dashboard-grid">
+            {/* Financial Overview */}
+            <div className="dashboard-card">
+              <h3>💰 Financial Overview</h3>
+              {companyAssets ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-green-600 font-medium">Total Transactions</p>
+                        <p className="text-2xl font-bold text-green-800">{companyAssets.totalTransactions || 0} RWF</p>
+                      </div>
+                      <div className="text-green-500">
+                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-blue-600 font-medium">Total Savings</p>
+                        <p className="text-2xl font-bold text-blue-800">{companyAssets.totalSavings || 0} RWF</p>
+                      </div>
+                      <div className="text-blue-500">
+                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-purple-600 font-medium">Total Stakes</p>
+                        <p className="text-2xl font-bold text-purple-800">{companyAssets.totalStakes || 0} RWF</p>
+                      </div>
+                      <div className="text-purple-500">
+                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-orange-600 font-medium">Total Bonuses</p>
+                        <p className="text-2xl font-bold text-orange-800">{companyAssets.totalBonuses || 0} RWF</p>
+                      </div>
+                      <div className="text-orange-500">
+                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+                  <p className="text-gray-600 mt-4">Loading financial data...</p>
+                </div>
+              )}
+            </div>
+
+            {/* User Statistics */}
+            <div className="dashboard-card">
+              <h3>👥 User Statistics</h3>
+              {companyAssets ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-indigo-600 font-medium">Total Users</p>
+                        <p className="text-2xl font-bold text-indigo-800">{companyAssets.totalUsers || 0}</p>
+                      </div>
+                      <div className="text-indigo-500">
+                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-teal-50 p-4 rounded-lg border border-teal-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-teal-600 font-medium">Approved Users</p>
+                        <p className="text-2xl font-bold text-teal-800">{companyAssets.approvedUsers || 0}</p>
+                        <p className="text-xs text-teal-600 mt-1">
+                          {companyAssets.totalUsers > 0
+                            ? `${Math.round((companyAssets.approvedUsers / companyAssets.totalUsers) * 100)}% approval rate`
+                            : '0% approval rate'
+                          }
+                        </p>
+                      </div>
+                      <div className="text-teal-500">
+                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+                  <p className="text-gray-600 mt-4">Loading user statistics...</p>
+                </div>
+              )}
+            </div>
+
+            {/* Transaction Summary */}
+            <div className="dashboard-card">
+              <h3>📊 Transaction Summary</h3>
+              {companyAssets ? (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Metric
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Amount (RWF)
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      <tr>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          Approved Transactions
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {companyAssets.totalTransactions || 0}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                            Active
+                          </span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          Savings Deposits
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {companyAssets.totalSavings || 0}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                            Growing
+                          </span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          Investment Stakes
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {companyAssets.totalStakes || 0}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+                            Invested
+                          </span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          Processed Withdrawals
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {companyAssets.totalWithdrawals || 0}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">
+                            Completed
+                          </span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          Referral Bonuses
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {companyAssets.totalBonuses || 0}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                            Paid
+                          </span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-600 mx-auto"></div>
+                  <p className="text-gray-600 mt-4">Loading transaction summary...</p>
+                </div>
+              )}
+            </div>
+
+            {/* Net Asset Position */}
+            <div className="dashboard-card">
+              <h3>🏦 Net Asset Position</h3>
+              {companyAssets ? (
+                <div className="bg-gradient-to-r from-green-50 to-blue-50 p-6 rounded-lg border border-green-200">
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-green-800 mb-2">
+                      {((companyAssets.totalTransactions || 0) +
+                        (companyAssets.totalSavings || 0) +
+                        (companyAssets.totalStakes || 0) -
+                        (companyAssets.totalWithdrawals || 0)).toLocaleString()} RWF
+                    </div>
+                    <p className="text-green-600 font-medium">Total Company Assets</p>
+                    <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
+                      <div className="text-green-700">
+                        <span className="font-semibold">Inflows:</span> {((companyAssets.totalTransactions || 0) + (companyAssets.totalSavings || 0) + (companyAssets.totalStakes || 0)).toLocaleString()} RWF
+                      </div>
+                      <div className="text-red-600">
+                        <span className="font-semibold">Outflows:</span> {(companyAssets.totalWithdrawals || 0).toLocaleString()} RWF
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+                  <p className="text-gray-600 mt-4">Calculating net position...</p>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
