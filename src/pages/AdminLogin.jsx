@@ -30,7 +30,7 @@ export default function AdminLogin() {
       const res = await adminLogin({ email, password }); // Use the API module function
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('role', 'admin');
-      navigate('/admin-dashboard');
+      navigate('/kedi-admin-dashboard'); // Redirect to enhanced admin dashboard with revenue analytics
     } catch (err) {
       setError(err.response?.data?.message || 'Invalid credentials');
     }

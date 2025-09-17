@@ -30,7 +30,13 @@ export default function Login() {
       const res = await login({ email, password }); // Use the API module function
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('role', res.data.role);
-      navigate(res.data.role === 'admin' ? '/admin-dashboard' : '/user-dashboard');
+
+      // Redirect to enhanced dashboards with database calculations
+      if (res.data.role === 'admin') {
+        navigate('/kedi-admin-dashboard'); // Enhanced admin dashboard with revenue analytics
+      } else {
+        navigate('/kedi-user-dashboard'); // Enhanced user dashboard with real-time calculations
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed');
     }
