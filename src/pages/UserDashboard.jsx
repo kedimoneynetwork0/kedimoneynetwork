@@ -188,9 +188,9 @@ export default function UserDashboard() {
         balance += stake.amount; // Principal amount
 
         // Calculate interest for matured stakes
-        const currentDate = new Date();
-        const endDate = new Date(stake.end_date);
-        if (currentDate >= endDate) {
+        const currentDate = new Date().toLocaleString('en-RW', { timeZone: 'Africa/Kigali' });
+        const endDate = new Date(stake.end_date).toLocaleString('en-RW', { timeZone: 'Africa/Kigali' });
+        if (new Date(currentDate) >= new Date(endDate)) {
           const interest = stake.amount * stake.interest_rate;
           balance += interest;
         }
@@ -209,9 +209,9 @@ export default function UserDashboard() {
 
   // Filter stakes that can be withdrawn (matured and not yet withdrawn)
   const withdrawableStakes = stakes.filter(stake => {
-    const currentDate = new Date();
-    const endDate = new Date(stake.end_date);
-    return currentDate >= endDate && stake.status === 'active';
+    const currentDate = new Date().toLocaleString('en-RW', { timeZone: 'Africa/Kigali' });
+    const endDate = new Date(stake.end_date).toLocaleString('en-RW', { timeZone: 'Africa/Kigali' });
+    return new Date(currentDate) >= new Date(endDate) && stake.status === 'active';
   });
 
   return (
@@ -494,8 +494,8 @@ export default function UserDashboard() {
                         <td>{stake.amount} RWF</td>
                         <td>{stake.stake_period} days</td>
                         <td>{(stake.interest_rate * 100)}%</td>
-                        <td>{new Date(stake.start_date).toLocaleDateString()}</td>
-                        <td>{new Date(stake.end_date).toLocaleDateString()}</td>
+                        <td>{new Date(stake.start_date).toLocaleDateString('en-RW', { timeZone: 'Africa/Kigali' })}</td>
+                        <td>{new Date(stake.end_date).toLocaleDateString('en-RW', { timeZone: 'Africa/Kigali' })}</td>
                         <td>
                           <span className={`status-badge status-${stake.status}`}>
                             {stake.status}
@@ -526,7 +526,7 @@ export default function UserDashboard() {
                     <option value="">Select a stake</option>
                     {withdrawableStakes.map((stake) => (
                       <option key={stake.id} value={stake.id}>
-                        {stake.amount} RWF - {stake.stake_period} days (Ends {new Date(stake.end_date).toLocaleDateString()})
+                        {stake.amount} RWF - {stake.stake_period} days (Ends {new Date(stake.end_date).toLocaleDateString('en-RW', { timeZone: 'Africa/Kigali' })})
                       </option>
                     ))}
                   </select>
@@ -553,7 +553,7 @@ export default function UserDashboard() {
                     {withdrawals.map((withdrawal) => (
                       <tr key={withdrawal.id}>
                         <td>{withdrawal.amount} RWF</td>
-                        <td>{new Date(withdrawal.request_date).toLocaleDateString()}</td>
+                        <td>{new Date(withdrawal.request_date).toLocaleDateString('en-RW', { timeZone: 'Africa/Kigali' })}</td>
                         <td>
                           <span className={`status-badge status-${withdrawal.status}`}>
                             {withdrawal.status}
@@ -595,7 +595,7 @@ export default function UserDashboard() {
                           {txn.status}
                         </span>
                       </td>
-                      <td>{new Date(txn.created_at).toLocaleString()}</td>
+                      <td>{new Date(txn.created_at).toLocaleString('en-RW', { timeZone: 'Africa/Kigali' })}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -662,7 +662,7 @@ export default function UserDashboard() {
                         <div>
                           <h4 style={{ margin: '0 0 5px 0', color: '#28a745' }}>{msg.subject}</h4>
                           <small style={{ color: '#6c757d' }}>
-                            From: {msg.admin_firstname} {msg.admin_lastname} • {new Date(msg.created_at).toLocaleString()}
+                            From: {msg.admin_firstname} {msg.admin_lastname} • {new Date(msg.created_at).toLocaleString('en-RW', { timeZone: 'Africa/Kigali' })}
                           </small>
                         </div>
                         {!msg.is_read && (

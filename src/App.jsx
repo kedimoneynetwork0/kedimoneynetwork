@@ -7,6 +7,7 @@ import UserDashboard from './pages/UserDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import UserProfile from './pages/UserProfile';
 import AdminLogin from './pages/AdminLogin';
+import NewsDetail from './pages/NewsDetail';
 import ErrorBoundary from './components/ErrorBoundary';
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/admin-login" element={<AdminLogin />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/news/:id" element={<NewsDetail />} />
 
           {/* Protected routes */}
           {token && role === 'user' && (
