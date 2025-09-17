@@ -2,23 +2,24 @@
 
 /**
  * Calculate user balance from transactions and stakes
- * Balance = (Total Deposits + Total Referral Bonus + Total Stakes Interest) - (Total Withdrawals + Loan Repayments)
+ * Balance = Total Interest + Total Saving + Tree Plan
  */
 export const calculateBalance = (transactions = [], stakes = [], referralBonus = 0) => {
-  // Use the improved deposit calculation logic
-  const totalDeposits = calculateTotalDeposits(transactions);
-  const totalWithdrawals = calculateTotalWithdrawals(transactions);
+  // Calculate total interest from active stakes
+  const totalInterest = calculateStakesInterest(stakes);
 
-  // Calculate loan repayments (separate from withdrawals)
-  const totalLoanRepayments = transactions
-    .filter(txn => txn.status === 'approved' && txn.type === 'loan')
+  // Calculate total savings (approved saving transactions)
+  const totalSaving = transactions
+    .filter(txn => txn.status === 'approved' && txn.type === 'saving')
     .reduce((total, txn) => total + (txn.amount || 0), 0);
 
-  // Calculate stakes interest
-  const totalStakesInterest = calculateStakesInterest(stakes);
+  // Calculate total tree plan (approved tree_plan transactions)
+  const totalTreePlan = transactions
+    .filter(txn => txn.status === 'approved' && txn.type === 'tree_plan')
+    .reduce((total, txn) => total + (txn.amount || 0), 0);
 
-  // Balance calculation: Deposits + Referral Bonus + Stakes Interest - Withdrawals - Loan Repayments
-  const balance = totalDeposits + referralBonus + totalStakesInterest - totalWithdrawals - totalLoanRepayments;
+  // Balance calculation: Total Interest + Total Saving + Tree Plan
+  const balance = totalInterest + totalSaving + totalTreePlan;
 
   return Math.max(0, balance); // Ensure balance doesn't go negative
 };

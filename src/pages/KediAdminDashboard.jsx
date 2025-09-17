@@ -508,6 +508,90 @@ const KediAdminDashboard = () => {
           </div>
         )}
 
+        {/* User Management Section */}
+        {currentSection === 'users' && (
+          <div>
+            <div className="dashboard-card">
+              <div className="flex justify-between items-center mb-4">
+                <h3>All Users Management</h3>
+                <div className="text-sm text-gray-600">
+                  Total Users: {allUsers.length} | Approved: {allUsers.filter(u => u.status === 'approved').length}
+                </div>
+              </div>
+
+              <div className="table-container">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Email</th>
+                      <th>Phone</th>
+                      <th>Status</th>
+                      <th>Role</th>
+                      <th>Balance</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {allUsers.map((user) => (
+                      <tr key={user.id}>
+                        <td className="font-medium">
+                          {user.firstname} {user.lastname}
+                        </td>
+                        <td>{user.email}</td>
+                        <td>{user.phone || 'N/A'}</td>
+                        <td>{getStatusBadge(user.status)}</td>
+                        <td>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+                          }`}>
+                            {user.role || 'user'}
+                          </span>
+                        </td>
+                        <td className="font-medium text-green-600">
+                          {formatCurrency(user.estimated_balance || 0)} RWF
+                        </td>
+                        <td>
+                          <div className="flex space-x-2">
+                            {user.status === 'pending' && (
+                              <>
+                                <button
+                                  onClick={() => handleApproveUser(user.id, true)}
+                                  className="action-button"
+                                >
+                                  <FaCheck className="mr-1" />
+                                  Approve
+                                </button>
+                                <button
+                                  onClick={() => handleApproveUser(user.id, false)}
+                                  className="danger"
+                                >
+                                  <FaReject className="mr-1" />
+                                  Reject
+                                </button>
+                              </>
+                            )}
+                            <button
+                              onClick={() => showSection('user-details')}
+                              className="action-button secondary"
+                            >
+                              <FaEye className="mr-1" />
+                              View Details
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {allUsers.length === 0 && (
+                  <p className="text-center text-gray-500 py-8">No users found</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Pending Approvals Section */}
         {currentSection === 'pending' && (
           <div>
@@ -808,6 +892,188 @@ const KediAdminDashboard = () => {
                   )}
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* User Details Section */}
+        {currentSection === 'user-details' && (
+          <div>
+            <div className="dashboard-card">
+              <div className="flex justify-between items-center mb-6">
+                <h3>User Details</h3>
+                <button
+                  onClick={() => showSection('users')}
+                  className="action-button secondary"
+                >
+                  <FaArrowLeft className="mr-2" />
+                  Back to Users
+                </button>
+              </div>
+
+              {allUsers.length > 0 ? (
+                <div className="space-y-6">
+                  {/* User Profile Summary */}
+                  <div className="bg-gray-50 p-6 rounded-lg">
+                    <div className="flex items-center space-x-4 mb-4">
+                      <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                        <span className="text-2xl font-bold text-green-600">
+                          {allUsers[0]?.firstname?.charAt(0)?.toUpperCase() || 'U'}
+                        </span>
+                      </div>
+                      <div>
+                        <h4 className="text-xl font-bold text-gray-800">
+                          {allUsers[0]?.firstname} {allUsers[0]?.lastname}
+                        </h4>
+                        <p className="text-gray-600">{allUsers[0]?.email}</p>
+                        <div className="flex items-center space-x-4 mt-2">
+                          {getStatusBadge(allUsers[0]?.status)}
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            allUsers[0]?.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+                          }`}>
+                            {allUsers[0]?.role || 'user'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* User Stats */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+                      <div className="text-center p-4 bg-white rounded-lg">
+                        <div className="text-2xl font-bold text-green-600">
+                          {formatCurrency(allUsers[0]?.estimated_balance || 0)}
+                        </div>
+                        <div className="text-sm text-gray-600">Balance (RWF)</div>
+                      </div>
+                      <div className="text-center p-4 bg-white rounded-lg">
+                        <div className="text-2xl font-bold text-blue-600">
+                          {allTransactions.filter(t => t.user_id === allUsers[0]?.id).length}
+                        </div>
+                        <div className="text-sm text-gray-600">Transactions</div>
+                      </div>
+                      <div className="text-center p-4 bg-white rounded-lg">
+                        <div className="text-2xl font-bold text-purple-600">
+                          {stakes.filter(s => s.user_id === allUsers[0]?.id).length}
+                        </div>
+                        <div className="text-sm text-gray-600">Active Stakes</div>
+                      </div>
+                      <div className="text-center p-4 bg-white rounded-lg">
+                        <div className="text-2xl font-bold text-orange-600">
+                          {withdrawals.filter(w => w.user_id === allUsers[0]?.id).length}
+                        </div>
+                        <div className="text-sm text-gray-600">Withdrawals</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* User Information */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Basic Information */}
+                    <div className="dashboard-card">
+                      <h4 className="text-lg font-semibold mb-4">Basic Information</h4>
+                      <div className="space-y-3">
+                        <div className="flex justify-between">
+                          <span className="font-medium text-gray-600">Full Name:</span>
+                          <span>{allUsers[0]?.firstname} {allUsers[0]?.lastname}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium text-gray-600">Email:</span>
+                          <span>{allUsers[0]?.email}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium text-gray-600">Phone:</span>
+                          <span>{allUsers[0]?.phone || 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium text-gray-600">ID Number:</span>
+                          <span>{allUsers[0]?.idNumber || 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium text-gray-600">Referral ID:</span>
+                          <span>{allUsers[0]?.referralId || 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium text-gray-600">Registration Date:</span>
+                          <span>{allUsers[0]?.created_at ? new Date(allUsers[0].created_at).toLocaleDateString() : 'N/A'}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Account Status */}
+                    <div className="dashboard-card">
+                      <h4 className="text-lg font-semibold mb-4">Account Status</h4>
+                      <div className="space-y-3">
+                        <div className="flex justify-between">
+                          <span className="font-medium text-gray-600">Status:</span>
+                          <span>{getStatusBadge(allUsers[0]?.status)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium text-gray-600">Role:</span>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            allUsers[0]?.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+                          }`}>
+                            {allUsers[0]?.role || 'user'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium text-gray-600">Current Balance:</span>
+                          <span className="font-semibold text-green-600">
+                            {formatCurrency(allUsers[0]?.estimated_balance || 0)} RWF
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium text-gray-600">Profile Picture:</span>
+                          <span>{allUsers[0]?.profile_picture ? 'Yes' : 'No'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Recent Activity */}
+                  <div className="dashboard-card">
+                    <h4 className="text-lg font-semibold mb-4">Recent Transactions</h4>
+                    <div className="table-container">
+                      <table className="data-table">
+                        <thead>
+                          <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {allTransactions
+                            .filter(t => t.user_id === allUsers[0]?.id)
+                            .slice(0, 5)
+                            .map((txn) => (
+                              <tr key={txn.id}>
+                                <td>{new Date(txn.created_at).toLocaleDateString()}</td>
+                                <td>{txn.type}</td>
+                                <td className="font-medium">{formatCurrency(txn.amount)} RWF</td>
+                                <td>{getStatusBadge(txn.status)}</td>
+                              </tr>
+                            ))}
+                        </tbody>
+                      </table>
+                      {allTransactions.filter(t => t.user_id === allUsers[0]?.id).length === 0 && (
+                        <p className="text-center text-gray-500 py-8">No transactions found for this user</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <FaUser className="text-6xl text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600 text-lg">No user data available</p>
+                  <button
+                    onClick={() => showSection('users')}
+                    className="action-button mt-4"
+                  >
+                    Back to Users List
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -186,6 +186,17 @@ const KediUserDashboard = () => {
       return;
     }
 
+    // Show payment verification popup
+    const userConfirmed = window.confirm(
+      'Nyamuneka banza ugenzure ko wishyuye ukanze *182*8*1*1594092# kuri kivin\n\n' +
+      'Please first check if you have paid by dialing *182*8*1*1594092# on your phone\n\n' +
+      'Click OK to continue with the transaction.'
+    );
+
+    if (!userConfirmed) {
+      return; // User cancelled
+    }
+
     setIsLoading(true);
     setError(null);
 
