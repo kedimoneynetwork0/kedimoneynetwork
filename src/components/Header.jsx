@@ -42,6 +42,21 @@ export default function Header() {
               Ibyerekeye
             </Link>
             <Link
+              to="#news"
+              className="text-white hover:text-green-200 transition duration-200 px-3 py-2 rounded-md hover:bg-white hover:bg-opacity-10"
+              onClick={(e) => {
+                e.preventDefault();
+                const newsSection = document.getElementById('news');
+                if (newsSection) {
+                  newsSection.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                  window.location.href = '/#news';
+                }
+              }}
+            >
+              Amakuru
+            </Link>
+            <Link
               to="/signup"
               className="bg-white text-green-600 hover:bg-green-50 transition duration-200 px-4 py-2 rounded-md font-medium"
             >

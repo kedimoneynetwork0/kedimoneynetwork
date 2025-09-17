@@ -53,7 +53,7 @@ export default function NewsSection() {
   }
 
   return (
-    <section className="news-section py-16 px-4 bg-white">
+    <section id="news" className="news-section py-16 px-4 bg-white">
       <div className="container mx-auto">
         <h2 className="text-3xl md:text-4xl font-bold text-center text-green-800 mb-12">
           Latest News
