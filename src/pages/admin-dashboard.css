@@ -851,3 +851,75 @@ button:hover,
     display: none !important;
   }
 }
+
+/* Custom Modal Styles */
+.modal-overlay {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.payment-modal {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -60%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+/* Hover effects for modal buttons */
+.payment-modal button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.payment-modal button:active {
+  transform: translateY(0);
+}
+
+/* Enhanced card styling for better visual appeal */
+.dashboard-card {
+  transition: all 0.3s ease;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* Loading spinner animation */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive modal adjustments */
+@media (max-width: 640px) {
+  .payment-modal {
+    width: 95% !important;
+    margin: 20px;
+  }
+
+  .payment-modal .modal-footer {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .payment-modal .modal-footer button {
+    width: 100%;
+  }
+}

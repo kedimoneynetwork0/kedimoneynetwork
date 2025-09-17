@@ -47,6 +47,9 @@ const KediUserDashboard = () => {
   const [messages, setMessages] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
+  // Modal states
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+
   // Form states
   const [transactionForm, setTransactionForm] = useState({
     type: '',
@@ -202,17 +205,12 @@ const KediUserDashboard = () => {
       return;
     }
 
-    // Show payment verification popup
-    const userConfirmed = window.confirm(
-      'Nyamuneka banza ugenzure ko wishyuye ukanze *182*8*1*1594092# kuri kivin\n\n' +
-      'Please first check if you have paid by dialing *182*8*1*1594092# on your phone\n\n' +
-      'Click OK to continue with the transaction.'
-    );
+    // Show custom payment verification modal
+    setShowPaymentModal(true);
+  };
 
-    if (!userConfirmed) {
-      return; // User cancelled
-    }
-
+  const handlePaymentConfirm = async () => {
+    setShowPaymentModal(false);
     setIsLoading(true);
     setError(null);
 
@@ -234,6 +232,10 @@ const KediUserDashboard = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handlePaymentCancel = () => {
+    setShowPaymentModal(false);
   };
 
   const handleStakeSubmit = async (e) => {
@@ -1128,6 +1130,238 @@ const KediUserDashboard = () => {
         )}
         </div>
       </div>
+
+      {/* Payment Verification Modal */}
+      {showPaymentModal && (
+        <>
+          {/* Modal Overlay */}
+          <div
+            className="modal-overlay"
+            onClick={handlePaymentCancel}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              backgroundColor: 'rgba(0, 0, 0, 0.6)',
+              zIndex: '1000',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backdropFilter: 'blur(4px)'
+            }}
+          ></div>
+
+          {/* Modal Content */}
+          <div
+            className="payment-modal"
+            style={{
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              zIndex: '1001',
+              backgroundColor: 'white',
+              borderRadius: '16px',
+              boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15), 0 8px 16px rgba(0, 0, 0, 0.1)',
+              maxWidth: '500px',
+              width: '90%',
+              padding: '0',
+              overflow: 'hidden',
+              transition: 'all 0.3s ease'
+            }}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                background: 'linear-gradient(135deg, #2e8b57 0%, #228b22 100%)',
+                color: 'white',
+                padding: '24px',
+                textAlign: 'center'
+              }}
+            >
+              <div style={{ fontSize: '48px', marginBottom: '12px' }}>📱</div>
+              <h3 style={{ margin: '0', fontSize: '24px', fontWeight: '600' }}>
+                Payment Verification Required
+              </h3>
+            </div>
+
+            {/* Modal Body */}
+            <div style={{ padding: '32px 24px' }}>
+              <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+                <p style={{
+                  fontSize: '16px',
+                  color: '#374151',
+                  lineHeight: '1.6',
+                  marginBottom: '16px'
+                }}>
+                  <strong style={{ color: '#2e8b57' }}>
+                    Nyamuneka banza ugenzure ko wishyuye ukanze *182*8*1*1594092# kuri kivin
+                  </strong>
+                </p>
+
+                <div style={{
+                  backgroundColor: '#f3f4f6',
+                  borderRadius: '12px',
+                  padding: '20px',
+                  marginBottom: '20px',
+                  border: '2px solid #e5e7eb'
+                }}>
+                  <p style={{
+                    fontSize: '18px',
+                    fontWeight: 'bold',
+                    color: '#1f2937',
+                    margin: '0',
+                    fontFamily: 'monospace'
+                  }}>
+                    *182*8*1*1594092#
+                  </p>
+                  <p style={{
+                    fontSize: '14px',
+                    color: '#6b7280',
+                    margin: '8px 0 0 0'
+                  }}>
+                    Dial this code on your phone to verify payment
+                  </p>
+                </div>
+
+                <p style={{
+                  fontSize: '14px',
+                  color: '#6b7280',
+                  lineHeight: '1.5'
+                }}>
+                  Please verify your payment by dialing the code above on your mobile phone.
+                  Once confirmed, click "Continue with Transaction" to proceed.
+                </p>
+              </div>
+
+              {/* Transaction Summary */}
+              <div style={{
+                backgroundColor: '#f8fafc',
+                borderRadius: '12px',
+                padding: '20px',
+                marginBottom: '24px',
+                border: '1px solid #e2e8f0'
+              }}>
+                <h4 style={{
+                  margin: '0 0 16px 0',
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  color: '#1f2937'
+                }}>
+                  Transaction Summary
+                </h4>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <span style={{ color: '#6b7280' }}>Type:</span>
+                  <span style={{ fontWeight: '500' }}>{transactionForm.type}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <span style={{ color: '#6b7280' }}>Amount:</span>
+                  <span style={{ fontWeight: '500' }}>{formatCurrency(transactionForm.amount)} RWF</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#6b7280' }}>Transaction ID:</span>
+                  <span style={{ fontWeight: '500', fontFamily: 'monospace' }}>{transactionForm.txnId}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div style={{
+              padding: '24px',
+              backgroundColor: '#f9fafb',
+              borderTop: '1px solid #e5e7eb',
+              display: 'flex',
+              gap: '12px',
+              justifyContent: 'flex-end'
+            }}>
+              <button
+                onClick={handlePaymentCancel}
+                style={{
+                  padding: '12px 24px',
+                  border: '2px solid #d1d5db',
+                  backgroundColor: 'white',
+                  color: '#6b7280',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.borderColor = '#9ca3af';
+                  e.target.style.color = '#374151';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.borderColor = '#d1d5db';
+                  e.target.style.color = '#6b7280';
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handlePaymentConfirm}
+                disabled={isLoading}
+                style={{
+                  padding: '12px 24px',
+                  border: 'none',
+                  backgroundColor: '#2e8b57',
+                  color: 'white',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: isLoading ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.2s ease',
+                  opacity: isLoading ? 0.7 : 1
+                }}
+                onMouseEnter={(e) => {
+                  if (!isLoading) {
+                    e.target.style.backgroundColor = '#228b22';
+                    e.target.style.transform = 'translateY(-1px)';
+                    e.target.style.boxShadow = '0 4px 12px rgba(46, 139, 87, 0.3)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isLoading) {
+                    e.target.style.backgroundColor = '#2e8b57';
+                    e.target.style.transform = 'translateY(0)';
+                    e.target.style.boxShadow = 'none';
+                  }
+                }}
+              >
+                {isLoading ? (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    <div style={{
+                      width: '16px',
+                      height: '16px',
+                      border: '2px solid #ffffff',
+                      borderTop: '2px solid transparent',
+                      borderRadius: '50%',
+                      animation: 'spin 1s linear infinite'
+                    }}></div>
+                    Processing...
+                  </div>
+                ) : (
+                  'Continue with Transaction'
+                )}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Add CSS animation for spinner */}
+      <style jsx>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 };
