@@ -63,12 +63,28 @@ const KediUserDashboard = () => {
     stakeId: ''
   });
 
+  // Support form state
+  const [supportForm, setSupportForm] = useState({
+    subject: '',
+    message: ''
+  });
+
+  // Profile update form state
+  const [profileForm, setProfileForm] = useState({
+    firstname: '',
+    lastname: '',
+    phone: '',
+    email: ''
+  });
+
   const navigationItems = [
     { id: 'dashboard', label: 'Dashboard', icon: FaTachometerAlt },
     { id: 'transaction', label: 'Make Transaction', icon: FaExchangeAlt },
     { id: 'stake', label: 'Deposit Stake', icon: FaPiggyBank },
     { id: 'history', label: 'Transaction History', icon: FaHistory },
     { id: 'bonus', label: 'Referral Bonus', icon: FaGift },
+    { id: 'inbox', label: 'Inbox', icon: FaUser },
+    { id: 'support', label: 'Support', icon: FaLeaf },
     { id: 'settings', label: 'Settings', icon: FaCog }
   ];
 
@@ -279,6 +295,80 @@ const KediUserDashboard = () => {
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-RW').format(amount);
+  };
+
+  // Support form submission handler
+  const handleSupportSubmit = async (e) => {
+    e.preventDefault();
+    if (!supportForm.subject || !supportForm.message) {
+      setError('Please fill all support fields');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // In a real app, this would send a message to admin
+      // For now, we'll simulate sending a support message
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+
+      // Reset form and show success
+      setSupportForm({ subject: '', message: '' });
+      alert('Support message sent successfully! Our team will respond within 24 hours.');
+
+    } catch (err) {
+      console.error('Support error:', err);
+      setError('Failed to send support message. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Profile update form submission handler
+  const handleProfileUpdate = async (e) => {
+    e.preventDefault();
+    if (!profileForm.firstname || !profileForm.lastname || !profileForm.email) {
+      setError('Please fill all required profile fields');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // In a real app, this would update the user profile
+      // For now, we'll simulate updating the profile
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+
+      // Update local user data
+      setUserData(prev => ({
+        ...prev,
+        name: `${profileForm.firstname} ${profileForm.lastname}`,
+        email: profileForm.email
+      }));
+
+      alert('Profile updated successfully!');
+
+    } catch (err) {
+      console.error('Profile update error:', err);
+      setError('Failed to update profile. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Load profile data into form
+  const loadProfileData = () => {
+    if (userData.name && userData.email) {
+      const nameParts = userData.name.split(' ');
+      setProfileForm({
+        firstname: nameParts[0] || '',
+        lastname: nameParts.slice(1).join(' ') || '',
+        phone: '', // Would come from API
+        email: userData.email
+      });
+    }
   };
 
   const getStatusBadge = (status) => {
@@ -730,17 +820,302 @@ const KediUserDashboard = () => {
           </div>
         )}
 
+        {/* Inbox Section */}
+        {currentSection === 'inbox' && (
+          <div>
+            <div className="dashboard-card">
+              <div className="flex justify-between items-center mb-6">
+                <h3>Messages & Notifications</h3>
+                <div className="text-sm text-gray-600">
+                  {unreadCount > 0 && (
+                    <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium">
+                      {unreadCount} unread
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {/* Sample messages - in real app this would come from API */}
+                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="flex justify-between items-start mb-2">
+                    <h4 className="font-semibold text-blue-800">Welcome to KEDI!</h4>
+                    <span className="text-xs text-gray-500">2 days ago</span>
+                  </div>
+                  <p className="text-blue-700 text-sm">
+                    Welcome to KEDI Business & Agri Funds! Your account has been successfully activated.
+                    You can now start making transactions and earning from our various investment options.
+                  </p>
+                  <div className="mt-2">
+                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                      System Message
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                  <div className="flex justify-between items-start mb-2">
+                    <h4 className="font-semibold text-green-800">Transaction Approved</h4>
+                    <span className="text-xs text-gray-500">1 week ago</span>
+                  </div>
+                  <p className="text-green-700 text-sm">
+                    Your tree planting transaction of 50,000 RWF has been approved and processed.
+                    Your estimated balance has been updated accordingly.
+                  </p>
+                  <div className="mt-2">
+                    <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
+                      Transaction Update
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                  <div className="flex justify-between items-start mb-2">
+                    <h4 className="font-semibold text-yellow-800">Stake Reminder</h4>
+                    <span className="text-xs text-gray-500">2 weeks ago</span>
+                  </div>
+                  <p className="text-yellow-700 text-sm">
+                    Your 90-day stake investment is maturing soon. Consider reinvesting your earnings
+                    for even higher returns with our extended stake options.
+                  </p>
+                  <div className="mt-2">
+                    <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs">
+                      Investment Reminder
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {messages.length === 0 && (
+                <div className="text-center py-12">
+                  <FaUser className="text-6xl text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600 text-lg">No messages yet</p>
+                  <p className="text-gray-500 text-sm">Your messages and notifications will appear here</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Support Section */}
+        {currentSection === 'support' && (
+          <div>
+            <div className="dashboard-grid">
+              {/* Contact Support */}
+              <div className="dashboard-card">
+                <h3>Contact Support</h3>
+                <p className="text-gray-600 mb-4">
+                  Need help? Our support team is here to assist you 24/7.
+                  Send us a message and we'll respond within 24 hours.
+                </p>
+
+                <form onSubmit={handleSupportSubmit}>
+                  <div className="form-group">
+                    <label>Subject *</label>
+                    <input
+                      type="text"
+                      value={supportForm.subject}
+                      onChange={(e) => setSupportForm({...supportForm, subject: e.target.value})}
+                      placeholder="Brief description of your issue"
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Message *</label>
+                    <textarea
+                      value={supportForm.message}
+                      onChange={(e) => setSupportForm({...supportForm, message: e.target.value})}
+                      placeholder="Please describe your issue in detail..."
+                      rows="6"
+                      required
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="action-button"
+                  >
+                    {isLoading ? (
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    ) : (
+                      <FaLeaf className="mr-2" />
+                    )}
+                    Send Support Request
+                  </button>
+                </form>
+              </div>
+
+              {/* Quick Support Options */}
+              <div className="dashboard-card">
+                <h3>Quick Support</h3>
+
+                <div className="space-y-4">
+                  <div className="p-4 bg-blue-50 rounded-lg">
+                    <h4 className="font-semibold text-blue-800 mb-2">📞 Phone Support</h4>
+                    <p className="text-blue-700 text-sm mb-2">
+                      Call our support hotline for immediate assistance
+                    </p>
+                    <p className="font-mono text-blue-800">+250 788 123 456</p>
+                  </div>
+
+                  <div className="p-4 bg-green-50 rounded-lg">
+                    <h4 className="font-semibold text-green-800 mb-2">💬 Live Chat</h4>
+                    <p className="text-green-700 text-sm mb-2">
+                      Chat with our support agents in real-time
+                    </p>
+                    <button className="action-button">
+                      Start Live Chat
+                    </button>
+                  </div>
+
+                  <div className="p-4 bg-purple-50 rounded-lg">
+                    <h4 className="font-semibold text-purple-800 mb-2">📧 Email Support</h4>
+                    <p className="text-purple-700 text-sm mb-2">
+                      Send detailed inquiries to our support team
+                    </p>
+                    <p className="font-mono text-purple-800">support@kedimoney.rw</p>
+                  </div>
+
+                  <div className="p-4 bg-orange-50 rounded-lg">
+                    <h4 className="font-semibold text-orange-800 mb-2">📱 WhatsApp</h4>
+                    <p className="text-orange-700 text-sm mb-2">
+                      Quick support via WhatsApp
+                    </p>
+                    <p className="font-mono text-orange-800">+250 788 123 456</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Settings Section */}
         {currentSection === 'settings' && (
           <div>
-            <div className="dashboard-card text-center">
-              <div className="text-6xl text-gray-400 mb-6">
-                <FaCog />
+            <div className="dashboard-grid">
+              {/* Profile Settings */}
+              <div className="dashboard-card">
+                <h3>Update Profile</h3>
+                <p className="text-gray-600 mb-4">
+                  Keep your profile information up to date for better account management.
+                </p>
+
+                <form onSubmit={handleProfileUpdate}>
+                  <div className="form-group">
+                    <label>First Name *</label>
+                    <input
+                      type="text"
+                      value={profileForm.firstname}
+                      onChange={(e) => setProfileForm({...profileForm, firstname: e.target.value})}
+                      placeholder="Enter your first name"
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Last Name *</label>
+                    <input
+                      type="text"
+                      value={profileForm.lastname}
+                      onChange={(e) => setProfileForm({...profileForm, lastname: e.target.value})}
+                      placeholder="Enter your last name"
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Phone Number</label>
+                    <input
+                      type="tel"
+                      value={profileForm.phone}
+                      onChange={(e) => setProfileForm({...profileForm, phone: e.target.value})}
+                      placeholder="Enter your phone number"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Email Address *</label>
+                    <input
+                      type="email"
+                      value={profileForm.email}
+                      onChange={(e) => setProfileForm({...profileForm, email: e.target.value})}
+                      placeholder="Enter your email address"
+                      required
+                    />
+                  </div>
+
+                  <div className="flex space-x-4">
+                    <button
+                      type="submit"
+                      disabled={isLoading}
+                      className="action-button"
+                    >
+                      {isLoading ? (
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      ) : (
+                        <FaUser className="mr-2" />
+                      )}
+                      Update Profile
+                    </button>
+                    <button
+                      type="button"
+                      onClick={loadProfileData}
+                      className="action-button secondary"
+                    >
+                      Load Current Data
+                    </button>
+                  </div>
+                </form>
               </div>
-              <h3>Account Settings</h3>
-              <p className="text-gray-600">
-                Account settings and preferences will be available here.
-              </p>
+
+              {/* Account Security */}
+              <div className="dashboard-card">
+                <h3>Account Security</h3>
+
+                <div className="space-y-4">
+                  <div className="p-4 bg-blue-50 rounded-lg">
+                    <h4 className="font-semibold text-blue-800 mb-2">🔒 Change Password</h4>
+                    <p className="text-blue-700 text-sm mb-3">
+                      Regularly update your password to keep your account secure.
+                    </p>
+                    <button className="action-button">
+                      Change Password
+                    </button>
+                  </div>
+
+                  <div className="p-4 bg-green-50 rounded-lg">
+                    <h4 className="font-semibold text-green-800 mb-2">📱 Two-Factor Authentication</h4>
+                    <p className="text-green-700 text-sm mb-3">
+                      Add an extra layer of security to your account.
+                    </p>
+                    <button className="action-button">
+                      Enable 2FA
+                    </button>
+                  </div>
+
+                  <div className="p-4 bg-yellow-50 rounded-lg">
+                    <h4 className="font-semibold text-yellow-800 mb-2">🔔 Notification Preferences</h4>
+                    <p className="text-yellow-700 text-sm mb-3">
+                      Choose how you want to receive notifications.
+                    </p>
+                    <button className="action-button">
+                      Manage Notifications
+                    </button>
+                  </div>
+
+                  <div className="p-4 bg-red-50 rounded-lg">
+                    <h4 className="font-semibold text-red-800 mb-2">🚪 Account Deactivation</h4>
+                    <p className="text-red-700 text-sm mb-3">
+                      Temporarily or permanently deactivate your account.
+                    </p>
+                    <button className="action-button danger">
+                      Deactivate Account
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}

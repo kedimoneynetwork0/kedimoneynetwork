@@ -67,6 +67,7 @@ const KediAdminDashboard = () => {
     { id: 'users', label: 'User Management', icon: FaUsers },
     { id: 'pending', label: 'Pending Approvals', icon: FaClock },
     { id: 'transactions', label: 'Transactions', icon: FaExchangeAlt },
+    { id: 'messages', label: 'User Messages', icon: FaUser },
     { id: 'revenue', label: 'Revenue Report', icon: FaChartLine },
     { id: 'announcements', label: 'Announcements', icon: FaBullhorn },
     { id: 'settings', label: 'Settings', icon: FaCog }
@@ -642,6 +643,107 @@ const KediAdminDashboard = () => {
           </div>
         )}
 
+        {/* User Messages Section */}
+        {currentSection === 'messages' && (
+          <div>
+            <div className="dashboard-card">
+              <div className="flex justify-between items-center mb-6">
+                <h3>User Messages & Support Requests</h3>
+                <div className="text-sm text-gray-600">
+                  Manage user inquiries and support requests
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {/* Sample support messages - in real app this would come from API */}
+                <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h4 className="font-semibold text-yellow-800">Transaction Issue - User: john@example.com</h4>
+                      <p className="text-yellow-700 text-sm">Subject: Unable to complete tree planting transaction</p>
+                    </div>
+                    <div className="text-right">
+                      <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium">
+                        Pending Response
+                      </span>
+                      <p className="text-xs text-gray-500 mt-1">2 hours ago</p>
+                    </div>
+                  </div>
+                  <p className="text-yellow-700 text-sm mb-3">
+                    "Hello, I'm having trouble completing my tree planting transaction.
+                    The system shows an error when I try to submit. Can you please help me resolve this issue?"
+                  </p>
+                  <div className="flex space-x-2">
+                    <button className="action-button">
+                      Reply
+                    </button>
+                    <button className="action-button secondary">
+                      Mark as Resolved
+                    </button>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h4 className="font-semibold text-blue-800">Stake Information - User: mary@example.com</h4>
+                      <p className="text-blue-700 text-sm">Subject: Question about stake interest rates</p>
+                    </div>
+                    <div className="text-right">
+                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                        In Progress
+                      </span>
+                      <p className="text-xs text-gray-500 mt-1">1 day ago</p>
+                    </div>
+                  </div>
+                  <p className="text-blue-700 text-sm mb-3">
+                    "Can you explain how the interest rates work for different stake periods?
+                    I'm considering investing in a 180-day stake but want to understand the returns better."
+                  </p>
+                  <div className="flex space-x-2">
+                    <button className="action-button">
+                      Reply
+                    </button>
+                    <button className="action-button secondary">
+                      Mark as Resolved
+                    </button>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h4 className="font-semibold text-green-800">Account Verification - User: peter@example.com</h4>
+                      <p className="text-green-700 text-sm">Subject: Account approval status</p>
+                    </div>
+                    <div className="text-right">
+                      <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
+                        Resolved
+                      </span>
+                      <p className="text-xs text-gray-500 mt-1">3 days ago</p>
+                    </div>
+                  </div>
+                  <p className="text-green-700 text-sm mb-3">
+                    "Thank you for approving my account! I can now access all the features.
+                    Looking forward to starting my investment journey with KEDI."
+                  </p>
+                  <div className="flex space-x-2">
+                    <button className="action-button secondary">
+                      View Conversation
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 text-center">
+                <button className="action-button">
+                  Load More Messages
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Transactions Section */}
         {currentSection === 'transactions' && (
           <div>
@@ -1081,14 +1183,93 @@ const KediAdminDashboard = () => {
         {/* Settings Section */}
         {currentSection === 'settings' && (
           <div>
-            <div className="dashboard-card text-center">
-              <div className="text-6xl text-gray-400 mb-6">
-                <FaCog />
+            <div className="dashboard-grid">
+              {/* Admin Credentials */}
+              <div className="dashboard-card">
+                <h3>Admin Credentials</h3>
+                <p className="text-gray-600 mb-4">
+                  Manage your admin account credentials and security settings.
+                </p>
+
+                <div className="space-y-4">
+                  <div className="p-4 bg-blue-50 rounded-lg">
+                    <h4 className="font-semibold text-blue-800 mb-2">🔑 Change Admin Password</h4>
+                    <p className="text-blue-700 text-sm mb-3">
+                      Update your admin password regularly for security.
+                    </p>
+                    <button className="action-button">
+                      Change Password
+                    </button>
+                  </div>
+
+                  <div className="p-4 bg-green-50 rounded-lg">
+                    <h4 className="font-semibold text-green-800 mb-2">👤 Update Admin Email</h4>
+                    <p className="text-green-700 text-sm mb-3">
+                      Change the admin email address for notifications.
+                    </p>
+                    <button className="action-button">
+                      Update Email
+                    </button>
+                  </div>
+
+                  <div className="p-4 bg-purple-50 rounded-lg">
+                    <h4 className="font-semibold text-purple-800 mb-2">🔐 Two-Factor Authentication</h4>
+                    <p className="text-purple-700 text-sm mb-3">
+                      Enable 2FA for enhanced admin account security.
+                    </p>
+                    <button className="action-button">
+                      Enable 2FA
+                    </button>
+                  </div>
+                </div>
               </div>
-              <h3>Admin Settings</h3>
-              <p className="text-gray-600">
-                System configuration and preferences will be available here.
-              </p>
+
+              {/* System Settings */}
+              <div className="dashboard-card">
+                <h3>System Settings</h3>
+
+                <div className="space-y-4">
+                  <div className="p-4 bg-yellow-50 rounded-lg">
+                    <h4 className="font-semibold text-yellow-800 mb-2">⚙️ System Configuration</h4>
+                    <p className="text-yellow-700 text-sm mb-3">
+                      Configure system-wide settings and preferences.
+                    </p>
+                    <button className="action-button">
+                      System Config
+                    </button>
+                  </div>
+
+                  <div className="p-4 bg-indigo-50 rounded-lg">
+                    <h4 className="font-semibold text-indigo-800 mb-2">📊 Database Management</h4>
+                    <p className="text-indigo-700 text-sm mb-3">
+                      Manage database connections and backups.
+                    </p>
+                    <button className="action-button">
+                      Database Settings
+                    </button>
+                  </div>
+
+                  <div className="p-4 bg-red-50 rounded-lg">
+                    <h4 className="font-semibold text-red-800 mb-2">🚨 Security Settings</h4>
+                    <p className="text-red-700 text-sm mb-3">
+                      Configure security policies and access controls.
+                    </p>
+                    <button className="action-button">
+                      Security Config
+                    </button>
+                  </div>
+
+                  <div className="p-4 bg-teal-50 rounded-lg">
+                    <h4 className="font-semibold text-teal-800 mb-2">📧 Email Configuration</h4>
+                    <p className="text-teal-700 text-sm mb-3">
+                      Set up email templates and SMTP settings.
+                    </p>
+                    <button className="action-button">
+                      Email Settings
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
