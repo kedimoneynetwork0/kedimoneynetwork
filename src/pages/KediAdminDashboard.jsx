@@ -107,18 +107,17 @@ const KediAdminDashboard = () => {
       ]);
 
       // Mock stakes data for calculations (in real app this would come from API)
-      const mockStakesData = [];
 
       // Update stats using calculation functions
       const pendingUsersData = pendingUsersRes.data || [];
       const allUsersData = allUsersRes.data || [];
       const transactionsData = transactionsRes.data || [];
-      const stakesData = stakesRes?.data?.stakes || [];
+      const stakesData = []; // Mock stakes data for calculations (in real app this would come from API)
       const assetsData = assetsRes.data || {};
       const newsData = newsRes.data || [];
 
       // Calculate admin metrics using the calculation functions
-      const adminMetrics = calculateAdminMetrics(allUsersData, transactionsData, mockStakesData);
+      const adminMetrics = calculateAdminMetrics(allUsersData, transactionsData, stakesData);
 
       setStats({
         totalUsers: adminMetrics.totalUsers,
