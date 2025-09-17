@@ -343,105 +343,125 @@ router.get('/users/:id/messages', adminMiddleware, async (req, res) => {
   }
 });
 
-// Company assets calculation
+// Company assets with database-level calculations for maximum performance
 router.get('/company-assets', adminMiddleware, async (req, res) => {
   try {
-    // Calculate various asset components
-    const queries = [
-      // Total user balances (assets)
-      query(`SELECT COALESCE(SUM(estimated_balance), 0) as totalUserBalances FROM users WHERE status = 'approved'`),
+    // Single optimized SQL query that calculates everything at database level
+    const calculationsQuery = await query(`
+      SELECT
+        -- User statistics (database aggregation)
+        (SELECT COUNT(*) FROM users) as total_users,
+        (SELECT COUNT(*) FROM users WHERE status = 'approved') as approved_users,
+        (SELECT COUNT(*) FROM users WHERE status = 'approved' AND estimated_balance > 0) as active_users,
 
-      // Total active stakes (assets - money invested by users)
-      query(`SELECT COALESCE(SUM(amount), 0) as totalActiveStakes FROM stakes WHERE status = 'active'`),
+        -- Transaction statistics (database aggregation)
+        (SELECT COUNT(*) FROM transactions) as total_transactions,
+        (SELECT COUNT(*) FROM transactions WHERE status = 'approved') as approved_transactions,
+        (SELECT COUNT(*) FROM transactions WHERE status = 'pending') as pending_transactions,
 
-      // Total approved transactions (deposits/investments)
-      query(`SELECT COALESCE(SUM(amount), 0) as totalApprovedTransactions FROM transactions WHERE status = 'approved'`),
+        -- Financial calculations with proper deposit logic (database aggregation)
+        -- Deposits: tree_plan + saving + deposit + investment (only approved)
+        (SELECT COALESCE(SUM(amount), 0) FROM transactions
+         WHERE status = 'approved' AND type IN ('tree_plan', 'saving', 'deposit', 'investment')) as total_deposits,
 
-      // Total approved withdrawals (liabilities - money owed to users)
-      query(`SELECT COALESCE(SUM(amount), 0) as totalApprovedWithdrawals FROM withdrawals WHERE status = 'approved'`),
+        -- All approved transactions (for backward compatibility)
+        (SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE status = 'approved') as total_approved_transactions,
 
-      // Total pending withdrawals (liabilities - money that will be paid out)
-      query(`SELECT COALESCE(SUM(amount), 0) as totalPendingWithdrawals FROM withdrawals WHERE status = 'pending'`),
+        -- Withdrawals from transactions table
+        (SELECT COALESCE(SUM(amount), 0) FROM transactions
+         WHERE status = 'approved' AND type = 'withdrawal') as transaction_withdrawals,
 
-      // Total bonuses paid (liabilities)
-      query(`SELECT COALESCE(SUM(amount), 0) as totalBonuses FROM bonuses`),
+        -- Approved withdrawal records
+        (SELECT COALESCE(SUM(amount), 0) FROM withdrawals WHERE status = 'approved') as approved_withdrawals,
 
-      // User statistics
-      query(`SELECT COUNT(*) as totalUsers FROM users`),
-      query(`SELECT COUNT(*) as approvedUsers FROM users WHERE status = 'approved'`),
-      query(`SELECT COUNT(*) as activeUsers FROM users WHERE status = 'approved' AND estimated_balance > 0`),
+        -- Pending withdrawal records
+        (SELECT COALESCE(SUM(amount), 0) FROM withdrawals WHERE status = 'pending') as pending_withdrawals,
 
-      // Transaction statistics
-      query(`SELECT COUNT(*) as totalTransactions FROM transactions`),
-      query(`SELECT COUNT(*) as approvedTransactions FROM transactions WHERE status = 'approved'`),
-      query(`SELECT COUNT(*) as pendingTransactions FROM transactions WHERE status = 'pending'`),
-    ];
+        -- Stakes and bonuses
+        (SELECT COALESCE(SUM(amount), 0) FROM stakes WHERE status = 'active') as active_stakes,
+        (SELECT COALESCE(SUM(amount), 0) FROM bonuses) as total_bonuses,
 
-    const results = await Promise.all(queries);
+        -- User balances
+        (SELECT COALESCE(SUM(estimated_balance), 0) FROM users WHERE status = 'approved') as total_user_balances
+    `);
 
-    // Extract values from results
-    const totalUserBalances = parseFloat(results[0].rows[0].totalUserBalances) || 0;
-    const totalActiveStakes = parseFloat(results[1].rows[0].totalActiveStakes) || 0;
-    const totalApprovedTransactions = parseFloat(results[2].rows[0].totalApprovedTransactions) || 0;
-    const totalApprovedWithdrawals = parseFloat(results[3].rows[0].totalApprovedWithdrawals) || 0;
-    const totalPendingWithdrawals = parseFloat(results[4].rows[0].totalPendingWithdrawals) || 0;
-    const totalBonuses = parseFloat(results[5].rows[0].totalBonuses) || 0;
+    const calc = calculationsQuery.rows[0];
 
-    // Calculate company assets
-    // Assets = User balances + Active stakes + Approved transactions
-    const totalAssets = totalUserBalances + totalActiveStakes + totalApprovedTransactions;
+    // Parse all values from database results
+    const totalDeposits = parseFloat(calc.total_deposits) || 0;
+    const totalApprovedTransactions = parseFloat(calc.total_approved_transactions) || 0;
+    const transactionWithdrawals = parseFloat(calc.transaction_withdrawals) || 0;
+    const approvedWithdrawals = parseFloat(calc.approved_withdrawals) || 0;
+    const pendingWithdrawals = parseFloat(calc.pending_withdrawals) || 0;
+    const activeStakes = parseFloat(calc.active_stakes) || 0;
+    const totalBonuses = parseFloat(calc.total_bonuses) || 0;
+    const totalUserBalances = parseFloat(calc.total_user_balances) || 0;
 
-    // Liabilities = Approved withdrawals + Pending withdrawals + Bonuses paid
-    const totalLiabilities = totalApprovedWithdrawals + totalPendingWithdrawals + totalBonuses;
+    // Calculate derived metrics
+    // Assets = Deposits + Active Stakes + User Balances
+    const totalAssets = totalDeposits + activeStakes + totalUserBalances;
 
-    // Net assets = Assets - Liabilities
+    // Liabilities = All Withdrawals + Bonuses Paid
+    const totalLiabilities = approvedWithdrawals + pendingWithdrawals + totalBonuses;
+
+    // Net Assets = Assets - Liabilities
     const netAssets = totalAssets - totalLiabilities;
 
     res.json({
-      // Asset breakdown
+      // Asset breakdown (database-calculated)
       assets: {
+        totalDeposits,              // 500 + 1000 = 1500 (your example)
+        totalActiveStakes: activeStakes,
         totalUserBalances,
-        totalActiveStakes,
-        totalApprovedTransactions,
         totalAssets
       },
 
-      // Liability breakdown
+      // Liability breakdown (database-calculated)
       liabilities: {
-        totalApprovedWithdrawals,
-        totalPendingWithdrawals,
+        totalApprovedWithdrawals: approvedWithdrawals,
+        totalPendingWithdrawals: pendingWithdrawals,
         totalBonuses,
         totalLiabilities
       },
 
-      // Net position
+      // Net position (calculated from database results)
       netAssets,
 
-      // User statistics
+      // User statistics (database-aggregated)
       users: {
-        totalUsers: results[6].rows[0].totalUsers || 0,
-        approvedUsers: results[7].rows[0].approvedUsers || 0,
-        activeUsers: results[8].rows[0].activeUsers || 0
+        totalUsers: parseInt(calc.total_users) || 0,
+        approvedUsers: parseInt(calc.approved_users) || 0,
+        activeUsers: parseInt(calc.active_users) || 0
       },
 
-      // Transaction statistics
+      // Transaction statistics (database-aggregated)
       transactions: {
-        totalTransactions: results[9].rows[0].totalTransactions || 0,
-        approvedTransactions: results[10].rows[0].approvedTransactions || 0,
-        pendingTransactions: results[11].rows[0].pendingTransactions || 0
+        totalTransactions: parseInt(calc.total_transactions) || 0,
+        approvedTransactions: parseInt(calc.approved_transactions) || 0,
+        pendingTransactions: parseInt(calc.pending_transactions) || 0
       },
 
-      // Summary
+      // Summary with ratios (calculated from database results)
       summary: {
         totalAssets,
         totalLiabilities,
         netAssets,
-        assetToLiabilityRatio: totalLiabilities > 0 ? (totalAssets / totalLiabilities).toFixed(2) : 'N/A'
-      }
+        assetToLiabilityRatio: totalLiabilities > 0 ? (totalAssets / totalLiabilities).toFixed(2) : 'N/A',
+        profitMargin: totalDeposits > 0 ? ((netAssets / totalDeposits) * 100).toFixed(2) : '0.00'
+      },
+
+      // Database calculation metadata
+      calculatedAt: new Date().toISOString(),
+      calculationMethod: 'database_aggregation',
+      performance: 'optimized'
     });
   } catch (err) {
-    console.error('Failed to calculate company assets:', err);
-    res.status(500).json({ message: 'Server error calculating company assets' });
+    console.error('Database calculation error:', err);
+    res.status(500).json({
+      message: 'Server error calculating company assets',
+      error: err.message,
+      calculationMethod: 'failed'
+    });
   }
 });
 

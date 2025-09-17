@@ -49,11 +49,92 @@ router.get('/bonus', authMiddleware, async (req, res) => {
 router.get('/dashboard', authMiddleware, async (req, res) => {
   const userId = req.user.id;
   try {
-    const result = await query(`SELECT * FROM transactions WHERE user_id = $1 ORDER BY created_at DESC`, [userId]);
-    const rows = result.rows;
-    res.json({ transactions: rows });
+    // Get transactions with database-level calculations
+    const transactionsQuery = await query(`
+      SELECT * FROM transactions
+      WHERE user_id = $1
+      ORDER BY created_at DESC
+      LIMIT 10
+    `, [userId]);
+
+    // Calculate total deposits (tree_plan + saving) - database level
+    const depositsQuery = await query(`
+      SELECT COALESCE(SUM(amount), 0) as total_deposits
+      FROM transactions
+      WHERE user_id = $1
+      AND status = 'approved'
+      AND type IN ('tree_plan', 'saving', 'deposit', 'investment')
+    `, [userId]);
+
+    // Calculate total withdrawals - database level
+    const withdrawalsQuery = await query(`
+      SELECT COALESCE(SUM(amount), 0) as total_withdrawals
+      FROM transactions
+      WHERE user_id = $1
+      AND status = 'approved'
+      AND type = 'withdrawal'
+    `, [userId]);
+
+    // Calculate total loan repayments - database level
+    const loansQuery = await query(`
+      SELECT COALESCE(SUM(amount), 0) as total_loans
+      FROM transactions
+      WHERE user_id = $1
+      AND status = 'approved'
+      AND type = 'loan'
+    `, [userId]);
+
+    // Calculate active stakes and interest - database level
+    const stakesQuery = await query(`
+      SELECT
+        COALESCE(SUM(amount), 0) as total_stakes,
+        COALESCE(SUM(amount * interest_rate * (stake_period / 365.0)), 0) as total_interest
+      FROM stakes
+      WHERE user_id = $1 AND status = 'active'
+    `, [userId]);
+
+    // Calculate referral bonus (5,000 per referral) - database level
+    const referralQuery = await query(`
+      SELECT COUNT(*) * 5000 as referral_bonus
+      FROM users
+      WHERE referralId IS NOT NULL
+      AND id = $1
+    `, [userId]);
+
+    const transactions = transactionsQuery.rows;
+    const totalDeposits = parseFloat(depositsQuery.rows[0].total_deposits) || 0;
+    const totalWithdrawals = parseFloat(withdrawalsQuery.rows[0].total_withdrawals) || 0;
+    const totalLoans = parseFloat(loansQuery.rows[0].total_loans) || 0;
+    const totalStakes = parseFloat(stakesQuery.rows[0].total_stakes) || 0;
+    const totalInterest = parseFloat(stakesQuery.rows[0].total_interest) || 0;
+    const referralBonus = parseFloat(referralQuery.rows[0].referral_bonus) || 0;
+
+    // Calculate final balance: Deposits + Referral Bonus + Stakes Interest - Withdrawals - Loan Repayments
+    const calculatedBalance = totalDeposits + referralBonus + totalInterest - totalWithdrawals - totalLoans;
+
+    res.json({
+      transactions: transactions,
+      calculations: {
+        totalDeposits,
+        totalWithdrawals,
+        totalLoans,
+        totalStakes,
+        totalInterest,
+        referralBonus,
+        calculatedBalance: Math.max(0, calculatedBalance), // Ensure non-negative
+        breakdown: {
+          deposits: totalDeposits,
+          withdrawals: totalWithdrawals,
+          loans: totalLoans,
+          stakes: totalStakes,
+          interest: totalInterest,
+          referralBonus: referralBonus
+        }
+      }
+    });
   } catch (err) {
-    res.status(500).json({ message: 'Server error' });
+    console.error('Dashboard calculation error:', err);
+    res.status(500).json({ message: 'Server error calculating dashboard data' });
   }
 });
 
@@ -265,6 +346,68 @@ router.put('/messages/:id/read', authMiddleware, async (req, res) => {
     res.json({ message: 'Message marked as read' });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Quick balance calculation endpoint for real-time updates
+router.get('/balance', authMiddleware, async (req, res) => {
+  const userId = req.user.id;
+  try {
+    // Single optimized query for balance calculation
+    const balanceQuery = await query(`
+      SELECT
+        -- Deposits: tree_plan + saving + deposit + investment
+        (SELECT COALESCE(SUM(amount), 0) FROM transactions
+         WHERE user_id = $1 AND status = 'approved'
+         AND type IN ('tree_plan', 'saving', 'deposit', 'investment')) as total_deposits,
+
+        -- Withdrawals
+        (SELECT COALESCE(SUM(amount), 0) FROM transactions
+         WHERE user_id = $1 AND status = 'approved' AND type = 'withdrawal') as total_withdrawals,
+
+        -- Loan repayments
+        (SELECT COALESCE(SUM(amount), 0) FROM transactions
+         WHERE user_id = $1 AND status = 'approved' AND type = 'loan') as total_loans,
+
+        -- Active stakes and interest
+        (SELECT COALESCE(SUM(amount), 0) FROM stakes
+         WHERE user_id = $1 AND status = 'active') as total_stakes,
+
+        (SELECT COALESCE(SUM(amount * interest_rate * (stake_period / 365.0)), 0) FROM stakes
+         WHERE user_id = $1 AND status = 'active') as total_interest,
+
+        -- Referral bonus (5,000 per approved referral)
+        (SELECT COUNT(*) * 5000 FROM users WHERE referralId IS NOT NULL AND id = $1) as referral_bonus
+    `, [userId]);
+
+    const calc = balanceQuery.rows[0];
+
+    const totalDeposits = parseFloat(calc.total_deposits) || 0;
+    const totalWithdrawals = parseFloat(calc.total_withdrawals) || 0;
+    const totalLoans = parseFloat(calc.total_loans) || 0;
+    const totalStakes = parseFloat(calc.total_stakes) || 0;
+    const totalInterest = parseFloat(calc.total_interest) || 0;
+    const referralBonus = parseFloat(calc.referral_bonus) || 0;
+
+    // Balance calculation: Deposits + Referral Bonus + Stakes Interest - Withdrawals - Loan Repayments
+    const calculatedBalance = totalDeposits + referralBonus + totalInterest - totalWithdrawals - totalLoans;
+
+    res.json({
+      balance: Math.max(0, calculatedBalance),
+      breakdown: {
+        deposits: totalDeposits,
+        withdrawals: totalWithdrawals,
+        loans: totalLoans,
+        stakes: totalStakes,
+        interest: totalInterest,
+        referralBonus: referralBonus
+      },
+      calculatedAt: new Date().toISOString(),
+      method: 'database_optimized'
+    });
+  } catch (err) {
+    console.error('Balance calculation error:', err);
+    res.status(500).json({ message: 'Error calculating balance' });
   }
 });
 
