@@ -1,31 +1,57 @@
 import React, { useState, useEffect } from 'react';
 import { FaBars, FaTimes, FaTachometerAlt, FaExchangeAlt, FaPiggyBank, FaHistory, FaGift, FaCog, FaSignOutAlt, FaUser, FaWallet, FaMoneyBillWave, FaPlus, FaSyncAlt, FaArrowLeft, FaLeaf } from 'react-icons/fa';
+import {
+  getUserBonus,
+  getUserDashboard,
+  getUserProfile,
+  createTransaction,
+  createStake,
+  getUserStakes,
+  requestWithdrawal,
+  getUserWithdrawals,
+  getUserMessages,
+  markMessageAsRead,
+  getFullUrl
+} from '../api';
 
 const KediUserDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [currentSection, setCurrentSection] = useState('dashboard');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  // Mock data - in real app this would come from API
-  const [userData] = useState({
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    avatar: 'JD',
-    balance: 2450000,
-    bonus: 125000
+  // Real data from API
+  const [userData, setUserData] = useState({
+    name: '',
+    email: '',
+    avatar: '',
+    balance: 0,
+    bonus: 0,
+    profilePicture: ''
   });
 
-  const [transactions] = useState([
-    { id: 1, date: '2025-01-15', type: 'Tree Plan', amount: 500000, status: 'approved', txnId: 'TXN001' },
-    { id: 2, date: '2025-01-10', type: 'Savings', amount: 200000, status: 'approved', txnId: 'TXN002' },
-    { id: 3, date: '2025-01-08', type: 'Loan', amount: 300000, status: 'pending', txnId: 'TXN003' }
-  ]);
+  const [transactions, setTransactions] = useState([]);
+  const [stakes, setStakes] = useState([]);
+  const [withdrawals, setWithdrawals] = useState([]);
+  const [messages, setMessages] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  const [stakes] = useState([
-    { id: 1, amount: 1000000, duration: 90, rate: 15, startDate: '2025-01-01', endDate: '2025-04-01', status: 'active' },
-    { id: 2, amount: 500000, duration: 30, rate: 5, startDate: '2025-01-10', endDate: '2025-02-10', status: 'active' }
-  ]);
+  // Form states
+  const [transactionForm, setTransactionForm] = useState({
+    type: '',
+    amount: '',
+    txnId: ''
+  });
+
+  const [stakeForm, setStakeForm] = useState({
+    amount: '',
+    period: 30
+  });
+
+  const [withdrawalForm, setWithdrawalForm] = useState({
+    stakeId: ''
+  });
 
   const navigationItems = [
     { id: 'dashboard', label: 'Dashboard', icon: FaTachometerAlt },
@@ -36,7 +62,11 @@ const KediUserDashboard = () => {
     { id: 'settings', label: 'Settings', icon: FaCog }
   ];
 
+  // Load user data on component mount
   useEffect(() => {
+    loadUserData();
+    loadMessages();
+
     const handleResize = () => {
       if (window.innerWidth > 768) {
         setSidebarOpen(false);
@@ -46,6 +76,56 @@ const KediUserDashboard = () => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Load all user data from API
+  const loadUserData = async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const [profileRes, bonusRes, dashboardRes, stakesRes, withdrawalsRes] = await Promise.all([
+        getUserProfile(),
+        getUserBonus(),
+        getUserDashboard(),
+        getUserStakes(),
+        getUserWithdrawals()
+      ]);
+
+      // Update user profile data
+      const profile = profileRes.data || {};
+      setUserData({
+        name: `${profile.firstname || ''} ${profile.lastname || ''}`.trim() || 'User',
+        email: profile.email || '',
+        avatar: profile.firstname?.charAt(0)?.toUpperCase() || 'U',
+        balance: profile.estimated_balance || 0,
+        bonus: bonusRes.data?.totalBonus || 0,
+        profilePicture: profile.profile_picture || ''
+      });
+
+      // Update other data
+      setTransactions(dashboardRes.data?.transactions || []);
+      setStakes(stakesRes.data?.stakes || []);
+      setWithdrawals(withdrawalsRes.data?.withdrawals || []);
+
+    } catch (err) {
+      console.error('Error loading user data:', err);
+      setError('Failed to load dashboard data. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Load user messages
+  const loadMessages = async () => {
+    try {
+      const response = await getUserMessages();
+      const userMessages = response.data?.messages || [];
+      setMessages(userMessages);
+      setUnreadCount(userMessages.filter(msg => !msg.is_read).length);
+    } catch (err) {
+      console.error('Error loading messages:', err);
+    }
+  };
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -67,17 +147,102 @@ const KediUserDashboard = () => {
   };
 
   const refreshDashboard = async () => {
-    setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      console.log('Dashboard refreshed');
-    }, 1000);
+    await loadUserData();
   };
 
   const logout = () => {
-    // Handle logout logic
-    console.log('Logout clicked');
+    // Clear authentication tokens and redirect to login
+    localStorage.removeItem('token');
+    localStorage.removeItem('role');
+    window.location.href = '/login';
+  };
+
+  // Form submission handlers
+  const handleTransactionSubmit = async (e) => {
+    e.preventDefault();
+    if (!transactionForm.type || !transactionForm.amount || !transactionForm.txnId) {
+      setError('Please fill all transaction fields');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      await createTransaction({
+        type: transactionForm.type,
+        amount: parseFloat(transactionForm.amount),
+        txn_id: transactionForm.txnId
+      });
+
+      // Reset form and refresh data
+      setTransactionForm({ type: '', amount: '', txnId: '' });
+      await loadUserData();
+      alert('Transaction submitted successfully!');
+
+    } catch (err) {
+      console.error('Transaction error:', err);
+      setError(err.response?.data?.message || 'Failed to submit transaction');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleStakeSubmit = async (e) => {
+    e.preventDefault();
+    if (!stakeForm.amount) {
+      setError('Please enter stake amount');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      await createStake({
+        amount: parseFloat(stakeForm.amount),
+        stakePeriod: parseInt(stakeForm.period)
+      });
+
+      // Reset form and refresh data
+      setStakeForm({ amount: '', period: 30 });
+      await loadUserData();
+      alert('Stake created successfully!');
+
+    } catch (err) {
+      console.error('Stake error:', err);
+      setError(err.response?.data?.message || 'Failed to create stake');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleWithdrawalSubmit = async (e) => {
+    e.preventDefault();
+    if (!withdrawalForm.stakeId) {
+      setError('Please select a stake to withdraw');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      await requestWithdrawal({
+        stakeId: parseInt(withdrawalForm.stakeId)
+      });
+
+      // Reset form and refresh data
+      setWithdrawalForm({ stakeId: '' });
+      await loadUserData();
+      alert('Withdrawal request submitted successfully!');
+
+    } catch (err) {
+      console.error('Withdrawal error:', err);
+      setError(err.response?.data?.message || 'Failed to submit withdrawal request');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const formatCurrency = (amount) => {
@@ -232,7 +397,7 @@ const KediUserDashboard = () => {
                       <span className="text-lg font-medium">Estimated Balance</span>
                     </div>
                     <div className="text-3xl font-bold mb-1">
-                      {formatCurrency(userData.balance)} RWF
+                      {formatCurrency(userData.balance || 0)} RWF
                     </div>
                     <p className="text-green-100 text-sm">
                       Total wallet balance
@@ -249,7 +414,7 @@ const KediUserDashboard = () => {
                       <span className="text-lg font-medium">Referral Bonus</span>
                     </div>
                     <div className="text-3xl font-bold mb-1">
-                      {formatCurrency(userData.bonus)} RWF
+                      {formatCurrency(userData.bonus || 0)} RWF
                     </div>
                     <p className="text-blue-100 text-sm">
                       Total referral earnings
@@ -314,7 +479,7 @@ const KediUserDashboard = () => {
                   <tbody>
                     {transactions.slice(0, 3).map((txn) => (
                       <tr key={txn.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200">
-                        <td className="py-3 px-4 text-gray-800">{txn.date}</td>
+                        <td className="py-3 px-4 text-gray-800">{new Date(txn.created_at).toLocaleDateString()}</td>
                         <td className="py-3 px-4 text-gray-800">{txn.type}</td>
                         <td className="py-3 px-4 text-gray-800 font-medium">{formatCurrency(txn.amount)} RWF</td>
                         <td className="py-3 px-4">{getStatusBadge(txn.status)}</td>
@@ -342,13 +507,13 @@ const KediUserDashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {stakes.map((stake) => (
+                    {stakes.filter(stake => stake.status === 'active').map((stake) => (
                       <tr key={stake.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200">
                         <td className="py-3 px-4 text-gray-800 font-medium">{formatCurrency(stake.amount)} RWF</td>
-                        <td className="py-3 px-4 text-gray-800">{stake.duration} days</td>
-                        <td className="py-3 px-4 text-gray-800">{stake.rate}%</td>
-                        <td className="py-3 px-4 text-gray-800">{stake.startDate}</td>
-                        <td className="py-3 px-4 text-gray-800">{stake.endDate}</td>
+                        <td className="py-3 px-4 text-gray-800">{stake.stake_period} days</td>
+                        <td className="py-3 px-4 text-gray-800">{(stake.interest_rate * 100)}%</td>
+                        <td className="py-3 px-4 text-gray-800">{new Date(stake.start_date).toLocaleDateString()}</td>
+                        <td className="py-3 px-4 text-gray-800">{new Date(stake.end_date).toLocaleDateString()}</td>
                         <td className="py-3 px-4">{getStatusBadge(stake.status)}</td>
                       </tr>
                     ))}
@@ -366,12 +531,17 @@ const KediUserDashboard = () => {
               <div className="bg-white p-6 rounded-xl shadow-lg">
                 <h2 className="text-2xl font-bold text-gray-800 mb-6">Make a Transaction</h2>
 
-                <form className="space-y-6">
+                <form onSubmit={handleTransactionSubmit} className="space-y-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Transaction Type
                     </label>
-                    <select className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300">
+                    <select
+                      value={transactionForm.type}
+                      onChange={(e) => setTransactionForm({...transactionForm, type: e.target.value})}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300"
+                      required
+                    >
                       <option value="">Select Type</option>
                       <option value="tree_plan">Tree Plan</option>
                       <option value="loan">Loan</option>
@@ -385,8 +555,11 @@ const KediUserDashboard = () => {
                     </label>
                     <input
                       type="number"
+                      value={transactionForm.amount}
+                      onChange={(e) => setTransactionForm({...transactionForm, amount: e.target.value})}
                       placeholder="Enter amount"
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300"
+                      required
                     />
                   </div>
 
@@ -396,17 +569,25 @@ const KediUserDashboard = () => {
                     </label>
                     <input
                       type="text"
+                      value={transactionForm.txnId}
+                      onChange={(e) => setTransactionForm({...transactionForm, txnId: e.target.value})}
                       placeholder="Enter transaction ID"
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300"
+                      required
                     />
                   </div>
 
                   <div className="flex space-x-4">
                     <button
                       type="submit"
-                      className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg transition-all duration-300 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl"
+                      disabled={isLoading}
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg transition-all duration-300 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl disabled:opacity-50"
                     >
-                      <FaExchangeAlt />
+                      {isLoading ? (
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      ) : (
+                        <FaExchangeAlt />
+                      )}
                       <span>Submit Transaction</span>
                     </button>
                     <button
@@ -430,15 +611,18 @@ const KediUserDashboard = () => {
               <div className="bg-white p-6 rounded-xl shadow-lg">
                 <h2 className="text-2xl font-bold text-gray-800 mb-6">Deposit Stake</h2>
 
-                <form className="space-y-6">
+                <form onSubmit={handleStakeSubmit} className="space-y-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Amount (RWF)
                     </label>
                     <input
                       type="number"
+                      value={stakeForm.amount}
+                      onChange={(e) => setStakeForm({...stakeForm, amount: e.target.value})}
                       placeholder="Enter amount"
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300"
+                      required
                     />
                   </div>
 
@@ -446,8 +630,12 @@ const KediUserDashboard = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Stake Period
                     </label>
-                    <select className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300">
-                      <option value="">Select Period</option>
+                    <select
+                      value={stakeForm.period}
+                      onChange={(e) => setStakeForm({...stakeForm, period: parseInt(e.target.value)})}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300"
+                      required
+                    >
                       <option value="30">30 Days (5% interest)</option>
                       <option value="90">90 Days (15% interest)</option>
                       <option value="180">180 Days (30% interest)</option>
@@ -457,9 +645,14 @@ const KediUserDashboard = () => {
                   <div className="flex space-x-4">
                     <button
                       type="submit"
-                      className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg transition-all duration-300 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl"
+                      disabled={isLoading}
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg transition-all duration-300 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl disabled:opacity-50"
                     >
-                      <FaPiggyBank />
+                      {isLoading ? (
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      ) : (
+                        <FaPiggyBank />
+                      )}
                       <span>Deposit Stake</span>
                     </button>
                     <button
@@ -496,10 +689,10 @@ const KediUserDashboard = () => {
                   <tbody>
                     {transactions.map((txn) => (
                       <tr key={txn.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200">
-                        <td className="py-3 px-4 text-gray-800">{txn.date}</td>
+                        <td className="py-3 px-4 text-gray-800">{new Date(txn.created_at).toLocaleDateString()}</td>
                         <td className="py-3 px-4 text-gray-800">{txn.type}</td>
                         <td className="py-3 px-4 text-gray-800 font-medium">{formatCurrency(txn.amount)} RWF</td>
-                        <td className="py-3 px-4 text-gray-800">{txn.txnId}</td>
+                        <td className="py-3 px-4 text-gray-800">{txn.txn_id}</td>
                         <td className="py-3 px-4">{getStatusBadge(txn.status)}</td>
                       </tr>
                     ))}
@@ -530,6 +723,60 @@ const KediUserDashboard = () => {
           </div>
         )}
 
+        {/* Withdrawal Section */}
+        {currentSection === 'history' && (
+          <div className="p-4 md:p-8">
+            <div className="max-w-2xl mx-auto">
+              <div className="bg-white p-6 rounded-xl shadow-lg">
+                <h2 className="text-2xl font-bold text-gray-800 mb-6">Request Withdrawal</h2>
+
+                <form onSubmit={handleWithdrawalSubmit} className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Select Stake to Withdraw
+                    </label>
+                    <select
+                      value={withdrawalForm.stakeId}
+                      onChange={(e) => setWithdrawalForm({...withdrawalForm, stakeId: e.target.value})}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300"
+                      required
+                    >
+                      <option value="">Select Stake</option>
+                      {stakes.filter(stake => stake.status === 'active').map((stake) => (
+                        <option key={stake.id} value={stake.id}>
+                          {formatCurrency(stake.amount)} RWF - {stake.stake_period} days (Ends {new Date(stake.end_date).toLocaleDateString()})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex space-x-4">
+                    <button
+                      type="submit"
+                      disabled={isLoading}
+                      className="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 px-6 rounded-lg transition-all duration-300 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl disabled:opacity-50"
+                    >
+                      {isLoading ? (
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      ) : (
+                        <FaMoneyBillWave />
+                      )}
+                      <span>Request Withdrawal</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => showSection('dashboard')}
+                      className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-3 px-6 rounded-lg transition-all duration-300"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Settings Section */}
         {currentSection === 'settings' && (
           <div className="p-4 md:p-8">
@@ -543,6 +790,29 @@ const KediUserDashboard = () => {
                   Account settings and preferences will be available here.
                 </p>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Error Display */}
+        {error && (
+          <div className="fixed top-20 right-4 z-50 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg shadow-lg max-w-sm">
+            <div className="flex items-center">
+              <div className="py-1">
+                <svg className="fill-current h-6 w-6 text-red-500 mr-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                  <path d="M2.93 17.07A10 10 0 1 1 17.07 2.93 10 10 0 0 1 2.93 17.07zm12.73-1.41A8 8 0 1 0 4.34 4.34a8 8 0 0 0 11.32 11.32zM9 11V9h2v6H9v-4zm0-6h2v2H9V5z"/>
+                </svg>
+              </div>
+              <div>
+                <p className="font-bold">Error</p>
+                <p className="text-sm">{error}</p>
+              </div>
+              <button
+                onClick={() => setError(null)}
+                className="ml-auto text-red-500 hover:text-red-700"
+              >
+                <FaTimes />
+              </button>
             </div>
           </div>
         )}
