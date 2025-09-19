@@ -1,21 +1,27 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import kediBusinessImage from '../assets/kedi business.png';
 
 export default function ModernHeroSection() {
   return (
     <section className="hero">
       {/* Logo/Image */}
       <img
-        src="/uploads/1756994307932-KEDI%20Money%20Network%20Logo%20(3).png"
-        alt="KEDI Money Network Logo"
-        style={{ width: '180px', height: 'auto' }}
+        src={kediBusinessImage}
+        alt="KEDI Business & Agri Funds"
+        style={{ width: '200px', height: 'auto', marginBottom: '20px' }}
       />
 
       {/* Title */}
-      <h1>KEDI BUSINESS & AGRI FUNDS</h1>
+      <h1>KEDI Business & Agri Funds</h1>
 
       {/* Subtitle */}
-      <p>Kimina k'Ikoranabuhanga ry'Ubucuruzi n'Ubuhinzi</p>
+      <p style={{ maxWidth: '600px', margin: '20px auto', lineHeight: '1.6' }}>
+        Building financial futures together through innovative business and agricultural solutions.
+      </p>
+      <p style={{ fontStyle: 'italic', opacity: 0.9 }}>
+        Kimina k'Ikoranabuhanga ry'Ubucuruzi n'Ubuhinzi
+      </p>
 
       {/* Buttons */}
       <div className="buttons">

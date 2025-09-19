@@ -2,7 +2,6 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import ImageSlideshow from '../components/ImageSlideshow';
-import NewsSection from '../components/NewsSection';
 import { MdSupport } from 'react-icons/md';
 import { FaFacebookF, FaInstagram, FaTwitter, FaYoutube } from 'react-icons/fa';
 import './home.css';
@@ -50,7 +49,22 @@ export default function Home() {
           </div>
         )}
 
-        <NewsSection />
+        {/* Video Section replacing News */}
+        <section className="mb-8 px-4">
+          <div className="mx-auto max-w-4xl">
+            <h2 className="text-2xl md:text-4xl font-bold text-green-800 mb-4 text-center">Latest News</h2>
+            <div className="aspect-video">
+              <iframe
+                src="https://www.youtube.com/embed/2-0F7iOYtFA"
+                title="YouTube video player"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="w-full h-full"
+              ></iframe>
+            </div>
+          </div>
+        </section>
       </main>
       <footer className="bg-green-800 text-white py-8">
         <div className="container mx-auto px-4">

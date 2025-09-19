@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { signup } from '../api'; // Use the API module instead of direct axios
 import './signup.css';
-import HeroSection from '../components/HeroSection';
 import Header from '../components/Header';
 
 export default function Signup() {
@@ -47,7 +46,6 @@ export default function Signup() {
   return (
     <div className="relative">
       <Header />
-      <HeroSection />
       <div className="container">
         <form onSubmit={handleSubmit} className="max-w-md mx-auto p-6 bg-white rounded shadow">
           <h2 className="text-2xl font-bold mb-6 text-green-700">Sign Up</h2>
@@ -116,7 +114,7 @@ export default function Signup() {
           <div className="mb-4">
             <input 
               name="referralId" 
-              placeholder="Referral ID (optional)" 
+              placeholder="Referral Id number"
               onChange={handleChange} 
               className="w-full p-2 border border-gray-300 rounded"
             />

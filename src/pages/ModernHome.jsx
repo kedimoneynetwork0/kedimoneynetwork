@@ -1,7 +1,6 @@
 import React from 'react';
 import Navigation from '../components/Navigation';
 import ModernHeroSection from '../components/ModernHeroSection';
-import NewsSection from '../components/NewsSection';
 import { MdSupport } from 'react-icons/md';
 import { FaFacebookF, FaInstagram, FaTwitter, FaYoutube } from 'react-icons/fa';
 import '../styles/homepage.css';
@@ -15,10 +14,35 @@ export default function ModernHome() {
       {/* Hero Section */}
       <ModernHeroSection />
 
-      {/* News Section */}
+      {/* Video Section */}
       <section className="content-section">
         <h2>Latest News & Updates</h2>
-        <NewsSection />
+        <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
+          <div style={{
+            position: 'relative',
+            paddingBottom: '56.25%',
+            height: 0,
+            overflow: 'hidden',
+            borderRadius: '8px',
+            boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)'
+          }}>
+            <iframe
+              src="https://www.youtube.com/embed/2-0F7iOYtFA"
+              title="YouTube video player"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                borderRadius: '8px'
+              }}
+            ></iframe>
+          </div>
+        </div>
       </section>
 
       {/* Footer */}

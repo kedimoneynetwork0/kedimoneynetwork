@@ -1,12 +1,10 @@
 import React from 'react';
-import HeroSection from '../components/HeroSection';
 import Header from '../components/Header';
 
 export default function About() {
   return (
     <div>
       <Header />
-      <HeroSection />
       <div style={styles.container}>
         <h1 style={styles.title}>Kedi Money Network</h1>
         <p style={styles.text}>
