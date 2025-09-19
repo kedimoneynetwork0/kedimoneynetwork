@@ -120,6 +120,28 @@ const createTables = async () => {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);
 
+    await query(`
+      CREATE TABLE IF NOT EXISTS savings (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER REFERENCES users(id),
+      amount DECIMAL(10,2),
+      interest_rate DECIMAL(5,4) DEFAULT 0.05,
+      maturity_date TIMESTAMP,
+      status VARCHAR(50) DEFAULT 'active',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`);
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS savings_withdrawals (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER REFERENCES users(id),
+      savings_id INTEGER REFERENCES savings(id),
+      amount DECIMAL(10,2),
+      request_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      status VARCHAR(50) DEFAULT 'pending',
+      processed_date TIMESTAMP
+    )`);
+
     // Tree Plan table for tree planting investments
     await query(`
       CREATE TABLE IF NOT EXISTS tree_plans (

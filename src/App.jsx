@@ -3,10 +3,8 @@ import ModernHome from './pages/ModernHome';
 import About from './pages/about';
 import Login from './pages/login';
 import Signup from './pages/signup';
-import UserDashboard from './pages/UserDashboard';
-import AdminDashboard from './pages/AdminDashboard';
-import KediAdminDashboard from './pages/KediAdminDashboard';
 import KediUserDashboard from './pages/KediUserDashboard';
+import KediAdminDashboard from './pages/KediAdminDashboard';
 import UserProfile from './pages/UserProfile';
 import AdminLogin from './pages/AdminLogin';
 import NewsDetail from './pages/NewsDetail';
@@ -33,14 +31,14 @@ function App() {
           {/* Protected routes */}
           {token && role === 'user' && (
             <>
-              <Route path="/user-dashboard" element={<UserDashboard />} />
+              <Route path="/user-dashboard" element={<KediUserDashboard />} />
               <Route path="/kedi-user-dashboard" element={<KediUserDashboard />} />
               <Route path="/user-profile" element={<UserProfile />} />
             </>
           )}
           {token && role === 'admin' && (
             <>
-              <Route path="/admin-dashboard" element={<AdminDashboard />} />
+              <Route path="/admin-dashboard" element={<KediAdminDashboard />} />
               <Route path="/kedi-admin-dashboard" element={<KediAdminDashboard />} />
             </>
           )}

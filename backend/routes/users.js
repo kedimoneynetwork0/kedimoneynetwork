@@ -319,6 +319,72 @@ router.get('/withdrawals', authMiddleware, async (req, res) => {
   }
 });
 
+// User Savings routes
+router.get('/savings', authMiddleware, async (req, res) => {
+  const userId = req.user.id;
+  try {
+    const result = await query(`SELECT * FROM savings WHERE user_id = $1 ORDER BY created_at DESC`, [userId]);
+    const rows = result.rows;
+    res.json({ savings: rows });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+router.post('/savings/withdraw', authMiddleware, async (req, res) => {
+  const userId = req.user.id;
+  const { savingsId, amount } = req.body;
+
+  if (!savingsId || !amount) {
+    return res.status(400).json({ message: 'Savings ID and amount are required' });
+  }
+
+  // Validate amount is a positive number
+  if (isNaN(amount) || amount <= 0) {
+    return res.status(400).json({ message: 'Amount must be a positive number' });
+  }
+
+  try {
+    // Get savings details
+    const savingsResult = await query(`SELECT * FROM savings WHERE id = $1 AND user_id = $2`, [savingsId, userId]);
+    const savings = savingsResult.rows[0];
+
+    if (!savings) return res.status(404).json({ message: 'Savings account not found' });
+
+    // Check if savings has matured (if there's a maturity date)
+    if (savings.maturity_date) {
+      const currentDate = new Date();
+      const maturityDate = new Date(savings.maturity_date);
+      if (currentDate < maturityDate) {
+        return res.status(400).json({ message: 'Savings has not matured yet' });
+      }
+    }
+
+    // Check if withdrawal amount doesn't exceed available balance
+    if (amount > savings.amount) {
+      return res.status(400).json({ message: 'Withdrawal amount exceeds available savings balance' });
+    }
+
+    // Create savings withdrawal record (similar to stake withdrawal)
+    const withdrawalResult = await query(
+      `INSERT INTO savings_withdrawals (user_id, savings_id, amount, request_date) VALUES ($1, $2, $3, NOW())`,
+      [userId, savingsId, amount]
+    );
+
+    // Update savings balance
+    await query(`UPDATE savings SET amount = amount - $1 WHERE id = $2`, [amount, savingsId]);
+
+    res.json({
+      message: 'Savings withdrawal request submitted successfully',
+      id: withdrawalResult.lastID,
+      amount: amount
+    });
+  } catch (err) {
+    console.error('Savings withdrawal error:', err);
+    res.status(500).json({ message: 'Server error during savings withdrawal' });
+  }
+});
+
 // Message routes
 router.get('/messages', authMiddleware, async (req, res) => {
   const userId = req.user.id;

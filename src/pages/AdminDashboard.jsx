@@ -4,7 +4,7 @@ import { getPendingUsers, getPendingTransactions, getAllUsers, getAllTransaction
 import Header from '../components/Header';
 import './admin-dashboard.css';
 
-export default function AdminDashboard() {
+export default function KediAdminDashboard() {
   const [pendingUsers, setPendingUsers] = useState([]);
   const [pendingTxns, setPendingTxns] = useState([]);
   const [allUsers, setAllUsers] = useState([]);

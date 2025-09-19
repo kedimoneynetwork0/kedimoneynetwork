@@ -64,6 +64,10 @@ export const getUserStakes = () => api.get('/api/user/stakes');
 export const requestWithdrawal = (withdrawalData) => api.post('/api/user/withdrawals', withdrawalData);
 export const getUserWithdrawals = () => api.get('/api/user/withdrawals');
 
+// User Savings APIs
+export const getUserSavings = () => api.get('/api/user/savings');
+export const requestSavingsWithdrawal = (withdrawalData) => api.post('/api/user/savings/withdraw', withdrawalData);
+
 // Admin Withdrawal APIs
 export const getPendingWithdrawals = () => api.get('/api/admin/withdrawals/pending');
 export const approveWithdrawal = (id, approveData) => api.put(`/api/admin/withdrawals/${id}/approve`, approveData);

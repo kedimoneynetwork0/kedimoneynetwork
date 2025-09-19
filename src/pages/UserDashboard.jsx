@@ -2,12 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Button from '../components/Button';
 import WalletCalculator from '../components/WalletCalculator';
-import { getUserBonus, getUserDashboard, getUserProfile, createTransaction, createStake, getUserStakes, requestWithdrawal, getUserWithdrawals, getFullUrl, getUserMessages, markMessageAsRead } from '../api';
+import { getUserBonus, getUserDashboard, getUserProfile, createTransaction, createStake, getUserStakes, requestWithdrawal, getUserWithdrawals, getFullUrl, getUserMessages, markMessageAsRead, getUserSavings, requestSavingsWithdrawal } from '../api';
 import Header from '../components/Header';
 import { FaInbox } from 'react-icons/fa';
 import './user-dashboard.css';
 
-export default function UserDashboard() {
+export default function KediUserDashboard() {
   const [bonus, setBonus] = useState(0);
   const [transactions, setTransactions] = useState([]);
   const [stakes, setStakes] = useState([]);
@@ -17,6 +17,8 @@ export default function UserDashboard() {
   const [txnId, setTxnId] = useState('');
   const [stakePeriod, setStakePeriod] = useState(30);
   const [withdrawalStakeId, setWithdrawalStakeId] = useState('');
+  const [savingsWithdrawalId, setSavingsWithdrawalId] = useState('');
+  const [savingsWithdrawalAmount, setSavingsWithdrawalAmount] = useState('');
   const [message, setMessage] = useState('');
   const [profile, setProfile] = useState({});
   const [messages, setMessages] = useState([]);
@@ -74,6 +76,16 @@ export default function UserDashboard() {
       }
     }
 
+    async function fetchSavings() {
+      try {
+        const response = await getUserSavings();
+        setSavings(Array.isArray(response.data?.savings) ? response.data.savings : []);
+      } catch (error) {
+        console.error(error);
+        setSavings([]);
+      }
+    }
+
     async function fetchMessages() {
       try {
         const response = await getUserMessages();
@@ -92,6 +104,7 @@ export default function UserDashboard() {
     fetchProfile();
     fetchStakes();
     fetchWithdrawals();
+    fetchSavings();
     fetchMessages();
   }, []);
 
@@ -151,16 +164,46 @@ export default function UserDashboard() {
       await requestWithdrawal({ stakeId: parseInt(withdrawalStakeId) });
       setMessage('Withdrawal request submitted successfully');
       setWithdrawalStakeId('');
-      
+
       // Refresh withdrawals after submitting
       const response = await getUserWithdrawals();
       setWithdrawals(Array.isArray(response.data?.withdrawals) ? response.data.withdrawals : []);
-      
+
       // Refresh stakes as well
       const stakesResponse = await getUserStakes();
       setStakes(Array.isArray(stakesResponse.data?.stakes) ? stakesResponse.data.stakes : []);
     } catch (error) {
       setMessage(error.message || 'Error requesting withdrawal');
+    }
+  };
+
+  const handleSavingsWithdrawalSubmit = async (e) => {
+    e.preventDefault();
+    if (!savingsWithdrawalId || !savingsWithdrawalAmount) {
+      setMessage('Please select savings account and enter amount');
+      return;
+    }
+
+    const amount = parseFloat(savingsWithdrawalAmount);
+    if (isNaN(amount) || amount <= 0) {
+      setMessage('Please enter a valid amount');
+      return;
+    }
+
+    try {
+      await requestSavingsWithdrawal({
+        savingsId: parseInt(savingsWithdrawalId),
+        amount: amount
+      });
+      setMessage('Savings withdrawal request submitted successfully');
+      setSavingsWithdrawalId('');
+      setSavingsWithdrawalAmount('');
+
+      // Refresh savings after submitting
+      const response = await getUserSavings();
+      setSavings(Array.isArray(response.data?.savings) ? response.data.savings : []);
+    } catch (error) {
+      setMessage(error.message || 'Error requesting savings withdrawal');
     }
   };
 
@@ -336,65 +379,122 @@ export default function UserDashboard() {
         <div className="dashboard-grid">
           <div className="dashboard-card">
             <h3>Make Transaction</h3>
-            <form onSubmit={handleSubmit} className="form-group">
-              <div className="form-group">
-                <label htmlFor="type">Transaction Type</label>
-                <select
-                  id="type"
-                  value={type}
-                  onChange={(e) => setType(e.target.value)}
+
+            {/* Transaction Type Selection Buttons */}
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold' }}>Choose Transaction Type:</label>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => setType('saving')}
+                  style={{
+                    padding: '12px 20px',
+                    border: type === 'saving' ? '2px solid #28a745' : '2px solid #ddd',
+                    backgroundColor: type === 'saving' ? '#e8f5e8' : '#fff',
+                    color: type === 'saving' ? '#28a745' : '#333',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    transition: 'all 0.3s ease',
+                    flex: '1',
+                    minWidth: '120px'
+                  }}
                 >
-                  <option value="saving">💰 Saving</option>
-                  <option value="loan">🏦 Loan</option>
-                  <option value="stake">📈 Stake</option>
-                </select>
+                  💰 Saving
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setType('loan')}
+                  style={{
+                    padding: '12px 20px',
+                    border: type === 'loan' ? '2px solid #007bff' : '2px solid #ddd',
+                    backgroundColor: type === 'loan' ? '#e3f2fd' : '#fff',
+                    color: type === 'loan' ? '#007bff' : '#333',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    transition: 'all 0.3s ease',
+                    flex: '1',
+                    minWidth: '120px'
+                  }}
+                >
+                  🏦 Loan
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setType('stake')}
+                  style={{
+                    padding: '12px 20px',
+                    border: type === 'stake' ? '2px solid #ffc107' : '2px solid #ddd',
+                    backgroundColor: type === 'stake' ? '#fff3cd' : '#fff',
+                    color: type === 'stake' ? '#856404' : '#333',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    transition: 'all 0.3s ease',
+                    flex: '1',
+                    minWidth: '120px'
+                  }}
+                >
+                  📈 Stake
+                </button>
               </div>
+            </div>
 
-              <div className="form-group">
-                <label htmlFor="amount">Amount (RWF)</label>
-                <input
-                  id="amount"
-                  type="number"
-                  placeholder="Enter amount"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  required
-                />
-              </div>
-
-              {type === 'stake' && (
+            {/* Transaction Form */}
+            {type && (
+              <form onSubmit={handleSubmit} className="form-group">
                 <div className="form-group">
-                  <label htmlFor="stakePeriod">Stake Period</label>
-                  <select
-                    id="stakePeriod"
-                    value={stakePeriod}
-                    onChange={(e) => setStakePeriod(e.target.value)}
-                  >
-                    <option value="30">30 Days (5% interest)</option>
-                    <option value="90">90 Days (15% interest)</option>
-                    <option value="180">180 Days (30% interest)</option>
-                  </select>
-                </div>
-              )}
-
-              {type !== 'stake' && (
-                <div className="form-group">
-                  <label htmlFor="txnId">Transaction ID</label>
+                  <label htmlFor="amount">Amount (RWF)</label>
                   <input
-                    id="txnId"
-                    type="text"
-                    placeholder="Enter transaction ID"
-                    value={txnId}
-                    onChange={(e) => setTxnId(e.target.value)}
+                    id="amount"
+                    type="number"
+                    placeholder="Enter amount"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
                     required
                   />
                 </div>
-              )}
 
-              <Button type="submit">
-                {type === 'stake' ? 'Create Stake' : 'Submit Transaction'}
-              </Button>
-            </form>
+                {type === 'stake' && (
+                  <div className="form-group">
+                    <label htmlFor="stakePeriod">Stake Period</label>
+                    <select
+                      id="stakePeriod"
+                      value={stakePeriod}
+                      onChange={(e) => setStakePeriod(e.target.value)}
+                    >
+                      <option value="30">30 Days (5% interest)</option>
+                      <option value="90">90 Days (15% interest)</option>
+                      <option value="180">180 Days (30% interest)</option>
+                    </select>
+                  </div>
+                )}
+
+                {type !== 'stake' && (
+                  <div className="form-group">
+                    <label htmlFor="txnId">Transaction ID</label>
+                    <input
+                      id="txnId"
+                      type="text"
+                      placeholder="Enter transaction ID"
+                      value={txnId}
+                      onChange={(e) => setTxnId(e.target.value)}
+                      required
+                    />
+                  </div>
+                )}
+
+                <Button type="submit">
+                  {type === 'saving' && '💰 Make Saving Deposit'}
+                  {type === 'loan' && '🏦 Apply for Loan'}
+                  {type === 'stake' && '📈 Create Stake Investment'}
+                </Button>
+              </form>
+            )}
           </div>
           
         </div>
