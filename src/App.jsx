@@ -10,6 +10,7 @@ import KediUserDashboard from './pages/KediUserDashboard';
 import UserProfile from './pages/UserProfile';
 import AdminLogin from './pages/AdminLogin';
 import NewsDetail from './pages/NewsDetail';
+import UserManagement from './pages/UserManagement';
 import ErrorBoundary from './components/ErrorBoundary';
 
 function App() {
@@ -26,6 +27,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/admin-login" element={<AdminLogin />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/user-management" element={<UserManagement />} />
           <Route path="/news/:id" element={<NewsDetail />} />
 
           {/* Protected routes */}

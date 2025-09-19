@@ -311,6 +311,13 @@ export default function AdminDashboard() {
           >
             Company Assets
           </button>
+          <a
+            href="/user-management"
+            className="tab-button"
+            style={{ textDecoration: 'none', display: 'block', marginTop: '10px', backgroundColor: '#28a745', color: 'white', textAlign: 'center' }}
+          >
+            👥 User Management
+          </a>
           {selectedUser && (
             <button
               className={`tab-button ${activeTab === 'user-details' ? 'active' : ''}`}

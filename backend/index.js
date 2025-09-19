@@ -120,6 +120,41 @@ const createTables = async () => {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);
 
+    // Tree Plan table for tree planting investments
+    await query(`
+      CREATE TABLE IF NOT EXISTS tree_plans (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER REFERENCES users(id),
+      amount DECIMAL(10,2),
+      trees_planted INTEGER,
+      location VARCHAR(255),
+      status VARCHAR(50) DEFAULT 'active',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`);
+
+    // Savings table for user savings accounts
+    await query(`
+      CREATE TABLE IF NOT EXISTS savings (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER REFERENCES users(id),
+      amount DECIMAL(10,2),
+      interest_rate DECIMAL(5,4) DEFAULT 0.05,
+      maturity_date TIMESTAMP,
+      status VARCHAR(50) DEFAULT 'active',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`);
+
+    // Loan Repayment table for tracking loan repayments
+    await query(`
+      CREATE TABLE IF NOT EXISTS loan_repayments (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER REFERENCES users(id),
+      loan_id INTEGER,
+      amount DECIMAL(10,2),
+      payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      status VARCHAR(50) DEFAULT 'completed'
+    )`);
+
     console.log('Tables created or already exist.');
   } catch (err) {
     console.error('Error creating tables', err);

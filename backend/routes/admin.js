@@ -6,6 +6,71 @@ const { adminMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
 
+// Function to calculate estimated balance for a user
+async function calculateEstimatedBalance(userId) {
+  try {
+    // Get tree plan investments
+    const treePlanResult = await query(`
+      SELECT COALESCE(SUM(amount), 0) as total_tree_plan
+      FROM tree_plans
+      WHERE user_id = $1 AND status = 'active'
+    `, [userId]);
+
+    // Get stake revenue (active stakes with interest)
+    const stakeResult = await query(`
+      SELECT COALESCE(SUM(amount * (1 + interest_rate)), 0) as total_stake_revenue
+      FROM stakes
+      WHERE user_id = $1 AND status = 'active'
+    `, [userId]);
+
+    // Get savings with interest
+    const savingsResult = await query(`
+      SELECT COALESCE(SUM(amount * (1 + interest_rate)), 0) as total_savings
+      FROM savings
+      WHERE user_id = $1 AND status = 'active'
+    `, [userId]);
+
+    // Get loan repayments (to subtract)
+    const loanRepaymentResult = await query(`
+      SELECT COALESCE(SUM(amount), 0) as total_loan_repayments
+      FROM loan_repayments
+      WHERE user_id = $1 AND status = 'completed'
+    `, [userId]);
+
+    // Get bonuses
+    const bonusResult = await query(`
+      SELECT COALESCE(SUM(amount), 0) as total_bonuses
+      FROM bonuses
+      WHERE userId = $1
+    `, [userId]);
+
+    const treePlan = parseFloat(treePlanResult.rows[0].total_tree_plan) || 0;
+    const stakeRevenue = parseFloat(stakeResult.rows[0].total_stake_revenue) || 0;
+    const savings = parseFloat(savingsResult.rows[0].total_savings) || 0;
+    const loanRepayments = parseFloat(loanRepaymentResult.rows[0].total_loan_repayments) || 0;
+    const bonuses = parseFloat(bonusResult.rows[0].total_bonuses) || 0;
+
+    // Calculate estimated balance: (Tree Plan + Stake Revenue + Savings + Bonuses) - Loan Repayments
+    const estimatedBalance = (treePlan + stakeRevenue + savings + bonuses) - loanRepayments;
+
+    return {
+      estimatedBalance: Math.max(0, estimatedBalance), // Ensure non-negative
+      breakdown: {
+        treePlan,
+        stakeRevenue,
+        savings,
+        bonuses,
+        loanRepayments,
+        totalCredits: treePlan + stakeRevenue + savings + bonuses,
+        totalDebits: loanRepayments
+      }
+    };
+  } catch (error) {
+    console.error('Error calculating estimated balance:', error);
+    return { estimatedBalance: 0, breakdown: {} };
+  }
+}
+
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -97,6 +162,17 @@ router.get('/users/:id/details', adminMiddleware, async (req, res) => {
 
     const user = userResult.rows[0];
 
+    // Calculate estimated balance using the new formula
+    const balanceCalculation = await calculateEstimatedBalance(userId);
+
+    // Update user's estimated balance in database
+    await query(`UPDATE users SET estimated_balance = $1 WHERE id = $2`,
+      [balanceCalculation.estimatedBalance, userId]);
+
+    // Add calculated balance to user object
+    user.estimated_balance = balanceCalculation.estimatedBalance;
+    user.balance_breakdown = balanceCalculation.breakdown;
+
     // Get user's transactions
     const transactionsResult = await query(`
       SELECT * FROM transactions WHERE user_id = $1 ORDER BY created_at DESC
@@ -117,12 +193,31 @@ router.get('/users/:id/details', adminMiddleware, async (req, res) => {
       SELECT * FROM bonuses WHERE userId = $1 ORDER BY created_at DESC
     `, [userId]);
 
+    // Get user's tree plans
+    const treePlansResult = await query(`
+      SELECT * FROM tree_plans WHERE user_id = $1 ORDER BY created_at DESC
+    `, [userId]);
+
+    // Get user's savings
+    const savingsResult = await query(`
+      SELECT * FROM savings WHERE user_id = $1 ORDER BY created_at DESC
+    `, [userId]);
+
+    // Get user's loan repayments
+    const loanRepaymentsResult = await query(`
+      SELECT * FROM loan_repayments WHERE user_id = $1 ORDER BY payment_date DESC
+    `, [userId]);
+
     res.json({
       user: user,
+      balanceCalculation: balanceCalculation,
       transactions: transactionsResult.rows,
       stakes: stakesResult.rows,
       withdrawals: withdrawalsResult.rows,
-      bonuses: bonusesResult.rows
+      bonuses: bonusesResult.rows,
+      treePlans: treePlansResult.rows,
+      savings: savingsResult.rows,
+      loanRepayments: loanRepaymentsResult.rows
     });
   } catch (err) {
     console.error('Error getting user details:', err);
@@ -165,35 +260,39 @@ router.put('/transactions/:id/approve', adminMiddleware, async (req, res) => {
       const txn = txnResult.rows[0];
 
       if (txn) {
-        // Calculate estimated balance for tree_plan and saving transactions
-        let estimatedBalanceIncrease = 0;
-
+        // Handle different transaction types according to the new balance calculation formula
         if (txn.type === 'tree_plan') {
-          // Tree plan: 10% bonus + principal amount
-          const bonusAmount = Math.floor(txn.amount * 0.1);
-          estimatedBalanceIncrease = txn.amount + bonusAmount;
+          // Add to tree_plans table
+          const treesPlanted = Math.floor(txn.amount / 100); // Assuming 100 RWF per tree
+          await query(`INSERT INTO tree_plans (user_id, amount, trees_planted, status) VALUES ($1, $2, $3, $4)`,
+            [txn.user_id, txn.amount, treesPlanted, 'active']);
 
           // Add referral bonus if amount >= 1000
           if (txn.amount >= 1000) {
+            const bonusAmount = Math.floor(txn.amount * 0.1);
             await query(`INSERT INTO bonuses (userId, amount, description) VALUES ($1, $2, $3)`,
-              [txn.user_id, bonusAmount, `Referral bonus for transaction #${txnId}`]);
+              [txn.user_id, bonusAmount, `Referral bonus for tree plan transaction #${txnId}`]);
           }
         } else if (txn.type === 'saving') {
-          // Saving: principal amount with interest
-          // Assuming 5% annual interest for savings
-          const interestRate = 0.05;
-          const interestAmount = Math.floor(txn.amount * interestRate);
-          estimatedBalanceIncrease = txn.amount + interestAmount;
-        } else if (txn.type === 'loan') {
-          // Loan: just add the principal amount (no interest for loans)
-          estimatedBalanceIncrease = txn.amount;
+          // Add to savings table
+          const maturityDate = new Date();
+          maturityDate.setFullYear(maturityDate.getFullYear() + 1); // 1 year maturity
+          await query(`INSERT INTO savings (user_id, amount, maturity_date, status) VALUES ($1, $2, $3, $4)`,
+            [txn.user_id, txn.amount, maturityDate.toISOString(), 'active']);
+        } else if (txn.type === 'stake') {
+          // Stakes are already handled in the stakes table, just ensure they're active
+          await query(`UPDATE stakes SET status = 'active' WHERE user_id = $1 AND amount = $2 AND status = 'pending'`,
+            [txn.user_id, txn.amount]);
+        } else if (txn.type === 'loan_repayment') {
+          // Add to loan_repayments table (this will reduce the balance)
+          await query(`INSERT INTO loan_repayments (user_id, amount, status) VALUES ($1, $2, $3)`,
+            [txn.user_id, txn.amount, 'completed']);
         }
 
-        // Update user's estimated balance
-        if (estimatedBalanceIncrease > 0) {
-          await query(`UPDATE users SET estimated_balance = estimated_balance + $1 WHERE id = $2`,
-            [estimatedBalanceIncrease, txn.user_id]);
-        }
+        // Recalculate estimated balance after transaction approval
+        const balanceCalculation = await calculateEstimatedBalance(txn.user_id);
+        await query(`UPDATE users SET estimated_balance = $1 WHERE id = $2`,
+          [balanceCalculation.estimatedBalance, txn.user_id]);
 
         // Send notification message to user
         const messageText = `Your ${txn.type} transaction of ${txn.amount} RWF has been approved. Your estimated balance has been updated.`;
