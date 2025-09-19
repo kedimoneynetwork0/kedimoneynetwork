@@ -81,6 +81,8 @@ export const getUserMessages = () => api.get('/api/user/messages');
 export const markMessageAsRead = (id) => api.put(`/api/user/messages/${id}/read`);
 export const sendMessageToUser = (messageData) => api.post('/api/admin/messages', messageData);
 export const getUserMessagesAdmin = (id) => api.get(`/api/admin/users/${id}/messages`);
+export const getAllMessagesAdmin = () => api.get('/api/admin/messages');
+export const markMessageAsReadAdmin = (id) => api.put(`/api/admin/messages/${id}/read`);
 
 // Admin APIs
 export const getPendingUsers = () => api.get('/api/admin/pending-users');

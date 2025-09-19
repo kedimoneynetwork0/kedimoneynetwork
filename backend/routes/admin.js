@@ -442,6 +442,38 @@ router.get('/users/:id/messages', adminMiddleware, async (req, res) => {
   }
 });
 
+router.get('/messages', adminMiddleware, async (req, res) => {
+  try {
+    const result = await query(`
+      SELECT
+        m.*,
+        u.firstname as user_firstname,
+        u.lastname as user_lastname,
+        u.email as user_email,
+        a.firstname as admin_firstname,
+        a.lastname as admin_lastname
+      FROM messages m
+      LEFT JOIN users u ON m.user_id = u.id
+      LEFT JOIN users a ON m.admin_id = a.id
+      ORDER BY m.created_at DESC
+    `);
+    const rows = result.rows;
+    res.json({ messages: rows });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+router.put('/messages/:id/read', adminMiddleware, async (req, res) => {
+  const messageId = req.params.id;
+  try {
+    await query(`UPDATE messages SET is_read = true WHERE id = $1`, [messageId]);
+    res.json({ message: 'Message marked as read' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Company assets with database-level calculations for maximum performance
 router.get('/company-assets', adminMiddleware, async (req, res) => {
   try {

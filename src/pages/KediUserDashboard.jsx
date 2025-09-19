@@ -1,6 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { FaBars, FaTimes, FaTachometerAlt, FaExchangeAlt, FaPiggyBank, FaHistory, FaGift, FaCog, FaSignOutAlt, FaUser, FaWallet, FaMoneyBillWave, FaPlus, FaSyncAlt, FaArrowLeft, FaLeaf } from 'react-icons/fa';
 import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+import { Line, Bar } from 'react-chartjs-2';
+
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
+import {
   getUserBonus,
   getUserDashboard,
   getUserProfile,
@@ -11,7 +35,9 @@ import {
   getUserWithdrawals,
   getUserMessages,
   markMessageAsRead,
-  getFullUrl
+  getFullUrl,
+  getUserSavings,
+  requestSavingsWithdrawal
 } from '../api';
 import {
   calculateBalance,
@@ -44,11 +70,35 @@ const KediUserDashboard = () => {
   const [transactions, setTransactions] = useState([]);
   const [stakes, setStakes] = useState([]);
   const [withdrawals, setWithdrawals] = useState([]);
+  const [savings, setSavings] = useState([]);
   const [messages, setMessages] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
+  // Enhanced filtering states
+  const [transactionFilters, setTransactionFilters] = useState({
+    type: 'all',
+    status: 'all',
+    dateRange: 'all'
+  });
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [advancedUserSearch, setAdvancedUserSearch] = useState({
+    showAdvanced: false,
+    dateFrom: '',
+    dateTo: '',
+    minAmount: '',
+    maxAmount: '',
+    transactionType: '',
+    status: ''
+  });
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+
   // Modal states
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showInbox, setShowInbox] = useState(false);
 
   // Form states
   const [transactionForm, setTransactionForm] = useState({
@@ -64,6 +114,11 @@ const KediUserDashboard = () => {
 
   const [withdrawalForm, setWithdrawalForm] = useState({
     stakeId: ''
+  });
+
+  const [savingsWithdrawalForm, setSavingsWithdrawalForm] = useState({
+    savingsId: '',
+    amount: ''
   });
 
   // Support form state
@@ -112,12 +167,13 @@ const KediUserDashboard = () => {
     setError(null);
 
     try {
-      const [profileRes, bonusRes, dashboardRes, stakesRes, withdrawalsRes] = await Promise.all([
+      const [profileRes, bonusRes, dashboardRes, stakesRes, withdrawalsRes, savingsRes] = await Promise.all([
         getUserProfile(),
         getUserBonus(),
         getUserDashboard(),
         getUserStakes(),
-        getUserWithdrawals()
+        getUserWithdrawals(),
+        getUserSavings()
       ]);
 
       // Update user profile data
@@ -146,6 +202,7 @@ const KediUserDashboard = () => {
       setTransactions(dashboardRes.data?.transactions || []);
       setStakes(stakesRes.data?.stakes || []);
       setWithdrawals(withdrawalsRes.data?.withdrawals || []);
+      setSavings(savingsRes.data?.savings || []);
 
     } catch (err) {
       console.error('Error loading user data:', err);
@@ -295,8 +352,152 @@ const KediUserDashboard = () => {
     }
   };
 
+  const handleSavingsWithdrawalSubmit = async (e) => {
+    e.preventDefault();
+    if (!savingsWithdrawalForm.savingsId || !savingsWithdrawalForm.amount) {
+      setError('Please select savings account and enter amount');
+      return;
+    }
+
+    const amount = parseFloat(savingsWithdrawalForm.amount);
+    if (isNaN(amount) || amount <= 0) {
+      setError('Please enter a valid amount');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      await requestSavingsWithdrawal({
+        savingsId: parseInt(savingsWithdrawalForm.savingsId),
+        amount: amount
+      });
+
+      // Reset form and refresh data
+      setSavingsWithdrawalForm({ savingsId: '', amount: '' });
+      await loadUserData();
+      alert('Savings withdrawal request submitted successfully!');
+
+    } catch (err) {
+      console.error('Savings withdrawal error:', err);
+      setError(err.response?.data?.message || 'Failed to submit savings withdrawal request');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-RW').format(amount);
+  };
+
+  // Calculate real balance based on approved transactions, stakes, and withdrawals
+  const calculateRealBalance = () => {
+    let balance = 0;
+
+    // Add approved transactions (deposits/investments)
+    transactions.forEach(txn => {
+      if (txn.status === 'approved') {
+        balance += txn.amount;
+      }
+    });
+
+    // Add referral bonus
+    balance += userData.bonus;
+
+    // Add stake principals and calculate interest for matured stakes
+    stakes.forEach(stake => {
+      if (stake.status === 'active') {
+        balance += stake.amount; // Principal amount
+
+        // Calculate interest for matured stakes
+        const currentDate = new Date().toLocaleString('en-RW', { timeZone: 'Africa/Kigali' });
+        const endDate = new Date(stake.end_date).toLocaleString('en-RW', { timeZone: 'Africa/Kigali' });
+        if (new Date(currentDate) >= new Date(endDate)) {
+          const interest = stake.amount * stake.interest_rate;
+          balance += interest;
+        }
+      }
+    });
+
+    // Subtract processed withdrawals
+    withdrawals.forEach(withdrawal => {
+      if (withdrawal.status === 'approved') {
+        balance -= withdrawal.amount;
+      }
+    });
+
+    return Math.max(0, balance); // Ensure balance doesn't go negative
+  };
+
+  // Filter stakes that can be withdrawn (matured and not yet withdrawn)
+  const withdrawableStakes = stakes.filter(stake => {
+    const currentDate = new Date().toLocaleString('en-RW', { timeZone: 'Africa/Kigali' });
+    const endDate = new Date(stake.end_date).toLocaleString('en-RW', { timeZone: 'Africa/Kigali' });
+    return new Date(currentDate) >= new Date(endDate) && stake.status === 'active';
+  });
+
+  // Pagination functions
+  const getPaginatedTransactions = () => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filterUserTransactions(transactions).slice(startIndex, endIndex);
+  };
+
+  const totalPages = Math.ceil(filterUserTransactions(transactions).length / itemsPerPage);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, transactionFilters]);
+
+  // Enhanced filtering functions
+  const filterUserTransactions = (transactions) => {
+    return transactions.filter(txn => {
+      // Search term filter
+      if (searchTerm) {
+        const searchLower = searchTerm.toLowerCase();
+        if (!txn.type.toLowerCase().includes(searchLower) &&
+            !txn.txn_id.toLowerCase().includes(searchLower) &&
+            !txn.status.toLowerCase().includes(searchLower)) {
+          return false;
+        }
+      }
+
+      // Type filter
+      if (transactionFilters.type !== 'all' && txn.type !== transactionFilters.type) {
+        return false;
+      }
+
+      // Status filter
+      if (transactionFilters.status !== 'all' && txn.status !== transactionFilters.status) {
+        return false;
+      }
+
+      // Date range filter
+      if (transactionFilters.dateRange !== 'all') {
+        const txnDate = new Date(txn.created_at);
+        const now = new Date();
+
+        switch (transactionFilters.dateRange) {
+          case 'today':
+            if (txnDate.toDateString() !== now.toDateString()) return false;
+            break;
+          case 'week':
+            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            if (txnDate < weekAgo) return false;
+            break;
+          case 'month':
+            const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+            if (txnDate < monthAgo) return false;
+            break;
+          default:
+            break;
+        }
+      }
+
+      return true;
+    });
   };
 
   // Support form submission handler
@@ -388,150 +589,277 @@ const KediUserDashboard = () => {
     );
   };
 
+  // Chart data generation functions for user dashboard
+  const generateUserTransactionData = () => {
+    // Get last 6 months of transaction data
+    const last6Months = [];
+    const transactionCounts = [];
+
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date();
+      date.setMonth(date.getMonth() - i);
+      last6Months.push(date.toLocaleDateString('en-US', { month: 'short' }));
+
+      // Count transactions for this month
+      const monthTransactions = transactions.filter(txn => {
+        const txnDate = new Date(txn.created_at);
+        return txnDate.getMonth() === date.getMonth() && txnDate.getFullYear() === date.getFullYear();
+      });
+      transactionCounts.push(monthTransactions.length);
+    }
+
+    return {
+      labels: last6Months,
+      datasets: [{
+        label: 'Transactions',
+        data: transactionCounts,
+        borderColor: 'rgb(34, 197, 94)',
+        backgroundColor: 'rgba(34, 197, 94, 0.1)',
+        tension: 0.4,
+        fill: true,
+      }]
+    };
+  };
+
+  const generateUserBalanceData = () => {
+    // Mock balance growth data
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+    const balances = [50000, 75000, 95000, 120000, 145000, calculateRealBalance()];
+
+    return {
+      labels: months,
+      datasets: [{
+        label: 'Balance (RWF)',
+        data: balances,
+        borderColor: 'rgb(59, 130, 246)',
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        tension: 0.4,
+        fill: true,
+      }]
+    };
+  };
+
+  const userChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'top',
+        labels: {
+          usePointStyle: true,
+          padding: 15,
+          font: {
+            size: 12,
+            weight: '500'
+          }
+        }
+      },
+      tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        titleColor: 'white',
+        bodyColor: 'white',
+        borderColor: 'rgba(255, 255, 255, 0.2)',
+        borderWidth: 1,
+        cornerRadius: 8,
+        displayColors: true,
+        padding: 12,
+        callbacks: {
+          label: function(context) {
+            if (context.dataset.label.includes('Balance')) {
+              return `${context.dataset.label}: ${formatCurrency(context.parsed.y)}`;
+            }
+            return `${context.dataset.label}: ${context.parsed.y}`;
+          }
+        }
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        grid: {
+          color: 'rgba(0, 0, 0, 0.1)',
+        },
+        ticks: {
+          callback: function(value) {
+            if (this.chart.data.datasets[0].label.includes('Balance')) {
+              return formatCurrency(value);
+            }
+            return value;
+          }
+        }
+      },
+      x: {
+        grid: {
+          display: false,
+        }
+      }
+    },
+    elements: {
+      point: {
+        radius: 4,
+        hoverRadius: 6,
+      }
+    }
+  };
+
   return (
-    <div>
+    <div className="min-h-screen bg-gray-50">
       {/* Mobile Menu Button */}
       <button
-        className="mobile-menu-btn"
+        className="lg:hidden fixed top-4 left-4 z-50 bg-green-600 hover:bg-green-700 text-white p-3 rounded-lg shadow-lg transition-colors duration-200"
         onClick={toggleSidebar}
-        style={{
-          position: 'fixed',
-          top: '20px',
-          left: '20px',
-          zIndex: '1001',
-          backgroundColor: '#2e8b57',
-          color: 'white',
-          border: 'none',
-          padding: '12px',
-          borderRadius: '8px',
-          cursor: 'pointer',
-          display: 'none',
-          boxShadow: '0 2px 10px rgba(0,0,0,0.2)'
-        }}
       >
         <FaBars size={20} />
       </button>
 
       {/* Sidebar */}
-      <div className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
-        <div className="sidebar-header">
-          <h2>KEDI BUSINESS & AGRI FUNDS</h2>
-          <button
-            className="sidebar-close-btn"
-            onClick={toggleSidebar}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: 'white',
-              fontSize: '24px',
-              cursor: 'pointer',
-              display: 'none'
-            }}
-          >
-            <FaTimes />
-          </button>
-        </div>
-        <div className="tabs">
-          {navigationItems.map((item) => (
+      <div className={`fixed inset-y-0 left-0 z-40 w-64 bg-gradient-to-b from-green-800 to-green-900 text-white transform transition-transform duration-300 ease-in-out ${
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+      } lg:translate-x-0 lg:static lg:inset-0`}>
+        <div className="flex flex-col h-full">
+          <div className="flex items-center justify-between p-6 border-b border-green-700">
+            <h2 className="text-lg font-bold text-white">KEDI BUSINESS & AGRI FUNDS</h2>
             <button
-              key={item.id}
-              className={`tab-button ${currentSection === item.id ? 'active' : ''}`}
-              onClick={() => showSection(item.id)}
+              className="lg:hidden text-white hover:text-green-200 transition-colors"
+              onClick={toggleSidebar}
             >
-              <item.icon className="mr-2" />
-              <span className="tab-text">{item.label}</span>
+              <FaTimes size={24} />
             </button>
-          ))}
-          <button
-            className="logout-button"
-            onClick={logout}
-          >
-            <FaSignOutAlt className="mr-2" />
-            <span className="tab-text">Logout</span>
-          </button>
+          </div>
+
+          {/* User Profile Section */}
+          <div className="px-6 py-4 border-b border-green-700">
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 bg-green-200 rounded-full flex items-center justify-center">
+                <span className="text-xl font-bold text-green-800">
+                  {userData.avatar}
+                </span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-white font-medium truncate">{userData.name}</p>
+                <p className="text-green-200 text-sm truncate">{userData.email}</p>
+              </div>
+            </div>
+          </div>
+
+          <nav className="flex-1 px-4 py-6 space-y-2">
+            {navigationItems.map((item) => (
+              <button
+                key={item.id}
+                className={`w-full flex items-center px-4 py-3 text-left rounded-lg transition-all duration-200 ${
+                  currentSection === item.id
+                    ? 'bg-green-600 text-white shadow-md'
+                    : 'text-green-100 hover:bg-green-700 hover:text-white'
+                }`}
+                onClick={() => showSection(item.id)}
+              >
+                <item.icon className="mr-3 text-lg" />
+                <span className="font-medium">{item.label}</span>
+              </button>
+            ))}
+          </nav>
+
+          <div className="p-4 border-t border-green-700">
+            <button
+              className="w-full flex items-center px-4 py-3 text-left text-red-300 hover:bg-red-600 hover:text-white rounded-lg transition-all duration-200"
+              onClick={logout}
+            >
+              <FaSignOutAlt className="mr-3" />
+              <span className="font-medium">Logout</span>
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Mobile Overlay */}
       {sidebarOpen && (
         <div
-          className="sidebar-overlay"
+          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
           onClick={toggleSidebar}
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            zIndex: '999',
-            display: 'none'
-          }}
         ></div>
       )}
 
       {/* Main Content */}
-      <div className="main-content">
-        <div className="container">
+      <div className="lg:ml-64 min-h-screen">
+        <div className="p-4 lg:p-8">
         {/* Dashboard Section */}
         {currentSection === 'dashboard' && (
-          <div>
+          <div className="space-y-6">
             {/* Welcome Section */}
-            <div className="dashboard-card">
-              <div className="flex justify-between items-center mb-4">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-800 mb-2">
+                  <h1 className="text-3xl font-bold text-gray-900 mb-2">
                     Welcome back, {userData.name}!
                   </h1>
-                  <p className="text-gray-600">
+                  <p className="text-gray-600 text-lg">
                     Here's an overview of your account and recent activities.
                   </p>
                 </div>
-                <button
-                  onClick={refreshDashboard}
-                  disabled={isLoading}
-                  className="action-button"
-                >
-                  {isLoading ? (
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  ) : (
-                    <FaSyncAlt className="mr-2" />
-                  )}
-                  Refresh
-                </button>
+                <div className="flex items-center space-x-4">
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowInbox(!showInbox)}
+                      className="p-3 bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-lg transition-colors relative"
+                    >
+                      <FaUser size={20} />
+                      {unreadCount > 0 && (
+                        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                          {unreadCount}
+                        </span>
+                      )}
+                    </button>
+                  </div>
+                  <button
+                    onClick={refreshDashboard}
+                    disabled={isLoading}
+                    className="inline-flex items-center px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                  >
+                    {isLoading ? (
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    ) : (
+                      <FaSyncAlt className="mr-2" />
+                    )}
+                    Refresh
+                  </button>
+                </div>
               </div>
             </div>
 
             {/* Balance Cards */}
-            <div className="dashboard-grid">
-              <div className="dashboard-card">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <div className="flex items-center space-x-3 mb-2">
-                      <FaWallet className="text-2xl text-green-600" />
-                      <span className="text-lg font-medium">Estimated Balance</span>
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3 mb-3">
+                      <div className="p-3 bg-green-100 rounded-lg">
+                        <FaWallet className="text-xl text-green-600" />
+                      </div>
+                      <span className="text-sm font-medium text-gray-600">Estimated Balance</span>
                     </div>
                     <div className="text-3xl font-bold text-green-600 mb-1">
-                      {formatCurrency(userData.balance || 0)} RWF
+                      {formatCurrency(calculateRealBalance())} RWF
                     </div>
-                    <p className="text-gray-600 text-sm">
+                    <p className="text-gray-500 text-sm">
                       Total wallet balance
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="dashboard-card">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <div className="flex items-center space-x-3 mb-2">
-                      <FaGift className="text-2xl text-blue-600" />
-                      <span className="text-lg font-medium">Referral Bonus</span>
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3 mb-3">
+                      <div className="p-3 bg-blue-100 rounded-lg">
+                        <FaGift className="text-xl text-blue-600" />
+                      </div>
+                      <span className="text-sm font-medium text-gray-600">Referral Bonus</span>
                     </div>
                     <div className="text-3xl font-bold text-blue-600 mb-1">
                       {formatCurrency(userData.bonus || 0)} RWF
                     </div>
-                    <p className="text-gray-600 text-sm">
+                    <p className="text-gray-500 text-sm">
                       Total referral earnings
                     </p>
                   </div>
@@ -540,12 +868,12 @@ const KediUserDashboard = () => {
             </div>
 
             {/* Quick Actions */}
-            <div className="dashboard-card">
-              <h3>Quick Actions</h3>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <h3 className="text-xl font-semibold text-gray-900 mb-6">Quick Actions</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <button
                   onClick={() => showSection('transaction')}
-                  className="action-button"
+                  className="flex items-center justify-center px-6 py-4 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors duration-200 shadow-sm"
                 >
                   <FaPlus className="mr-2" />
                   Make Transaction
@@ -553,7 +881,7 @@ const KediUserDashboard = () => {
 
                 <button
                   onClick={() => showSection('stake')}
-                  className="action-button"
+                  className="flex items-center justify-center px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 shadow-sm"
                 >
                   <FaPiggyBank className="mr-2" />
                   Deposit Stake
@@ -561,7 +889,7 @@ const KediUserDashboard = () => {
 
                 <button
                   onClick={() => showSection('history')}
-                  className="action-button"
+                  className="flex items-center justify-center px-6 py-4 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors duration-200 shadow-sm"
                 >
                   <FaMoneyBillWave className="mr-2" />
                   Withdraw
@@ -570,75 +898,134 @@ const KediUserDashboard = () => {
             </div>
 
             {/* Recent Transactions */}
-            <div className="dashboard-card">
-              <div className="flex justify-between items-center mb-4">
-                <h3>Recent Transactions</h3>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-semibold text-gray-900">Recent Transactions</h3>
                 <button
                   onClick={() => showSection('history')}
-                  className="action-button"
+                  className="text-green-600 hover:text-green-700 font-medium text-sm transition-colors"
                 >
                   View All →
                 </button>
               </div>
 
-              <div className="table-container">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Date</th>
-                      <th>Type</th>
-                      <th>Amount</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {getRecentTransactions(transactions, 3).map((txn) => (
-                      <tr key={txn.id}>
-                        <td>{new Date(txn.created_at).toLocaleDateString()}</td>
-                        <td>{txn.type}</td>
-                        <td className="font-medium">{formatCurrency(txn.amount)} RWF</td>
-                        <td>{getStatusBadge(txn.status)}</td>
+              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Type</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Amount</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {getRecentTransactions(transactions, 3).map((txn) => (
+                        <tr key={txn.id} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {new Date(txn.created_at).toLocaleDateString()}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {txn.type}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
+                            {formatCurrency(txn.amount)} RWF
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {getStatusBadge(txn.status)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {getRecentTransactions(transactions, 3).length === 0 && (
+                  <div className="text-center py-8">
+                    <FaExchangeAlt className="text-4xl text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-500">No recent transactions</p>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Active Stakes */}
-            <div className="dashboard-card">
-              <h3>Active Stakes</h3>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <h3 className="text-xl font-semibold text-gray-900 mb-6">Active Stakes</h3>
 
-              <div className="table-container">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Principal</th>
-                      <th>Duration</th>
-                      <th>Rate</th>
-                      <th>Interest</th>
-                      <th>Total Value</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {stakes.filter(stake => stake.status === 'active').map((stake) => {
-                      const interestEarned = stake.amount * stake.interest_rate * (stake.stake_period / 365);
-                      const totalValue = stake.amount + interestEarned;
+              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Principal</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Duration</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Rate</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Interest</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Total Value</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {stakes.filter(stake => stake.status === 'active').map((stake) => {
+                        const interestEarned = stake.amount * stake.interest_rate * (stake.stake_period / 365);
+                        const totalValue = stake.amount + interestEarned;
 
-                      return (
-                        <tr key={stake.id}>
-                          <td className="font-medium">{formatCurrency(stake.amount)} RWF</td>
-                          <td>{stake.stake_period} days</td>
-                          <td>{(stake.interest_rate * 100)}%</td>
-                          <td>{formatCurrency(interestEarned)} RWF</td>
-                          <td className="font-medium text-green-600">{formatCurrency(totalValue)} RWF</td>
-                          <td>{getStatusBadge(stake.status)}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                        return (
+                          <tr key={stake.id} className="hover:bg-gray-50 transition-colors">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                              {formatCurrency(stake.amount)} RWF
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                              {stake.stake_period} days
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                              {(stake.interest_rate * 100)}%
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 font-medium">
+                              {formatCurrency(interestEarned)} RWF
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
+                              {formatCurrency(totalValue)} RWF
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              {getStatusBadge(stake.status)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                {stakes.filter(stake => stake.status === 'active').length === 0 && (
+                  <div className="text-center py-8">
+                    <FaPiggyBank className="text-4xl text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-500">No active stakes</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Personal Analytics */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <h3 className="text-xl font-semibold text-gray-900 mb-6">Your Analytics</h3>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Transaction Activity */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="text-lg font-medium text-gray-900 mb-4">Transaction Activity</h4>
+                  <div className="h-48">
+                    <Line data={generateUserTransactionData()} options={userChartOptions} />
+                  </div>
+                </div>
+
+                {/* Balance Growth */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="text-lg font-medium text-gray-900 mb-4">Balance Growth</h4>
+                  <div className="h-48">
+                    <Line data={generateUserBalanceData()} options={userChartOptions} />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -772,34 +1159,287 @@ const KediUserDashboard = () => {
 
         {/* History Section */}
         {currentSection === 'history' && (
-          <div>
-            <div className="dashboard-card">
-              <h3>Transaction History</h3>
-
-              <div className="table-container">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Date</th>
-                      <th>Type</th>
-                      <th>Amount</th>
-                      <th>Transaction ID</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {transactions.map((txn) => (
-                      <tr key={txn.id}>
-                        <td>{new Date(txn.created_at).toLocaleDateString()}</td>
-                        <td>{txn.type}</td>
-                        <td className="font-medium">{formatCurrency(txn.amount)} RWF</td>
-                        <td>{txn.txn_id}</td>
-                        <td>{getStatusBadge(txn.status)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+          <div className="space-y-6">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-6">
+                <h3 className="text-2xl font-semibold text-gray-900">Transaction History</h3>
+                <div className="text-sm text-gray-600 bg-gray-100 px-3 py-2 rounded-lg">
+                  {filterUserTransactions(transactions).length} of {transactions.length} transactions
+                </div>
               </div>
+
+              {/* Enhanced Filters */}
+              <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                <div className="flex flex-col sm:flex-row gap-4 items-center mb-4">
+                  <div className="flex-1 w-full">
+                    <div className="relative">
+                      <FaFilter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="text"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        placeholder="Search transactions..."
+                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                      />
+                      {searchTerm && (
+                        <button
+                          onClick={() => setSearchTerm('')}
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setAdvancedUserSearch({...advancedUserSearch, showAdvanced: !advancedUserSearch.showAdvanced})}
+                    className={`px-4 py-3 font-medium rounded-lg transition-colors ${
+                      advancedUserSearch.showAdvanced
+                        ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                        : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                    }`}
+                  >
+                    <FaFilter className="inline mr-2" />
+                    {advancedUserSearch.showAdvanced ? 'Hide Advanced' : 'Advanced'}
+                  </button>
+                </div>
+
+                {/* Quick Filter Tags */}
+                {searchTerm && (
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    <span className="text-sm text-gray-600">Searching for:</span>
+                    <span className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 text-sm font-medium rounded-full">
+                      "{searchTerm}"
+                      <button
+                        onClick={() => setSearchTerm('')}
+                        className="ml-2 text-green-600 hover:text-green-800"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  </div>
+                )}
+
+                {/* Basic Filters */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
+                    <select
+                      value={transactionFilters.type}
+                      onChange={(e) => setTransactionFilters({...transactionFilters, type: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    >
+                      <option value="all">All Types</option>
+                      <option value="tree_plan">Tree Plan</option>
+                      <option value="loan">Loan</option>
+                      <option value="savings">Savings</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <select
+                      value={transactionFilters.status}
+                      onChange={(e) => setTransactionFilters({...transactionFilters, status: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    >
+                      <option value="all">All Status</option>
+                      <option value="approved">Approved</option>
+                      <option value="pending">Pending</option>
+                      <option value="rejected">Rejected</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+                    <select
+                      value={transactionFilters.dateRange}
+                      onChange={(e) => setTransactionFilters({...transactionFilters, dateRange: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    >
+                      <option value="all">All Time</option>
+                      <option value="today">Today</option>
+                      <option value="week">Last 7 days</option>
+                      <option value="month">Last 30 days</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Clear Filters */}
+                {(searchTerm || transactionFilters.type !== 'all' || transactionFilters.status !== 'all' || transactionFilters.dateRange !== 'all') && (
+                  <div className="mt-4 flex justify-end">
+                    <button
+                      onClick={() => {
+                        setSearchTerm('');
+                        setTransactionFilters({ type: 'all', status: 'all', dateRange: 'all' });
+                        setAdvancedUserSearch({...advancedUserSearch, showAdvanced: false});
+                      }}
+                      className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white font-medium rounded-lg transition-colors duration-200"
+                    >
+                      Clear All Filters
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Advanced Search Panel */}
+              {advancedUserSearch.showAdvanced && (
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <FaFilter className="mr-2 text-blue-600" />
+                    Advanced Search & Filters
+                  </h3>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {/* Date Range */}
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-gray-700">Date From</label>
+                      <input
+                        type="date"
+                        value={advancedUserSearch.dateFrom}
+                        onChange={(e) => setAdvancedUserSearch({...advancedUserSearch, dateFrom: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-gray-700">Date To</label>
+                      <input
+                        type="date"
+                        value={advancedUserSearch.dateTo}
+                        onChange={(e) => setAdvancedUserSearch({...advancedUserSearch, dateTo: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    {/* Amount Range */}
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-gray-700">Min Amount (RWF)</label>
+                      <input
+                        type="number"
+                        placeholder="0"
+                        value={advancedUserSearch.minAmount}
+                        onChange={(e) => setAdvancedUserSearch({...advancedUserSearch, minAmount: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-gray-700">Max Amount (RWF)</label>
+                      <input
+                        type="number"
+                        placeholder="No limit"
+                        value={advancedUserSearch.maxAmount}
+                        onChange={(e) => setAdvancedUserSearch({...advancedUserSearch, maxAmount: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Filter Actions */}
+                  <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-200">
+                    <div className="text-sm text-gray-600">
+                      {filterUserTransactions(transactions).length} of {transactions.length} transactions match filters
+                    </div>
+                    <button
+                      onClick={() => setAdvancedUserSearch({...advancedUserSearch, showAdvanced: false})}
+                      className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors"
+                    >
+                      Apply Filters
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Type</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Amount</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Transaction ID</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {getPaginatedTransactions().map((txn) => (
+                        <tr key={txn.id} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {new Date(txn.created_at).toLocaleDateString()}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {txn.type}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
+                            {formatCurrency(txn.amount)} RWF
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-600">
+                            {txn.txn_id}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {getStatusBadge(txn.status)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {filterUserTransactions(transactions).length === 0 && (
+                  <div className="text-center py-12">
+                    <FaHistory className="text-4xl text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-500">No transactions found</p>
+                    <p className="text-sm text-gray-400 mt-1">Try adjusting your filters</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Pagination Controls for User Transactions */}
+              {filterUserTransactions(transactions).length > itemsPerPage && (
+                <div className="mt-6 flex items-center justify-between">
+                  <div className="text-sm text-gray-700">
+                    Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filterUserTransactions(transactions).length)} of {filterUserTransactions(transactions).length} transactions
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Previous
+                    </button>
+
+                    {/* Page Numbers */}
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+                      if (pageNum > totalPages) return null;
+
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => setCurrentPage(pageNum)}
+                          className={`px-3 py-2 text-sm font-medium rounded-md ${
+                            currentPage === pageNum
+                              ? 'text-white bg-green-600 border border-green-600'
+                              : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1130,6 +1770,109 @@ const KediUserDashboard = () => {
         )}
         </div>
       </div>
+
+      {/* Inbox Modal */}
+      {showInbox && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '8px',
+            padding: '20px',
+            maxWidth: '600px',
+            width: '90%',
+            maxHeight: '80vh',
+            overflow: 'auto'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ margin: 0 }}>Inbox</h3>
+              <button
+                onClick={() => setShowInbox(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '20px',
+                  cursor: 'pointer',
+                  color: '#6c757d'
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            {messages.length === 0 ? (
+              <p style={{ textAlign: 'center', color: '#6c757d' }}>No messages yet</p>
+            ) : (
+              <div>
+                {messages.map((msg) => (
+                  <div
+                    key={msg.id}
+                    style={{
+                      border: '1px solid #e9ecef',
+                      borderRadius: '8px',
+                      padding: '15px',
+                      marginBottom: '15px',
+                      backgroundColor: msg.is_read ? '#f8f9fa' : '#fff3cd'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                      <div>
+                        <h4 style={{ margin: '0 0 5px 0', color: '#28a745' }}>{msg.subject}</h4>
+                        <small style={{ color: '#6c757d' }}>
+                          From: {msg.admin_firstname} {msg.admin_lastname} • {new Date(msg.created_at).toLocaleString('en-RW', { timeZone: 'Africa/Kigali' })}
+                        </small>
+                      </div>
+                      {!msg.is_read && (
+                        <button
+                          onClick={async () => {
+                            try {
+                              await markMessageAsRead(msg.id);
+                              // Update local state
+                              setMessages(messages.map(m =>
+                                m.id === msg.id ? { ...m, is_read: 1 } : m
+                              ));
+                              setUnreadCount(prev => Math.max(0, prev - 1));
+                            } catch (error) {
+                              console.error('Error marking message as read:', error);
+                            }
+                          }}
+                          style={{
+                            backgroundColor: '#28a745',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            padding: '4px 8px',
+                            fontSize: '12px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Mark as Read
+                        </button>
+                      )}
+                    </div>
+                    <p style={{ margin: 0, lineHeight: '1.5' }}>{msg.message}</p>
+                    {msg.activity_type && (
+                      <small style={{ color: '#6c757d', marginTop: '10px', display: 'block' }}>
+                        Related to: {msg.activity_type} #{msg.activity_id}
+                      </small>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Payment Verification Modal */}
       {showPaymentModal && (
