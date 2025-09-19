@@ -12,10 +12,9 @@ export default function UserDashboard() {
   const [transactions, setTransactions] = useState([]);
   const [stakes, setStakes] = useState([]);
   const [withdrawals, setWithdrawals] = useState([]);
-  const [type, setType] = useState('tree_plan');
+  const [type, setType] = useState('saving');
   const [amount, setAmount] = useState('');
   const [txnId, setTxnId] = useState('');
-  const [stakeAmount, setStakeAmount] = useState('');
   const [stakePeriod, setStakePeriod] = useState(30);
   const [withdrawalStakeId, setWithdrawalStakeId] = useState('');
   const [message, setMessage] = useState('');
@@ -104,42 +103,43 @@ export default function UserDashboard() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!amount || !txnId) {
-      setMessage('Please enter amount and transaction ID');
+    if (!amount) {
+      setMessage('Please enter amount');
       return;
     }
+
+    // For stakes, we don't need transaction ID, for others we do
+    if (type !== 'stake' && !txnId) {
+      setMessage('Please enter transaction ID');
+      return;
+    }
+
     try {
-      await createTransaction({ type, amount: parseFloat(amount), txn_id: txnId });
-      setMessage('Transaction submitted for approval');
+      if (type === 'stake') {
+        // Handle stake creation
+        await createStake({ amount: parseFloat(amount), stakePeriod: parseInt(stakePeriod) });
+        setMessage('Stake deposit created successfully');
+
+        // Refresh stakes after submitting
+        const response = await getUserStakes();
+        setStakes(Array.isArray(response.data?.stakes) ? response.data.stakes : []);
+      } else {
+        // Handle regular transactions
+        await createTransaction({ type, amount: parseFloat(amount), txn_id: txnId });
+        setMessage('Transaction submitted for approval');
+
+        // Refresh transactions after submitting
+        const response = await getUserDashboard();
+        setTransactions(Array.isArray(response.data?.transactions) ? response.data.transactions : []);
+      }
+
       setAmount('');
       setTxnId('');
-      
-      // Refresh transactions after submitting
-      const response = await getUserDashboard();
-      setTransactions(Array.isArray(response.data?.transactions) ? response.data.transactions : []);
     } catch (error) {
       setMessage(error.message || 'Error submitting transaction');
     }
   };
 
-  const handleStakeSubmit = async (e) => {
-    e.preventDefault();
-    if (!stakeAmount) {
-      setMessage('Please enter stake amount');
-      return;
-    }
-    try {
-      await createStake({ amount: parseFloat(stakeAmount), stakePeriod: parseInt(stakePeriod) });
-      setMessage('Stake deposit created successfully');
-      setStakeAmount('');
-      
-      // Refresh stakes after submitting
-      const response = await getUserStakes();
-      setStakes(Array.isArray(response.data?.stakes) ? response.data.stakes : []);
-    } catch (error) {
-      setMessage(error.message || 'Error creating stake deposit');
-    }
-  };
 
   const handleWithdrawalSubmit = async (e) => {
     e.preventDefault();
@@ -344,12 +344,12 @@ export default function UserDashboard() {
                   value={type}
                   onChange={(e) => setType(e.target.value)}
                 >
-                  <option value="tree_plan">Tree Plan</option>
-                  <option value="loan">Loan</option>
-                  <option value="savings">Savings</option>
+                  <option value="saving">💰 Saving</option>
+                  <option value="loan">🏦 Loan</option>
+                  <option value="stake">📈 Stake</option>
                 </select>
               </div>
-              
+
               <div className="form-group">
                 <label htmlFor="amount">Amount (RWF)</label>
                 <input
@@ -361,54 +361,42 @@ export default function UserDashboard() {
                   required
                 />
               </div>
-              
-              <div className="form-group">
-                <label htmlFor="txnId">Transaction ID</label>
-                <input
-                  id="txnId"
-                  type="text"
-                  placeholder="Enter transaction ID"
-                  value={txnId}
-                  onChange={(e) => setTxnId(e.target.value)}
-                  required
-                />
-              </div>
-              
-              <Button type="submit">Submit Transaction</Button>
+
+              {type === 'stake' && (
+                <div className="form-group">
+                  <label htmlFor="stakePeriod">Stake Period</label>
+                  <select
+                    id="stakePeriod"
+                    value={stakePeriod}
+                    onChange={(e) => setStakePeriod(e.target.value)}
+                  >
+                    <option value="30">30 Days (5% interest)</option>
+                    <option value="90">90 Days (15% interest)</option>
+                    <option value="180">180 Days (30% interest)</option>
+                  </select>
+                </div>
+              )}
+
+              {type !== 'stake' && (
+                <div className="form-group">
+                  <label htmlFor="txnId">Transaction ID</label>
+                  <input
+                    id="txnId"
+                    type="text"
+                    placeholder="Enter transaction ID"
+                    value={txnId}
+                    onChange={(e) => setTxnId(e.target.value)}
+                    required
+                  />
+                </div>
+              )}
+
+              <Button type="submit">
+                {type === 'stake' ? 'Create Stake' : 'Submit Transaction'}
+              </Button>
             </form>
           </div>
           
-          <div className="dashboard-card">
-            <h3>Deposit Stake</h3>
-            <form onSubmit={handleStakeSubmit} className="form-group">
-              <div className="form-group">
-                <label htmlFor="stakeAmount">Amount (RWF)</label>
-                <input
-                  id="stakeAmount"
-                  type="number"
-                  placeholder="Enter amount"
-                  value={stakeAmount}
-                  onChange={(e) => setStakeAmount(e.target.value)}
-                  required
-                />
-              </div>
-              
-              <div className="form-group">
-                <label htmlFor="stakePeriod">Stake Period</label>
-                <select
-                  id="stakePeriod"
-                  value={stakePeriod}
-                  onChange={(e) => setStakePeriod(e.target.value)}
-                >
-                  <option value="30">30 Days (5% interest)</option>
-                  <option value="90">90 Days (15% interest)</option>
-                  <option value="180">180 Days (30% interest)</option>
-                </select>
-              </div>
-              
-              <Button type="submit">Deposit Stake</Button>
-            </form>
-          </div>
         </div>
         
         {message && (
