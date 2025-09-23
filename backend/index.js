@@ -5,6 +5,7 @@ const bcrypt = require('bcrypt');
 const dotenv = require('dotenv');
 const morgan = require('morgan');
 const path = require('path');
+const fs = require('fs');
 const { query } = require('./utils/database');
 
 // Load environment variables
@@ -15,6 +16,14 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 app.use(morgan('combined'));
+
+// Set correct MIME type for JavaScript modules
+app.use((req, res, next) => {
+  if (req.path.endsWith('.js')) {
+    res.type('application/javascript');
+  }
+  next();
+});
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -227,11 +236,16 @@ app.use('/api/transactions', transactionRoutes);
 
 // All routes are now handled by modular route files above
 
+// Ensure uploads directory exists
+if (!fs.existsSync(path.join(__dirname, 'uploads'))) {
+  fs.mkdirSync(path.join(__dirname, 'uploads'), { recursive: true });
+}
+
 // Serve static files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Serve static files from the React app build directory
-app.use(express.static(path.join(__dirname, '..', 'dist')));
+app.use(express.static(path.join(__dirname, 'dist')));
 
 // Debug endpoint to check admin user status
 app.get('/api/debug/admin-status', async (req, res) => {
@@ -259,7 +273,7 @@ app.get('/api/debug/admin-status', async (req, res) => {
 
 // Catch all handler: send back React's index.html file for client-side routing
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
 // Start server

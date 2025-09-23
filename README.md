@@ -32,7 +32,26 @@ A comprehensive financial management platform built with React, Node.js, and Pos
 
 ## 📋 Deployment to Render
 
-### Step 1: Create PostgreSQL Database
+### Option 1: Using render.yaml (Recommended - Single Service)
+
+1. Push your code to a GitHub repository
+2. Go to [Render Dashboard](https://dashboard.render.com/)
+3. Click "New +" → "Blueprint"
+4. Connect your GitHub repository
+5. Render will automatically detect `render.yaml` and set up:
+   - PostgreSQL database
+   - Web service with frontend and backend combined
+6. In the web service settings, add the following environment variables as **secrets**:
+   ```
+   JWT_SECRET=your_super_secret_jwt_key
+   ADMIN_PASSWORD=your_secure_password
+   ```
+   (ADMIN_EMAIL is already set to kedimoneynetwork@gmail.com)
+7. Deploy!
+
+### Option 2: Separate Services (For Better Scaling)
+
+#### Step 1: Create PostgreSQL Database
 1. Go to [Render Dashboard](https://dashboard.render.com/)
 2. Click "New +" → "PostgreSQL"
 3. Configure:
@@ -41,13 +60,13 @@ A comprehensive financial management platform built with React, Node.js, and Pos
    - Choose your region
 4. Copy the **External Database URL**
 
-### Step 2: Deploy Backend (Web Service)
+#### Step 2: Deploy Backend (Web Service)
 1. Click "New +" → "Web Service"
 2. Connect your GitHub repository
 3. Set configuration:
    - **Runtime**: Node.js
-   - **Build Command**: `npm install`
-   - **Start Command**: `node index.js`
+   - **Build Command**: `cd backend && npm install`
+   - **Start Command**: `cd backend && node index.js`
 4. Set environment variables:
    ```
    DATABASE_URL=postgresql://user:pass@host:port/db
@@ -57,7 +76,7 @@ A comprehensive financial management platform built with React, Node.js, and Pos
    NODE_ENV=production
    ```
 
-### Step 3: Deploy Frontend (Static Site)
+#### Step 3: Deploy Frontend (Static Site)
 1. Click "New +" → "Static Site"
 2. Connect your GitHub repository
 3. Set configuration:

@@ -9,10 +9,11 @@ services:
     region: singapore
     plan: starter
     buildCommand: |
-      npm install
-      npm run build
-      cd backend && npm install
-    startCommand: npm run full-start
+       npm install
+       npm run build
+       cd backend && npm install
+       cp -r ../dist .
+    startCommand: npm start
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -21,9 +22,9 @@ services:
       - key: NODE_VERSION
         value: 18.17.0
       - key: JWT_SECRET
-        value: RwandaKediNetworkSuperSecretKey123!@#
+        # Set this as a secret in Render dashboard
       - key: ADMIN_PASSWORD
-        value: AdminPass123!@#
+        # Set this as a secret in Render dashboard
       - key: ADMIN_EMAIL
         value: kedimoneynetwork@gmail.com
       - key: PORT
