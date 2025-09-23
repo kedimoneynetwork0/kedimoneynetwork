@@ -8,11 +8,7 @@ services:
     env: node
     region: singapore
     plan: starter
-    buildCommand: |
-       npm install
-       npm run build
-       cd backend && npm install
-       cp -r ../dist .
+    buildCommand: npm install && npm run build && cd backend && npm install && cp -r ../dist .
     startCommand: npm start
     envVars:
       - key: DATABASE_URL
