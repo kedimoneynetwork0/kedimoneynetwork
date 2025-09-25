@@ -1851,341 +1851,342 @@ const KediUserDashboard = () => {
           </div>
         )}
 
-        {/* Error Display */}
-        {error && (
-          <div className="message error">
-            <strong>Error:</strong> {error}
-          </div>
-        )}
+        </div>
+      </main>
 
-        {/* Inbox Modal */}
-        {showInbox && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000
-        }}>
-          <div style={{
-            backgroundColor: 'white',
-            borderRadius: '8px',
-            padding: '20px',
-            maxWidth: '600px',
-            width: '90%',
-            maxHeight: '80vh',
-            overflow: 'auto'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h3 style={{ margin: 0 }}>Inbox</h3>
-              <button
-                onClick={() => setShowInbox(false)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '20px',
-                  cursor: 'pointer',
-                  color: '#6c757d'
-                }}
-              >
-                ×
-              </button>
-            </div>
-
-            {messages.length === 0 ? (
-              <p style={{ textAlign: 'center', color: '#6c757d' }}>No messages yet</p>
-            ) : (
-              <div>
-                {messages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    style={{
-                      border: '1px solid #e9ecef',
-                      borderRadius: '8px',
-                      padding: '15px',
-                      marginBottom: '15px',
-                      backgroundColor: msg.is_read ? '#f8f9fa' : '#fff3cd'
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
-                      <div>
-                        <h4 style={{ margin: '0 0 5px 0', color: '#28a745' }}>{msg.subject}</h4>
-                        <small style={{ color: '#6c757d' }}>
-                          From: {msg.admin_firstname} {msg.admin_lastname} • {new Date(msg.created_at).toLocaleString('en-RW', { timeZone: 'Africa/Kigali' })}
-                        </small>
-                      </div>
-                      {!msg.is_read && (
-                        <button
-                          onClick={async () => {
-                            try {
-                              await markMessageAsRead(msg.id);
-                              // Update local state
-                              setMessages(messages.map(m =>
-                                m.id === msg.id ? { ...m, is_read: 1 } : m
-                              ));
-                              setUnreadCount(prev => Math.max(0, prev - 1));
-                            } catch (error) {
-                              console.error('Error marking message as read:', error);
-                            }
-                          }}
-                          style={{
-                            backgroundColor: '#28a745',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            padding: '4px 8px',
-                            fontSize: '12px',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          Mark as Read
-                        </button>
-                      )}
-                    </div>
-                    <p style={{ margin: 0, lineHeight: '1.5' }}>{msg.message}</p>
-                    {msg.activity_type && (
-                      <small style={{ color: '#6c757d', marginTop: '10px', display: 'block' }}>
-                        Related to: {msg.activity_type} #{msg.activity_id}
-                      </small>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+      {/* Error Display */}
+      {error && (
+        <div className="message error">
+          <strong>Error:</strong> {error}
         </div>
       )}
 
-      {/* Payment Verification Modal */}
-      {showPaymentModal && (
-        <div>
-          {/* Modal Overlay */}
-          <div
-            className="modal-overlay"
-            onClick={handlePaymentCancel}
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              backgroundColor: 'rgba(0, 0, 0, 0.6)',
-              zIndex: '1000',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backdropFilter: 'blur(4px)'
-            }}
-          ></div>
-
-          {/* Modal Content */}
-          <div
-            className="payment-modal"
-            style={{
-              position: 'fixed',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              zIndex: '1001',
-              backgroundColor: 'white',
-              borderRadius: '16px',
-              boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15), 0 8px 16px rgba(0, 0, 0, 0.1)',
-              maxWidth: '500px',
-              width: '90%',
-              padding: '0',
-              overflow: 'hidden',
-              transition: 'all 0.3s ease'
-            }}
-          >
-            {/* Modal Header */}
-            <div
+      {/* Inbox Modal */}
+      {showInbox && (
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1000
+      }}>
+        <div style={{
+          backgroundColor: 'white',
+          borderRadius: '8px',
+          padding: '20px',
+          maxWidth: '600px',
+          width: '90%',
+          maxHeight: '80vh',
+          overflow: 'auto'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h3 style={{ margin: 0 }}>Inbox</h3>
+            <button
+              onClick={() => setShowInbox(false)}
               style={{
-                background: 'linear-gradient(135deg, #2e8b57 0%, #228b22 100%)',
-                color: 'white',
-                padding: '24px',
-                textAlign: 'center'
+                background: 'none',
+                border: 'none',
+                fontSize: '20px',
+                cursor: 'pointer',
+                color: '#6c757d'
               }}
             >
-              <div style={{ fontSize: '48px', marginBottom: '12px' }}>📱</div>
-              <h3 style={{ margin: '0', fontSize: '24px', fontWeight: '600' }}>
-                Payment Verification Required
-              </h3>
-            </div>
+              ×
+            </button>
+          </div>
 
-            {/* Modal Body */}
-            <div style={{ padding: '32px 24px' }}>
-              <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-                <p style={{
-                  fontSize: '16px',
-                  color: '#374151',
-                  lineHeight: '1.6',
-                  marginBottom: '16px'
-                }}>
-                  <strong style={{ color: '#2e8b57' }}>
-                    Nyamuneka banza ugenzure ko wishyuye ukanze *182*8*1*1594092# kuri kivin
-                  </strong>
-                </p>
-
-                <div style={{
-                  backgroundColor: '#f3f4f6',
-                  borderRadius: '12px',
-                  padding: '20px',
-                  marginBottom: '20px',
-                  border: '2px solid #e5e7eb'
-                }}>
-                  <p style={{
-                    fontSize: '18px',
-                    fontWeight: 'bold',
-                    color: '#1f2937',
-                    margin: '0',
-                    fontFamily: 'monospace'
-                  }}>
-                    *182*8*1*1594092#
-                  </p>
-                  <p style={{
-                    fontSize: '14px',
-                    color: '#6b7280',
-                    margin: '8px 0 0 0'
-                  }}>
-                    Dial this code on your phone to verify payment
-                  </p>
+          {messages.length === 0 ? (
+            <p style={{ textAlign: 'center', color: '#6c757d' }}>No messages yet</p>
+          ) : (
+            <div>
+              {messages.map((msg) => (
+                <div
+                  key={msg.id}
+                  style={{
+                    border: '1px solid #e9ecef',
+                    borderRadius: '8px',
+                    padding: '15px',
+                    marginBottom: '15px',
+                    backgroundColor: msg.is_read ? '#f8f9fa' : '#fff3cd'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                    <div>
+                      <h4 style={{ margin: '0 0 5px 0', color: '#28a745' }}>{msg.subject}</h4>
+                      <small style={{ color: '#6c757d' }}>
+                        From: {msg.admin_firstname} {msg.admin_lastname} • {new Date(msg.created_at).toLocaleString('en-RW', { timeZone: 'Africa/Kigali' })}
+                      </small>
+                    </div>
+                    {!msg.is_read && (
+                      <button
+                        onClick={async () => {
+                          try {
+                            await markMessageAsRead(msg.id);
+                            // Update local state
+                            setMessages(messages.map(m =>
+                              m.id === msg.id ? { ...m, is_read: 1 } : m
+                            ));
+                            setUnreadCount(prev => Math.max(0, prev - 1));
+                          } catch (error) {
+                            console.error('Error marking message as read:', error);
+                          }
+                        }}
+                        style={{
+                          backgroundColor: '#28a745',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          padding: '4px 8px',
+                          fontSize: '12px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Mark as Read
+                      </button>
+                    )}
+                  </div>
+                  <p style={{ margin: 0, lineHeight: '1.5' }}>{msg.message}</p>
+                  {msg.activity_type && (
+                    <small style={{ color: '#6c757d', marginTop: '10px', display: 'block' }}>
+                      Related to: {msg.activity_type} #{msg.activity_id}
+                    </small>
+                  )}
                 </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    )}
 
-                <p style={{
-                  fontSize: '14px',
-                  color: '#6b7280',
-                  lineHeight: '1.5'
-                }}>
-                  Please verify your payment by dialing the code above on your mobile phone.
-                  Once confirmed, click "Continue with Transaction" to proceed.
-                </p>
-              </div>
+    {/* Payment Verification Modal */}
+    {showPaymentModal && (
+      <div>
+        {/* Modal Overlay */}
+        <div
+          className="modal-overlay"
+          onClick={handlePaymentCancel}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            zIndex: '1000',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backdropFilter: 'blur(4px)'
+          }}
+        ></div>
 
-              {/* Transaction Summary */}
+        {/* Modal Content */}
+        <div
+          className="payment-modal"
+          style={{
+            position: 'fixed',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            zIndex: '1001',
+            backgroundColor: 'white',
+            borderRadius: '16px',
+            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15), 0 8px 16px rgba(0, 0, 0, 0.1)',
+            maxWidth: '500px',
+            width: '90%',
+            padding: '0',
+            overflow: 'hidden',
+            transition: 'all 0.3s ease'
+          }}
+        >
+          {/* Modal Header */}
+          <div
+            style={{
+              background: 'linear-gradient(135deg, #2e8b57 0%, #228b22 100%)',
+              color: 'white',
+              padding: '24px',
+              textAlign: 'center'
+            }}
+          >
+            <div style={{ fontSize: '48px', marginBottom: '12px' }}>📱</div>
+            <h3 style={{ margin: '0', fontSize: '24px', fontWeight: '600' }}>
+              Payment Verification Required
+            </h3>
+          </div>
+
+          {/* Modal Body */}
+          <div style={{ padding: '32px 24px' }}>
+            <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+              <p style={{
+                fontSize: '16px',
+                color: '#374151',
+                lineHeight: '1.6',
+                marginBottom: '16px'
+              }}>
+                <strong style={{ color: '#2e8b57' }}>
+                  Nyamuneka banza ugenzure ko wishyuye ukanze *182*8*1*1594092# kuri kivin
+                </strong>
+              </p>
+
               <div style={{
-                backgroundColor: '#f8fafc',
+                backgroundColor: '#f3f4f6',
                 borderRadius: '12px',
                 padding: '20px',
-                marginBottom: '24px',
-                border: '1px solid #e2e8f0'
+                marginBottom: '20px',
+                border: '2px solid #e5e7eb'
               }}>
-                <h4 style={{
-                  margin: '0 0 16px 0',
-                  fontSize: '16px',
-                  fontWeight: '600',
-                  color: '#1f2937'
+                <p style={{
+                  fontSize: '18px',
+                  fontWeight: 'bold',
+                  color: '#1f2937',
+                  margin: '0',
+                  fontFamily: 'monospace'
                 }}>
-                  Transaction Summary
-                </h4>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <span style={{ color: '#6b7280' }}>Type:</span>
-                  <span style={{ fontWeight: '500' }}>{transactionForm.type}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <span style={{ color: '#6b7280' }}>Amount:</span>
-                  <span style={{ fontWeight: '500' }}>{formatCurrency(transactionForm.amount)} RWF</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#6b7280' }}>Transaction ID:</span>
-                  <span style={{ fontWeight: '500', fontFamily: 'monospace' }}>{transactionForm.txnId}</span>
-                </div>
+                  *182*8*1*1594092#
+                </p>
+                <p style={{
+                  fontSize: '14px',
+                  color: '#6b7280',
+                  margin: '8px 0 0 0'
+                }}>
+                  Dial this code on your phone to verify payment
+                </p>
+              </div>
+
+              <p style={{
+                fontSize: '14px',
+                color: '#6b7280',
+                lineHeight: '1.5'
+              }}>
+                Please verify your payment by dialing the code above on your mobile phone.
+                Once confirmed, click "Continue with Transaction" to proceed.
+              </p>
+            </div>
+
+            {/* Transaction Summary */}
+            <div style={{
+              backgroundColor: '#f8fafc',
+              borderRadius: '12px',
+              padding: '20px',
+              marginBottom: '24px',
+              border: '1px solid #e2e8f0'
+            }}>
+              <h4 style={{
+                margin: '0 0 16px 0',
+                fontSize: '16px',
+                fontWeight: '600',
+                color: '#1f2937'
+              }}>
+                Transaction Summary
+              </h4>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ color: '#6b7280' }}>Type:</span>
+                <span style={{ fontWeight: '500' }}>{transactionForm.type}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ color: '#6b7280' }}>Amount:</span>
+                <span style={{ fontWeight: '500' }}>{formatCurrency(transactionForm.amount)} RWF</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#6b7280' }}>Transaction ID:</span>
+                <span style={{ fontWeight: '500', fontFamily: 'monospace' }}>{transactionForm.txnId}</span>
               </div>
             </div>
+          </div>
 
-            {/* Modal Footer */}
-            <div style={{
-              padding: '24px',
-              backgroundColor: '#f9fafb',
-              borderTop: '1px solid #e5e7eb',
-              display: 'flex',
-              gap: '12px',
-              justifyContent: 'flex-end'
-            }}>
-              <button
-                onClick={handlePaymentCancel}
-                style={{
-                  padding: '12px 24px',
-                  border: '2px solid #d1d5db',
-                  backgroundColor: 'white',
-                  color: '#6b7280',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease'
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.borderColor = '#9ca3af';
-                  e.target.style.color = '#374151';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.borderColor = '#d1d5db';
-                  e.target.style.color = '#6b7280';
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handlePaymentConfirm}
-                disabled={isLoading}
-                style={{
-                  padding: '12px 24px',
-                  border: 'none',
-                  backgroundColor: '#2e8b57',
-                  color: 'white',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  cursor: isLoading ? 'not-allowed' : 'pointer',
-                  transition: 'all 0.2s ease',
-                  opacity: isLoading ? 0.7 : 1
-                }}
-                onMouseEnter={(e) => {
-                  if (!isLoading) {
-                    e.target.style.backgroundColor = '#228b22';
-                    e.target.style.transform = 'translateY(-1px)';
-                    e.target.style.boxShadow = '0 4px 12px rgba(46, 139, 87, 0.3)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isLoading) {
-                    e.target.style.backgroundColor = '#2e8b57';
-                    e.target.style.transform = 'translateY(0)';
-                    e.target.style.boxShadow = 'none';
-                  }
-                }}
-              >
-                {isLoading ? (
+          {/* Modal Footer */}
+          <div style={{
+            padding: '24px',
+            backgroundColor: '#f9fafb',
+            borderTop: '1px solid #e5e7eb',
+            display: 'flex',
+            gap: '12px',
+            justifyContent: 'flex-end'
+          }}>
+            <button
+              onClick={handlePaymentCancel}
+              style={{
+                padding: '12px 24px',
+                border: '2px solid #d1d5db',
+                backgroundColor: 'white',
+                color: '#6b7280',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontWeight: '500',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.borderColor = '#9ca3af';
+                e.target.style.color = '#374151';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.borderColor = '#d1d5db';
+                e.target.style.color = '#6b7280';
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handlePaymentConfirm}
+              disabled={isLoading}
+              style={{
+                padding: '12px 24px',
+                border: 'none',
+                backgroundColor: '#2e8b57',
+                color: 'white',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontWeight: '500',
+                cursor: isLoading ? 'not-allowed' : 'pointer',
+                transition: 'all 0.2s ease',
+                opacity: isLoading ? 0.7 : 1
+              }}
+              onMouseEnter={(e) => {
+                if (!isLoading) {
+                  e.target.style.backgroundColor = '#228b22';
+                  e.target.style.transform = 'translateY(-1px)';
+                  e.target.style.boxShadow = '0 4px 12px rgba(46, 139, 87, 0.3)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isLoading) {
+                  e.target.style.backgroundColor = '#2e8b57';
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = 'none';
+                }
+              }}
+            >
+              {isLoading ? (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
                   <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px'
-                  }}>
-                    <div style={{
-                      width: '16px',
-                      height: '16px',
-                      border: '2px solid #ffffff',
-                      borderTop: '2px solid transparent',
-                      borderRadius: '50%',
-                      animation: 'spin 1s linear infinite'
-                    }}></div>
-                    Processing...
-                  </div>
-                ) : (
-                  'Continue with Transaction'
-                )}
-              </button>
-            </div>
+                    width: '16px',
+                    height: '16px',
+                    border: '2px solid #ffffff',
+                    borderTop: '2px solid transparent',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite'
+                  }}></div>
+                  Processing...
+                </div>
+              ) : (
+                'Continue with Transaction'
+              )}
+            </button>
           </div>
         </div>
-      )}
-
-      </main>
+      </div>
+    )}
     </div>
   );
 };
