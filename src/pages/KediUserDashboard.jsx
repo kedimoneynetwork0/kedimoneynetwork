@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaBars, FaTimes, FaTachometerAlt, FaExchangeAlt, FaPiggyBank, FaHistory, FaGift, FaCog, FaSignOutAlt, FaUser, FaWallet, FaMoneyBillWave, FaPlus, FaSyncAlt, FaArrowLeft, FaLeaf } from 'react-icons/fa';
+import { FaBars, FaTimes, FaTachometerAlt, FaExchangeAlt, FaPiggyBank, FaHistory, FaGift, FaCog, FaSignOutAlt, FaUser, FaWallet, FaMoneyBillWave, FaPlus, FaSyncAlt, FaArrowLeft, FaLeaf, FaFilter } from 'react-icons/fa';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -792,7 +792,7 @@ const KediUserDashboard = () => {
         {currentSection === 'dashboard' && (
           <div className="space-y-6">
             {/* Welcome Section */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow duration-300">
               <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
                 <div>
                   <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -806,11 +806,11 @@ const KediUserDashboard = () => {
                   <div className="relative">
                     <button
                       onClick={() => setShowInbox(!showInbox)}
-                      className="p-3 bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-lg transition-colors relative"
+                      className="p-3 bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-lg transition-all duration-200 relative hover:shadow-md"
                     >
                       <FaUser size={20} />
                       {unreadCount > 0 && (
-                        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center animate-pulse">
                           {unreadCount}
                         </span>
                       )}
@@ -819,7 +819,10 @@ const KediUserDashboard = () => {
                   <button
                     onClick={refreshDashboard}
                     disabled={isLoading}
-                    className="inline-flex items-center px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                    className="inline-flex items-center px-6 py-3 text-white font-medium rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:-translate-y-1"
+                    style={{ backgroundColor: '#28a745' }}
+                    onMouseEnter={(e) => !isLoading && (e.target.style.backgroundColor = '#218838')}
+                    onMouseLeave={(e) => !isLoading && (e.target.style.backgroundColor = '#28a745')}
                   >
                     {isLoading ? (
                       <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
@@ -834,7 +837,7 @@ const KediUserDashboard = () => {
 
             {/* Balance Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
+              <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-3">
@@ -853,7 +856,7 @@ const KediUserDashboard = () => {
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
+              <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-3">
@@ -874,12 +877,15 @@ const KediUserDashboard = () => {
             </div>
 
             {/* Quick Actions */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow duration-300">
               <h3 className="text-xl font-semibold text-gray-900 mb-6">Quick Actions</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <button
                   onClick={() => showSection('transaction')}
-                  className="flex items-center justify-center px-6 py-4 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors duration-200 shadow-sm"
+                  className="flex items-center justify-center px-6 py-4 text-white font-medium rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1"
+                  style={{ backgroundColor: '#28a745' }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = '#218838'}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = '#28a745'}
                 >
                   <FaPlus className="mr-2" />
                   Make Transaction
@@ -887,7 +893,7 @@ const KediUserDashboard = () => {
 
                 <button
                   onClick={() => showSection('stake')}
-                  className="flex items-center justify-center px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 shadow-sm"
+                  className="flex items-center justify-center px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1"
                 >
                   <FaPiggyBank className="mr-2" />
                   Deposit Stake
@@ -895,7 +901,7 @@ const KediUserDashboard = () => {
 
                 <button
                   onClick={() => showSection('history')}
-                  className="flex items-center justify-center px-6 py-4 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors duration-200 shadow-sm"
+                  className="flex items-center justify-center px-6 py-4 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1"
                 >
                   <FaMoneyBillWave className="mr-2" />
                   Withdraw
@@ -904,31 +910,31 @@ const KediUserDashboard = () => {
             </div>
 
             {/* Recent Transactions */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow duration-300">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-xl font-semibold text-gray-900">Recent Transactions</h3>
                 <button
                   onClick={() => showSection('history')}
-                  className="text-green-600 hover:text-green-700 font-medium text-sm transition-colors"
+                  className="text-green-600 hover:text-green-700 font-medium text-sm transition-colors hover:underline"
                 >
                   View All →
                 </button>
               </div>
 
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-lg">
                 <div className="overflow-x-auto">
                   <table className="w-full">
-                    <thead className="bg-gray-50">
+                    <thead className="bg-gray-100">
                       <tr>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Type</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Amount</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Date</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Type</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Amount</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {getRecentTransactions(transactions, 3).map((txn) => (
-                        <tr key={txn.id} className="hover:bg-gray-50 transition-colors">
+                      {getRecentTransactions(transactions, 3).map((txn, index) => (
+                        <tr key={txn.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 transition-colors`}>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {new Date(txn.created_at).toLocaleDateString()}
                           </td>
@@ -956,29 +962,29 @@ const KediUserDashboard = () => {
             </div>
 
             {/* Active Stakes */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow duration-300">
               <h3 className="text-xl font-semibold text-gray-900 mb-6">Active Stakes</h3>
 
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-lg">
                 <div className="overflow-x-auto">
                   <table className="w-full">
-                    <thead className="bg-gray-50">
+                    <thead className="bg-gray-100">
                       <tr>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Principal</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Duration</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Rate</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Interest</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Total Value</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Principal</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Duration</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Rate</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Interest</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Total Value</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {(Array.isArray(stakes) ? stakes : []).filter(stake => stake && stake.status === 'active').map((stake) => {
+                      {(Array.isArray(stakes) ? stakes : []).filter(stake => stake && stake.status === 'active').map((stake, index) => {
                         const interestEarned = stake.amount * stake.interest_rate * (stake.stake_period / 365);
                         const totalValue = stake.amount + interestEarned;
 
                         return (
-                          <tr key={stake.id} className="hover:bg-gray-50 transition-colors">
+                          <tr key={stake.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 transition-colors`}>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
                               {formatCurrency(stake.amount)} RWF
                             </td>
@@ -1013,12 +1019,12 @@ const KediUserDashboard = () => {
             </div>
 
             {/* Personal Analytics */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow duration-300">
               <h3 className="text-xl font-semibold text-gray-900 mb-6">Your Analytics</h3>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Transaction Activity */}
-                <div className="bg-gray-50 rounded-lg p-4">
+                <div className="bg-gray-50 rounded-lg p-4 shadow-md hover:shadow-lg transition-shadow duration-300">
                   <h4 className="text-lg font-medium text-gray-900 mb-4">Transaction Activity</h4>
                   <div className="h-48">
                     <Line data={generateUserTransactionData()} options={userChartOptions} />
@@ -1026,7 +1032,7 @@ const KediUserDashboard = () => {
                 </div>
 
                 {/* Balance Growth */}
-                <div className="bg-gray-50 rounded-lg p-4">
+                <div className="bg-gray-50 rounded-lg p-4 shadow-md hover:shadow-lg transition-shadow duration-300">
                   <h4 className="text-lg font-medium text-gray-900 mb-4">Balance Growth</h4>
                   <div className="h-48">
                     <Line data={generateUserBalanceData()} options={userChartOptions} />
@@ -1166,10 +1172,10 @@ const KediUserDashboard = () => {
         {/* History Section */}
         {currentSection === 'history' && (
           <div className="space-y-6">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow duration-300">
               <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-6">
                 <h3 className="text-2xl font-semibold text-gray-900">Transaction History</h3>
-                <div className="text-sm text-gray-600 bg-gray-100 px-3 py-2 rounded-lg">
+                <div className="text-sm text-gray-600 bg-gray-100 px-3 py-2 rounded-lg shadow-sm">
                   {filterUserTransactions(transactions).length} of {transactions.length} transactions
                 </div>
               </div>
@@ -1357,21 +1363,21 @@ const KediUserDashboard = () => {
                 </div>
               )}
 
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-lg">
                 <div className="overflow-x-auto">
                   <table className="w-full">
-                    <thead className="bg-gray-50">
+                    <thead className="bg-gray-100">
                       <tr>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Type</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Amount</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Transaction ID</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Date</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Type</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Amount</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Transaction ID</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {getPaginatedTransactions().map((txn) => (
-                        <tr key={txn.id} className="hover:bg-gray-50 transition-colors">
+                      {getPaginatedTransactions().map((txn, index) => (
+                        <tr key={txn.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 transition-colors`}>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {new Date(txn.created_at).toLocaleDateString()}
                           </td>
