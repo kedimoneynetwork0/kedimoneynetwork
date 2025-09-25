@@ -25,6 +25,7 @@ export default function UserManagement() {
     } catch (error) {
       console.error('Error fetching users:', error);
       setMessage('Error loading users');
+      setAllUsers([]); // Ensure allUsers is always an array
     } finally {
       setLoading(false);
     }
@@ -63,12 +64,14 @@ export default function UserManagement() {
     }
   };
 
-  const filteredUsers = allUsers.filter(user =>
-    (user.firstname + ' ' + user.lastname).toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.phone.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.idNumber.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredUsers = (Array.isArray(allUsers) ? allUsers : []).filter(user =>
+    user && (
+      (user.firstname + ' ' + user.lastname).toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.phone?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.idNumber?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
   );
 
   if (loading) {
