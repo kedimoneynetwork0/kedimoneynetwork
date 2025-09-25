@@ -98,39 +98,37 @@ export default function UserManagement() {
           )}
 
           {/* Header Controls */}
-          <div className="dashboard-controls" style={{ marginBottom: '20px', display: 'flex', gap: '10px', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <input
-                type="text"
-                placeholder="Search users by name, email, phone, ID..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="form-control"
-                style={{ width: '300px', padding: '8px 12px', border: '1px solid #ddd', borderRadius: '4px' }}
-              />
-              <button
-                onClick={() => setShowHeader(!showHeader)}
-                className="action-button"
-                style={{ padding: '8px 16px', fontSize: '14px' }}
-              >
-                {showHeader ? 'Hide Header' : 'Show Header'}
-              </button>
-            </div>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button
-                onClick={handleDownloadUsers}
-                className="action-button"
-                style={{ padding: '8px 16px', fontSize: '14px' }}
-              >
-                📥 Download CSV
-              </button>
-              <Link
-                to="/admin-dashboard"
-                className="action-button secondary"
-                style={{ padding: '8px 16px', fontSize: '14px', textDecoration: 'none' }}
-              >
-                Back to Admin Dashboard
-              </Link>
+          <div className="dashboard-controls" style={{ marginBottom: '20px' }}>
+            <div className="controls-row">
+              <div className="search-section">
+                <input
+                  type="text"
+                  placeholder="Search users by name, email, phone, ID..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="form-control search-input"
+                />
+                <button
+                  onClick={() => setShowHeader(!showHeader)}
+                  className="action-button toggle-header-btn"
+                >
+                  {showHeader ? 'Hide Header' : 'Show Header'}
+                </button>
+              </div>
+              <div className="action-buttons">
+                <button
+                  onClick={handleDownloadUsers}
+                  className="action-button download-btn"
+                >
+                  📥 Download CSV
+                </button>
+                <Link
+                  to="/admin-dashboard"
+                  className="action-button secondary back-btn"
+                >
+                  Back to Admin Dashboard
+                </Link>
+              </div>
             </div>
           </div>
 
@@ -183,7 +181,7 @@ export default function UserManagement() {
                 {/* User Registration Details */}
                 <div style={{ marginBottom: '30px' }}>
                   <h3 style={{ color: '#007bff', marginBottom: '15px' }}>📋 Registration Details</h3>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '15px' }}>
+                  <div className="user-details-grid">
                     <div className="transaction-detail">
                       <span className="detail-label">Full Name</span>
                       <span className="detail-value">{userDetails.user.firstname} {userDetails.user.lastname}</span>

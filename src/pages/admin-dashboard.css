@@ -907,6 +907,209 @@ button:hover,
   100% { transform: rotate(360deg); }
 }
 
+/* UserManagement Responsive Styles */
+.dashboard-controls {
+  margin-bottom: 20px;
+}
+
+.controls-row {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.search-section {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex: 1;
+  min-width: 300px;
+}
+
+.search-input {
+  flex: 1;
+  min-width: 200px;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.toggle-header-btn,
+.download-btn,
+.back-btn {
+  padding: 10px 16px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+/* User Details Grid Improvements */
+.transaction-details,
+.user-details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 15px;
+}
+
+/* Enhanced Table Responsiveness */
+.table-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.data-table {
+  min-width: 600px; /* Minimum width to prevent squishing */
+}
+
+/* Mobile Table Styles */
+@media (max-width: 768px) {
+  .data-table th,
+  .data-table td {
+    padding: 8px 6px;
+    font-size: 0.8rem;
+  }
+
+  .data-table th:nth-child(1),
+  .data-table td:nth-child(1) {
+    min-width: 120px;
+  }
+
+  .data-table th:nth-child(2),
+  .data-table td:nth-child(2) {
+    min-width: 100px;
+  }
+
+  .data-table th:nth-child(3),
+  .data-table td:nth-child(3) {
+    min-width: 120px;
+  }
+}
+
+/* Responsive Controls */
+@media (max-width: 1024px) {
+  .controls-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 15px;
+  }
+
+  .search-section {
+    flex-direction: column;
+    align-items: stretch;
+    min-width: auto;
+  }
+
+  .search-input {
+    width: 100%;
+    min-width: auto;
+  }
+
+  .action-buttons {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .toggle-header-btn {
+    align-self: flex-start;
+    width: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .action-buttons {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .download-btn,
+  .back-btn {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+
+  .toggle-header-btn {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+/* User Profile Section Responsiveness */
+@media (max-width: 768px) {
+  .transaction-details,
+  .user-details-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .transaction-detail {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+    padding: 12px;
+  }
+
+  .detail-label {
+    font-size: 0.9rem;
+    color: #666;
+  }
+
+  .detail-value {
+    text-align: left;
+    font-weight: 600;
+    color: #333;
+    word-break: break-word;
+  }
+
+  /* User profile picture responsiveness */
+  .dashboard-card .text-center img {
+    width: 100px !important;
+    height: 100px !important;
+  }
+
+  /* User details header responsiveness */
+  .dashboard-card h2 {
+    font-size: 1.4rem;
+    text-align: center;
+  }
+
+  .dashboard-card .action-button.secondary {
+    width: 100%;
+    text-align: center;
+    margin-top: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .transaction-detail {
+    padding: 10px;
+  }
+
+  .detail-label {
+    font-size: 0.85rem;
+  }
+
+  .detail-value {
+    font-size: 0.9rem;
+  }
+
+  .dashboard-card h2 {
+    font-size: 1.2rem;
+  }
+
+  .dashboard-card h3 {
+    font-size: 1.1rem;
+  }
+}
+
 /* Responsive modal adjustments */
 @media (max-width: 640px) {
   .payment-modal {
