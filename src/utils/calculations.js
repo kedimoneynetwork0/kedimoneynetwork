@@ -9,13 +9,13 @@ export const calculateBalance = (transactions = [], stakes = [], referralBonus =
   const totalInterest = calculateStakesInterest(stakes);
 
   // Calculate total savings (approved saving transactions)
-  const totalSaving = transactions
-    .filter(txn => txn.status === 'approved' && txn.type === 'saving')
+  const totalSaving = (Array.isArray(transactions) ? transactions : [])
+    .filter(txn => txn && txn.status === 'approved' && txn.type === 'saving')
     .reduce((total, txn) => total + (txn.amount || 0), 0);
 
   // Calculate total tree plan (approved tree_plan transactions)
-  const totalTreePlan = transactions
-    .filter(txn => txn.status === 'approved' && txn.type === 'tree_plan')
+  const totalTreePlan = (Array.isArray(transactions) ? transactions : [])
+    .filter(txn => txn && txn.status === 'approved' && txn.type === 'tree_plan')
     .reduce((total, txn) => total + (txn.amount || 0), 0);
 
   // Balance calculation: Total Interest + Total Saving + Tree Plan
@@ -37,8 +37,8 @@ export const calculateReferralBonus = (referralCount = 0) => {
  * Calculate total stakes interest
  */
 export const calculateStakesInterest = (stakes = []) => {
-  return stakes
-    .filter(stake => stake.status === 'active')
+  return (Array.isArray(stakes) ? stakes : [])
+    .filter(stake => stake && stake.status === 'active')
     .reduce((total, stake) => {
       const interest = stake.amount * stake.interest_rate * (stake.stake_period / 365);
       return total + interest;
@@ -49,16 +49,17 @@ export const calculateStakesInterest = (stakes = []) => {
  * Calculate total active stakes amount
  */
 export const calculateTotalStakes = (stakes = []) => {
-  return stakes
-    .filter(stake => stake.status === 'active')
-    .reduce((total, stake) => total + stake.amount, 0);
+  return (Array.isArray(stakes) ? stakes : [])
+    .filter(stake => stake && stake.status === 'active')
+    .reduce((total, stake) => total + (stake.amount || 0), 0);
 };
 
 /**
  * Get last N transactions sorted by date
  */
 export const getRecentTransactions = (transactions = [], limit = 10) => {
-  return transactions
+  return (Array.isArray(transactions) ? transactions : [])
+    .filter(txn => txn && txn.created_at)
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
     .slice(0, limit);
 };
@@ -79,8 +80,8 @@ export const getRecentTransactions = (transactions = [], limit = 10) => {
  * calculateTotalDeposits(transactions); // Returns 1500
  */
 export const calculateTotalDeposits = (transactions = []) => {
-  return transactions
-    .filter(txn => txn.status === 'approved' && isDepositType(txn.type))
+  return (Array.isArray(transactions) ? transactions : [])
+    .filter(txn => txn && txn.status === 'approved' && isDepositType(txn.type))
     .reduce((total, txn) => total + (txn.amount || 0), 0);
 };
 
@@ -88,8 +89,8 @@ export const calculateTotalDeposits = (transactions = []) => {
  * Calculate total withdrawals from approved transactions
  */
 export const calculateTotalWithdrawals = (transactions = []) => {
-  return transactions
-    .filter(txn => txn.status === 'approved' && txn.type === 'withdrawal')
+  return (Array.isArray(transactions) ? transactions : [])
+    .filter(txn => txn && txn.status === 'approved' && txn.type === 'withdrawal')
     .reduce((total, txn) => total + (txn.amount || 0), 0);
 };
 
@@ -108,8 +109,8 @@ export const isDepositType = (type) => {
 export const getDepositBreakdown = (transactions = []) => {
   const breakdown = {};
 
-  transactions
-    .filter(txn => txn.status === 'approved' && isDepositType(txn.type))
+  (Array.isArray(transactions) ? transactions : [])
+    .filter(txn => txn && txn.status === 'approved' && isDepositType(txn.type))
     .forEach(txn => {
       if (!breakdown[txn.type]) {
         breakdown[txn.type] = 0;
@@ -127,8 +128,8 @@ export const getDepositBreakdown = (transactions = []) => {
  * Simple deposit sum function (as requested: 500 + 1000 = 1500)
  */
 export const sumDeposits = (transactions = []) => {
-  return transactions
-    .filter(txn => txn.status === 'approved' && isDepositType(txn.type))
+  return (Array.isArray(transactions) ? transactions : [])
+    .filter(txn => txn && txn.status === 'approved' && isDepositType(txn.type))
     .reduce((sum, txn) => sum + (txn.amount || 0), 0);
 };
 
@@ -136,17 +137,20 @@ export const sumDeposits = (transactions = []) => {
  * Calculate admin dashboard metrics
  */
 export const calculateAdminMetrics = (users = [], transactions = [], stakes = []) => {
-  const totalUsers = users.length;
-  const pendingUsers = users.filter(user => user.status === 'pending').length;
-  const approvedUsers = users.filter(user => user.status === 'approved').length;
+  const usersArray = Array.isArray(users) ? users : [];
+  const transactionsArray = Array.isArray(transactions) ? transactions : [];
 
-  const totalTransactions = transactions.length;
-  const approvedTransactions = transactions.filter(txn => txn.status === 'approved').length;
-  const pendingTransactions = transactions.filter(txn => txn.status === 'pending').length;
+  const totalUsers = usersArray.length;
+  const pendingUsers = usersArray.filter(user => user && user.status === 'pending').length;
+  const approvedUsers = usersArray.filter(user => user && user.status === 'approved').length;
+
+  const totalTransactions = transactionsArray.length;
+  const approvedTransactions = transactionsArray.filter(txn => txn && txn.status === 'approved').length;
+  const pendingTransactions = transactionsArray.filter(txn => txn && txn.status === 'pending').length;
 
   // Simple and clear deposit/withdrawal calculations
-  const totalDeposits = calculateTotalDeposits(transactions);
-  const totalWithdrawals = calculateTotalWithdrawals(transactions);
+  const totalDeposits = calculateTotalDeposits(transactionsArray);
+  const totalWithdrawals = calculateTotalWithdrawals(transactionsArray);
 
   const totalRevenue = totalDeposits - totalWithdrawals;
   const totalStakesAmount = calculateTotalStakes(stakes);
@@ -243,13 +247,16 @@ export const calculateStakeInterest = (stake) => {
  * Get user statistics
  */
 export const getUserStats = (user, transactions = [], stakes = []) => {
-  const approvedTransactions = transactions.filter(txn => txn.status === 'approved');
-  const pendingTransactions = transactions.filter(txn => txn.status === 'pending');
-  const activeStakes = stakes.filter(stake => stake.status === 'active');
+  const transactionsArray = Array.isArray(transactions) ? transactions : [];
+  const stakesArray = Array.isArray(stakes) ? stakes : [];
+
+  const approvedTransactions = transactionsArray.filter(txn => txn && txn.status === 'approved');
+  const pendingTransactions = transactionsArray.filter(txn => txn && txn.status === 'pending');
+  const activeStakes = stakesArray.filter(stake => stake && stake.status === 'active');
   const maturedStakes = activeStakes.filter(isStakeMatured);
 
   return {
-    totalTransactions: transactions.length,
+    totalTransactions: transactionsArray.length,
     approvedTransactions: approvedTransactions.length,
     pendingTransactions: pendingTransactions.length,
     activeStakes: activeStakes.length,

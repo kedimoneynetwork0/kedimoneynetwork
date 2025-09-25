@@ -431,7 +431,8 @@ const KediUserDashboard = () => {
   };
 
   // Filter stakes that can be withdrawn (matured and not yet withdrawn)
-  const withdrawableStakes = stakes.filter(stake => {
+  const withdrawableStakes = (Array.isArray(stakes) ? stakes : []).filter(stake => {
+    if (!stake || !stake.end_date) return false;
     const currentDate = new Date().toLocaleString('en-RW', { timeZone: 'Africa/Kigali' });
     const endDate = new Date(stake.end_date).toLocaleString('en-RW', { timeZone: 'Africa/Kigali' });
     return new Date(currentDate) >= new Date(endDate) && stake.status === 'active';
@@ -453,13 +454,15 @@ const KediUserDashboard = () => {
 
   // Enhanced filtering functions
   const filterUserTransactions = (transactions) => {
-    return transactions.filter(txn => {
+    return (Array.isArray(transactions) ? transactions : []).filter(txn => {
+      if (!txn) return false;
+
       // Search term filter
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase();
-        if (!txn.type.toLowerCase().includes(searchLower) &&
-            !txn.txn_id.toLowerCase().includes(searchLower) &&
-            !txn.status.toLowerCase().includes(searchLower)) {
+        if (!txn.type?.toLowerCase().includes(searchLower) &&
+            !txn.txn_id?.toLowerCase().includes(searchLower) &&
+            !txn.status?.toLowerCase().includes(searchLower)) {
           return false;
         }
       }
@@ -601,7 +604,8 @@ const KediUserDashboard = () => {
       last6Months.push(date.toLocaleDateString('en-US', { month: 'short' }));
 
       // Count transactions for this month
-      const monthTransactions = transactions.filter(txn => {
+      const monthTransactions = (Array.isArray(transactions) ? transactions : []).filter(txn => {
+        if (!txn || !txn.created_at) return false;
         const txnDate = new Date(txn.created_at);
         return txnDate.getMonth() === date.getMonth() && txnDate.getFullYear() === date.getFullYear();
       });
@@ -967,7 +971,7 @@ const KediUserDashboard = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {stakes.filter(stake => stake.status === 'active').map((stake) => {
+                      {(Array.isArray(stakes) ? stakes : []).filter(stake => stake && stake.status === 'active').map((stake) => {
                         const interestEarned = stake.amount * stake.interest_rate * (stake.stake_period / 365);
                         const totalValue = stake.amount + interestEarned;
 
@@ -997,7 +1001,7 @@ const KediUserDashboard = () => {
                     </tbody>
                   </table>
                 </div>
-                {stakes.filter(stake => stake.status === 'active').length === 0 && (
+                {(Array.isArray(stakes) ? stakes : []).filter(stake => stake && stake.status === 'active').length === 0 && (
                   <div className="text-center py-8">
                     <FaPiggyBank className="text-4xl text-gray-300 mx-auto mb-3" />
                     <p className="text-gray-500">No active stakes</p>
