@@ -3,7 +3,7 @@ import {
   FaBars, FaTimes, FaTachometerAlt, FaUsers, FaClock, FaExchangeAlt,
   FaChartLine, FaBullhorn, FaCog, FaSignOutAlt, FaUser, FaCheck,
   FaTimes as FaReject, FaEye, FaPlus, FaLeaf, FaChevronDown,
-  FaUserCheck, FaUserClock, FaMoneyBillWave, FaCoins, FaFilter
+  FaUserCheck, FaUserClock, FaMoneyBillWave, FaCoins, FaFilter, FaBell
 } from 'react-icons/fa';
 import {
   Chart as ChartJS,
