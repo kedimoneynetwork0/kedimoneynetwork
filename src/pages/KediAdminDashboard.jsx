@@ -16,7 +16,6 @@ import {
   Tooltip,
   Legend,
   ArcElement,
-  Filler,
 } from 'chart.js';
 import { Line, Bar, Doughnut, Pie } from 'react-chartjs-2';
 
@@ -30,8 +29,7 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  ArcElement,
-  Filler
+  ArcElement
 );
 import {
   getPendingUsers,
@@ -1126,33 +1124,39 @@ const KediAdminDashboard = () => {
   };
 
   // Filtered data based on search term
-  const filteredPendingUsers = pendingUsers.filter(user =>
-    user.email.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredPendingUsers = (Array.isArray(pendingUsers) ? pendingUsers : []).filter(user =>
+    user && user.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const filteredAllUsers = allUsers.filter(user =>
-    (user.firstname + ' ' + user.lastname).toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.username.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredAllUsers = (Array.isArray(allUsers) ? allUsers : []).filter(user =>
+    user && (
+      (user.firstname + ' ' + user.lastname)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.username?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
   );
 
-  const filteredPendingTxns = pendingUsers.filter(user =>
-    user.email.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredPendingTxns = (Array.isArray(pendingUsers) ? pendingUsers : []).filter(user =>
+    user && user.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const filteredAllTransactions = allTransactions.filter(txn =>
-    txn.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    txn.txn_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    txn.type.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredAllTransactions = (Array.isArray(allTransactions) ? allTransactions : []).filter(txn =>
+    txn && (
+      txn.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      txn.txn_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      txn.type?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
   );
 
-  const filteredNews = news.filter(item =>
-    item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.content.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredNews = (Array.isArray(news) ? news : []).filter(item =>
+    item && (
+      item.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.content?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
   );
 
-  const filteredPendingWithdrawals = pendingWithdrawals.filter(withdrawal =>
-    withdrawal.email.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredPendingWithdrawals = (Array.isArray(pendingWithdrawals) ? pendingWithdrawals : []).filter(withdrawal =>
+    withdrawal && withdrawal.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const getStatusBadge = (status) => {
