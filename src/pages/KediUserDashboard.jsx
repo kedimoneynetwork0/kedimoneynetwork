@@ -772,7 +772,7 @@ const KediUserDashboard = () => {
 
                 {/* Dropdown Menu */}
                 {dropdownOpen && (
-                  <>
+                  <div>
                     <div
                       className="fixed inset-0 z-10"
                       onClick={() => setDropdownOpen(false)}
@@ -799,7 +799,7 @@ const KediUserDashboard = () => {
                         </button>
                       </div>
                     </div>
-                  </>
+                  </div>
                 )}
               </div>
             </div>
@@ -1963,7 +1963,7 @@ const KediUserDashboard = () => {
 
       {/* Payment Verification Modal */}
       {showPaymentModal && (
-        <>
+        <div>
           {/* Modal Overlay */}
           <div
             className="modal-overlay"
@@ -2182,18 +2182,10 @@ const KediUserDashboard = () => {
               </button>
             </div>
           </div>
-        </>
+        </div>
       )}
 
       </main>
-
-      {/* Add CSS animation for spinner */}
-      <style jsx>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 };
