@@ -19,12 +19,13 @@ const WalletCalculator = ({
 
   // Calculate detailed breakdown
   const calculateBreakdown = () => {
-    const approvedTransactions = transactions.filter(t => t.status === 'approved');
-    const activeStakes = stakes.filter(s => s.status === 'active');
-    const approvedWithdrawals = withdrawals.filter(w => w.status === 'approved');
+    const approvedTransactions = (Array.isArray(transactions) ? transactions : []).filter(t => t && t.status === 'approved');
+    const activeStakes = (Array.isArray(stakes) ? stakes : []).filter(s => s && s.status === 'active');
+    const approvedWithdrawals = (Array.isArray(withdrawals) ? withdrawals : []).filter(w => w && w.status === 'approved');
 
     // Calculate matured stakes with interest
     const maturedStakes = activeStakes.filter(stake => {
+      if (!stake || !stake.end_date) return false;
       const currentDate = new Date();
       const endDate = new Date(stake.end_date);
       return currentDate >= endDate;
@@ -284,15 +285,15 @@ const WalletCalculator = ({
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span>Approved Rate:</span>
-                    <strong>{transactions.length > 0 ? ((transactions.filter(t => t.status === 'approved').length / transactions.length) * 100).toFixed(1) : 0}%</strong>
+                    <strong>{(Array.isArray(transactions) ? transactions : []).length > 0 ? (((Array.isArray(transactions) ? transactions : []).filter(t => t && t.status === 'approved').length / (Array.isArray(transactions) ? transactions : []).length) * 100).toFixed(1) : 0}%</strong>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span>Active Stakes:</span>
-                    <strong>{stakes.filter(s => s.status === 'active').length}</strong>
+                    <strong>{(Array.isArray(stakes) ? stakes : []).filter(s => s && s.status === 'active').length}</strong>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span>Avg Transaction:</span>
-                    <strong>{transactions.length > 0 ? (breakdown.deposits / transactions.filter(t => t.status === 'approved').length).toFixed(0) : 0} RWF</strong>
+                    <strong>{(Array.isArray(transactions) ? transactions : []).length > 0 ? (breakdown.deposits / (Array.isArray(transactions) ? transactions : []).filter(t => t && t.status === 'approved').length).toFixed(0) : 0} RWF</strong>
                   </div>
                 </div>
               </div>
@@ -313,7 +314,8 @@ const WalletCalculator = ({
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span>Potential Interest:</span>
                     <strong style={{ color: '#28a745' }}>
-                      {stakes.filter(s => s.status === 'active').reduce((sum, s) => {
+                      {(Array.isArray(stakes) ? stakes : []).filter(s => s && s.status === 'active').reduce((sum, s) => {
+                        if (!s || !s.end_date || !s.amount || !s.interest_rate) return sum;
                         const currentDate = new Date();
                         const endDate = new Date(s.end_date);
                         if (currentDate < endDate) {
