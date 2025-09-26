@@ -1,6 +1,27 @@
 // Calculation utilities for KEDI BUSINESS & AGRI FUNDS
 
 /**
+ * Calculate referral bonus
+ * Each approved referral = 5,000 RWF
+ */
+export const calculateReferralBonus = (referralCount = 0) => {
+  const BONUS_PER_REFERRAL = 5000;
+  return referralCount * BONUS_PER_REFERRAL;
+};
+
+/**
+ * Calculate total stakes interest
+ */
+export const calculateStakesInterest = (stakes = []) => {
+  return (Array.isArray(stakes) ? stakes : [])
+    .filter(stake => stake && stake.status === 'active')
+    .reduce((total, stake) => {
+      const interest = stake.amount * stake.interest_rate * (stake.stake_period / 365);
+      return total + interest;
+    }, 0);
+};
+
+/**
  * Calculate user balance from transactions and stakes
  * Balance = Total Interest + Total Saving + Tree Plan
  */
@@ -22,27 +43,6 @@ export const calculateBalance = (transactions = [], stakes = [], referralBonus =
   const balance = totalInterest + totalSaving + totalTreePlan;
 
   return Math.max(0, balance); // Ensure balance doesn't go negative
-};
-
-/**
- * Calculate referral bonus
- * Each approved referral = 5,000 RWF
- */
-export const calculateReferralBonus = (referralCount = 0) => {
-  const BONUS_PER_REFERRAL = 5000;
-  return referralCount * BONUS_PER_REFERRAL;
-};
-
-/**
- * Calculate total stakes interest
- */
-export const calculateStakesInterest = (stakes = []) => {
-  return (Array.isArray(stakes) ? stakes : [])
-    .filter(stake => stake && stake.status === 'active')
-    .reduce((total, stake) => {
-      const interest = stake.amount * stake.interest_rate * (stake.stake_period / 365);
-      return total + interest;
-    }, 0);
 };
 
 /**
