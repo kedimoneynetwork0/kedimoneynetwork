@@ -3,7 +3,8 @@ import {
   FaBars, FaTimes, FaTachometerAlt, FaUsers, FaClock, FaExchangeAlt,
   FaChartLine, FaBullhorn, FaCog, FaSignOutAlt, FaUser, FaCheck,
   FaTimes as FaReject, FaEye, FaPlus, FaLeaf, FaChevronDown,
-  FaUserCheck, FaUserClock, FaMoneyBillWave, FaCoins, FaFilter, FaBell
+  FaUserCheck, FaUserClock, FaMoneyBillWave, FaCoins, FaFilter, FaBell,
+  FaArrowLeft
 } from 'react-icons/fa';
 import {
   Chart as ChartJS,
@@ -1793,18 +1794,178 @@ const KediAdminDashboard = () => {
   }, [transactionFilters, advancedSearch]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Skip to main content link for screen readers */}
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-blue-600 text-white px-4 py-2 rounded-lg z-50"
-      >
-        Skip to main content
-      </a>
+    <div className="min-h-screen" style={{ backgroundColor: '#f8f9fa', fontFamily: 'Poppins, Inter, sans-serif' }}>
+      {/* Top Navbar */}
+      <nav className="bg-white shadow-lg border-b border-gray-200 fixed top-0 left-0 right-0 z-50" style={{ fontFamily: 'Poppins, Inter, sans-serif' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            {/* Left side - Logo and app name */}
+            <div className="flex items-center">
+              <div className="flex-shrink-0 flex items-center">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center mr-3" style={{ backgroundColor: '#28a745' }}>
+                  <span className="text-white font-bold text-sm">KEDI</span>
+                </div>
+                <h1 className="text-xl font-bold text-gray-900" style={{ color: '#1c3c2e' }}>KEDI BUSINESS & AGRI FUNDS</h1>
+              </div>
+            </div>
+
+            {/* Right side - User dropdown */}
+            <div className="flex items-center space-x-4">
+              {/* Notifications */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors relative"
+                  title="Notifications"
+                >
+                  <FaBell size={20} />
+                  {unreadNotifications > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                      {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                    </span>
+                  )}
+                </button>
+
+                {/* Notification Dropdown */}
+                {showNotifications && (
+                  <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-96">
+                    <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-lg">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                          <FaBell className="mr-2 text-blue-600" />
+                          Notifications
+                          {unreadNotifications > 0 && (
+                            <span className="ml-2 bg-red-500 text-white text-xs font-bold rounded-full px-2 py-1">
+                              {unreadNotifications}
+                            </span>
+                          )}
+                        </h3>
+                        {unreadNotifications > 0 && (
+                          <button
+                            onClick={markAllNotificationsAsRead}
+                            className="text-sm text-blue-600 hover:text-blue-700 font-medium underline"
+                          >
+                            Mark all read
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="max-h-96 overflow-y-auto">
+                      {notifications.length === 0 ? (
+                        <div className="p-8 text-center">
+                          <FaBell className="text-4xl text-gray-300 mx-auto mb-3" />
+                          <p className="text-gray-500">No notifications yet</p>
+                        </div>
+                      ) : (
+                        notifications.map((notification) => (
+                          <div
+                            key={notification.id}
+                            className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-all duration-200 ${
+                              !notification.read ? getNotificationPriorityColor(notification.priority) : ''
+                            } ${!notification.read ? 'border-l-4' : ''} ${
+                              notification.priority === 'high' ? 'border-l-red-500' :
+                              notification.priority === 'medium' ? 'border-l-yellow-500' : 'border-l-blue-500'
+                            }`}
+                            onClick={() => markNotificationAsRead(notification.id)}
+                          >
+                            <div className="flex items-start space-x-3">
+                              <div className={`text-2xl p-2 rounded-lg ${
+                                notification.priority === 'high' ? 'bg-red-100 text-red-600' :
+                                notification.priority === 'medium' ? 'bg-yellow-100 text-yellow-600' :
+                                'bg-blue-100 text-blue-600'
+                              }`}>
+                                {getNotificationIcon(notification.type)}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between">
+                                  <h4 className={`text-sm font-semibold truncate ${
+                                    !notification.read ? 'text-gray-900' : 'text-gray-700'
+                                  }`}>
+                                    {notification.title}
+                                    {notification.priority === 'high' && (
+                                      <span className="ml-2 text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full font-medium">
+                                        HIGH
+                                      </span>
+                                    )}
+                                  </h4>
+                                  <span className="text-xs text-gray-500 ml-2 flex-shrink-0">
+                                    {getTimeAgo(notification.timestamp)}
+                                  </span>
+                                </div>
+                                <p className={`text-sm mt-1 ${
+                                  !notification.read ? 'text-gray-700' : 'text-gray-600'
+                                }`}>
+                                  {notification.message}
+                                </p>
+                                {!notification.read && (
+                                  <div className="mt-2 flex items-center">
+                                    <span className="inline-block w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                                    <span className="text-xs text-blue-600 font-medium">New</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    <div className="p-4 border-t border-gray-200">
+                      <button className="w-full text-center text-blue-600 hover:text-blue-700 font-medium text-sm">
+                        View All Notifications
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* User Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className="flex items-center space-x-3 text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 rounded-lg p-2 transition-colors"
+                >
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: '#28a745' }}>
+                    <span className="text-white font-bold text-sm">A</span>
+                  </div>
+                  <span className="font-medium">Admin</span>
+                  <FaChevronDown size={14} />
+                </button>
+
+                {dropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
+                    <div className="p-4 border-b border-gray-200" style={{ backgroundColor: '#f8f9fa' }}>
+                      <p className="text-sm font-medium text-gray-900">Admin User</p>
+                      <p className="text-sm text-gray-600">admin@kedi.rw</p>
+                    </div>
+                    <div className="py-2">
+                      <button
+                        onClick={() => showSection('settings')}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center transition-colors"
+                      >
+                        <FaCog className="mr-3" />
+                        Settings
+                      </button>
+                      <button
+                        onClick={logout}
+                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center transition-colors"
+                      >
+                        <FaSignOutAlt className="mr-3" />
+                        Logout
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </nav>
 
       {/* Mobile Menu Button */}
       <button
-        className="lg:hidden fixed top-4 left-4 z-50 bg-green-600 hover:bg-green-700 text-white p-3 rounded-lg shadow-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+        className="lg:hidden fixed top-20 left-4 z-50 bg-green-600 hover:bg-green-700 text-white p-3 rounded-lg shadow-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
         onClick={toggleSidebar}
         aria-label="Toggle navigation menu"
         aria-expanded={sidebarOpen}
@@ -1814,24 +1975,14 @@ const KediAdminDashboard = () => {
 
       {/* Sidebar */}
       <div
-        className={`fixed inset-y-0 left-0 z-40 w-64 bg-gradient-to-b from-green-800 to-green-900 text-white transform transition-transform duration-300 ease-in-out ${
+        className={`fixed inset-y-0 left-0 z-40 w-64 text-white transform transition-transform duration-300 ease-in-out mt-16 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } lg:translate-x-0 lg:static lg:inset-0`}
+        style={{ backgroundColor: '#1c3c2e' }}
         role="navigation"
         aria-label="Main navigation"
       >
         <div className="flex flex-col h-full">
-          <div className="flex items-center justify-between p-6 border-b border-green-700">
-            <h1 className="text-lg font-bold text-white">KEDI BUSINESS & AGRI FUNDS</h1>
-            <button
-              className="lg:hidden text-white hover:text-green-200 transition-colors focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-green-800"
-              onClick={toggleSidebar}
-              aria-label="Close navigation menu"
-            >
-              <FaTimes size={24} aria-hidden="true" />
-            </button>
-          </div>
-
           <nav className="flex-1 px-4 py-6 space-y-2" role="navigation" aria-label="Dashboard sections">
             <h2 className="sr-only">Dashboard Navigation</h2>
             {navigationItems.map((item) => (
@@ -1839,9 +1990,13 @@ const KediAdminDashboard = () => {
                 key={item.id}
                 className={`w-full flex items-center px-4 py-3 text-left rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-green-800 ${
                   currentSection === item.id
-                    ? 'bg-green-600 text-white shadow-md'
-                    : 'text-green-100 hover:bg-green-700 hover:text-white'
+                    ? 'shadow-lg'
+                    : 'hover:bg-green-700 hover:text-white hover:shadow-md'
                 }`}
+                style={{
+                  backgroundColor: currentSection === item.id ? '#28a745' : 'transparent',
+                  color: currentSection === item.id ? 'white' : '#f8f9fa'
+                }}
                 onClick={() => showSection(item.id)}
                 aria-current={currentSection === item.id ? 'page' : undefined}
                 aria-label={`Navigate to ${item.label}`}
@@ -1852,9 +2007,10 @@ const KediAdminDashboard = () => {
             ))}
           </nav>
 
-          <div className="p-4 border-t border-green-700">
+          <div className="p-4 border-t" style={{ borderColor: '#28a745' }}>
             <button
-              className="w-full flex items-center px-4 py-3 text-left text-red-300 hover:bg-red-600 hover:text-white rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-2 focus:ring-offset-green-800"
+              className="w-full flex items-center px-4 py-3 text-left rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-2 focus:ring-offset-green-800 hover:bg-red-600 hover:shadow-md"
+              style={{ color: '#f8f9fa' }}
               onClick={logout}
               aria-label="Logout from admin dashboard"
             >
@@ -1868,13 +2024,13 @@ const KediAdminDashboard = () => {
       {/* Mobile Overlay */}
       {sidebarOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
+          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30 mt-16"
           onClick={toggleSidebar}
         ></div>
       )}
 
       {/* Main Content */}
-      <main id="main-content" className="lg:ml-64 min-h-screen" role="main">
+      <main className="lg:ml-64 min-h-screen pt-20" role="main">
         <div className="p-4 lg:p-8">
           {/* Initial Loading Skeleton */}
           {isLoading && allUsers.length === 0 && (
@@ -1954,140 +2110,154 @@ const KediAdminDashboard = () => {
         {currentSection === 'overview' && (
           <div className="space-y-6">
             {/* Welcome Section */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow duration-300">
               <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                  Admin Dashboard - Manage KEDI Funds
-                </h1>
-                <p className="text-gray-600 text-lg">
-                  Monitor users, transactions, and system performance in real-time
-                </p>
-              </div>
-              <div className="flex items-center space-x-4">
-                {/* Notifications */}
-                <div className="relative">
-                  <button
-                    onClick={() => setShowNotifications(!showNotifications)}
-                    className="p-3 bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-lg transition-colors relative"
-                    title="Notifications"
-                  >
-                    <FaUser size={20} />
-                    {unreadNotifications > 0 && (
-                      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center animate-pulse">
-                        {unreadNotifications > 99 ? '99+' : unreadNotifications}
-                      </span>
-                    )}
-                  </button>
-
-                  {/* Notification Dropdown */}
-                  {showNotifications && (
-                    <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-96">
-                      <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-lg">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                            <FaUser className="mr-2 text-blue-600" />
-                            Notifications
-                            {unreadNotifications > 0 && (
-                              <span className="ml-2 bg-red-500 text-white text-xs font-bold rounded-full px-2 py-1">
-                                {unreadNotifications}
-                              </span>
-                            )}
-                          </h3>
-                          {unreadNotifications > 0 && (
-                            <button
-                              onClick={markAllNotificationsAsRead}
-                              className="text-sm text-blue-600 hover:text-blue-700 font-medium underline"
-                            >
-                              Mark all read
-                            </button>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="max-h-96 overflow-y-auto">
-                        {notifications.length === 0 ? (
-                          <div className="p-8 text-center">
-                            <FaUser className="text-4xl text-gray-300 mx-auto mb-3" />
-                            <p className="text-gray-500">No notifications yet</p>
-                          </div>
-                        ) : (
-                          notifications.map((notification) => (
-                            <div
-                              key={notification.id}
-                              className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-all duration-200 ${
-                                !notification.read ? getNotificationPriorityColor(notification.priority) : ''
-                              } ${!notification.read ? 'border-l-4' : ''} ${
-                                notification.priority === 'high' ? 'border-l-red-500' :
-                                notification.priority === 'medium' ? 'border-l-yellow-500' : 'border-l-blue-500'
-                              }`}
-                              onClick={() => markNotificationAsRead(notification.id)}
-                            >
-                              <div className="flex items-start space-x-3">
-                                <div className={`text-2xl p-2 rounded-lg ${
-                                  notification.priority === 'high' ? 'bg-red-100 text-red-600' :
-                                  notification.priority === 'medium' ? 'bg-yellow-100 text-yellow-600' :
-                                  'bg-blue-100 text-blue-600'
-                                }`}>
-                                  {getNotificationIcon(notification.type)}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center justify-between">
-                                    <h4 className={`text-sm font-semibold truncate ${
-                                      !notification.read ? 'text-gray-900' : 'text-gray-700'
-                                    }`}>
-                                      {notification.title}
-                                      {notification.priority === 'high' && (
-                                        <span className="ml-2 text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full font-medium">
-                                          HIGH
-                                        </span>
-                                      )}
-                                    </h4>
-                                    <span className="text-xs text-gray-500 ml-2 flex-shrink-0">
-                                      {getTimeAgo(notification.timestamp)}
-                                    </span>
-                                  </div>
-                                  <p className={`text-sm mt-1 ${
-                                    !notification.read ? 'text-gray-700' : 'text-gray-600'
-                                  }`}>
-                                    {notification.message}
-                                  </p>
-                                  {!notification.read && (
-                                    <div className="mt-2 flex items-center">
-                                      <span className="inline-block w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-                                      <span className="text-xs text-blue-600 font-medium">New</span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          ))
-                        )}
-                      </div>
-
-                      <div className="p-4 border-t border-gray-200">
-                        <button className="w-full text-center text-blue-600 hover:text-blue-700 font-medium text-sm">
-                          View All Notifications
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                    Welcome back, Admin!
+                  </h1>
+                  <p className="text-gray-600 text-lg">
+                    Here's an overview of your KEDI platform and recent activities.
+                  </p>
                 </div>
-
-                <button
-                  onClick={loadDashboardData}
-                  disabled={isLoading}
-                  className="inline-flex items-center px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-                >
-                  {isLoading ? (
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                  ) : (
-                    <FaExchangeAlt className="mr-2" />
-                  )}
-                  Refresh Data
-                </button>
+                <div className="flex items-center space-x-4">
+                  <button
+                    onClick={loadDashboardData}
+                    disabled={isLoading}
+                    className="inline-flex items-center px-6 py-3 text-white font-medium rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:-translate-y-1"
+                    style={{ backgroundColor: '#28a745' }}
+                    onMouseEnter={(e) => !isLoading && (e.target.style.backgroundColor = '#218838')}
+                    onMouseLeave={(e) => !isLoading && (e.target.style.backgroundColor = '#28a745')}
+                  >
+                    {isLoading ? (
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    ) : (
+                      <FaExchangeAlt className="mr-2" />
+                    )}
+                    Refresh Data
+                  </button>
+                </div>
               </div>
             </div>
+
+            {/* Overview Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3 mb-3">
+                      <div className="p-3 bg-green-100 rounded-lg">
+                        <FaUsers className="text-xl text-green-600" />
+                      </div>
+                      <span className="text-sm font-medium text-gray-600">Total Users</span>
+                    </div>
+                    <div className="text-3xl font-bold text-green-600 mb-1">
+                      {stats.totalUsers || 0}
+                    </div>
+                    <p className="text-gray-500 text-sm">
+                      Registered users
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3 mb-3">
+                      <div className="p-3 bg-yellow-100 rounded-lg">
+                        <FaClock className="text-xl text-yellow-600" />
+                      </div>
+                      <span className="text-sm font-medium text-gray-600">Pending Users</span>
+                    </div>
+                    <div className="text-3xl font-bold text-yellow-600 mb-1">
+                      {stats.pendingUsers || 0}
+                    </div>
+                    <p className="text-gray-500 text-sm">
+                      Awaiting approval
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3 mb-3">
+                      <div className="p-3 bg-blue-100 rounded-lg">
+                        <FaExchangeAlt className="text-xl text-blue-600" />
+                      </div>
+                      <span className="text-sm font-medium text-gray-600">Total Transactions</span>
+                    </div>
+                    <div className="text-3xl font-bold text-blue-600 mb-1">
+                      {stats.totalTransactions || 0}
+                    </div>
+                    <p className="text-gray-500 text-sm">
+                      All transactions
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3 mb-3">
+                      <div className="p-3 bg-purple-100 rounded-lg">
+                        <FaChartLine className="text-xl text-purple-600" />
+                      </div>
+                      <span className="text-sm font-medium text-gray-600">Total Revenue</span>
+                    </div>
+                    <div className="text-3xl font-bold text-purple-600 mb-1">
+                      {formatCurrency(stats.totalRevenue || 0)} RWF
+                    </div>
+                    <p className="text-gray-500 text-sm">
+                      Net revenue
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow duration-300">
+              <h3 className="text-xl font-semibold text-gray-900 mb-6">Quick Actions</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <button
+                  onClick={() => showSection('users')}
+                  className="flex items-center justify-center px-6 py-4 text-white font-medium rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1"
+                  style={{ backgroundColor: '#28a745' }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = '#218838'}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = '#28a745'}
+                >
+                  <FaUsers className="mr-2" />
+                  Manage Users
+                </button>
+
+                <button
+                  onClick={() => showSection('pending')}
+                  className="flex items-center justify-center px-6 py-4 bg-yellow-600 hover:bg-yellow-700 text-white font-medium rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1"
+                >
+                  <FaClock className="mr-2" />
+                  Approve Pending
+                </button>
+
+                <button
+                  onClick={() => showSection('transactions')}
+                  className="flex items-center justify-center px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1"
+                >
+                  <FaExchangeAlt className="mr-2" />
+                  View Transactions
+                </button>
+
+                <button
+                  onClick={() => showSection('announcements')}
+                  className="flex items-center justify-center px-6 py-4 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1"
+                >
+                  <FaBullhorn className="mr-2" />
+                  Post Announcement
+                </button>
+              </div>
             </div>
 
             {/* Enhanced Search and Filter Controls */}
