@@ -6,32 +6,8 @@ import {
   FaUserCheck, FaUserClock, FaMoneyBillWave, FaCoins, FaFilter, FaBell,
   FaArrowLeft
 } from 'react-icons/fa';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  ArcElement,
-} from 'chart.js';
 import { Line, Bar, Doughnut, Pie } from 'react-chartjs-2';
-
-// Register Chart.js components
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  ArcElement
-);
+import '../utils/chartConfig'; // Import chart configuration
 import {
   getPendingUsers,
   getPendingTransactions,
