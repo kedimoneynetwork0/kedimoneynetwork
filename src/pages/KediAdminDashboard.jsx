@@ -1794,33 +1794,38 @@ const KediAdminDashboard = () => {
   }, [transactionFilters, advancedSearch]);
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#f8f9fa', fontFamily: 'Poppins, Inter, sans-serif' }}>
+    <div className="min-h-screen bg-[#f8f9fa] font-['Poppins',sans-serif]">
       {/* Top Navbar */}
-      <nav className="bg-white shadow-lg border-b border-gray-200 fixed top-0 left-0 right-0 z-50" style={{ fontFamily: 'Poppins, Inter, sans-serif' }}>
+      <nav className="bg-white shadow-lg border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
+          <div className="flex justify-between items-center h-16">
             {/* Left side - Logo and app name */}
             <div className="flex items-center">
               <div className="flex-shrink-0 flex items-center">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center mr-3" style={{ backgroundColor: '#28a745' }}>
+                <div className="w-8 h-8 bg-[#28a745] rounded-lg flex items-center justify-center mr-3">
                   <span className="text-white font-bold text-sm">KEDI</span>
                 </div>
-                <h1 className="text-xl font-bold text-gray-900" style={{ color: '#1c3c2e' }}>KEDI BUSINESS & AGRI FUNDS</h1>
+                <h1 className="text-lg sm:text-xl font-bold text-[#1c3c2e] hidden sm:block">
+                  KEDI BUSINESS & AGRI FUNDS
+                </h1>
+                <h1 className="text-lg font-bold text-[#1c3c2e] sm:hidden">
+                  KEDI
+                </h1>
               </div>
             </div>
 
             {/* Right side - User dropdown */}
-            <div className="flex items-center space-x-4">
-              {/* Notifications */}
-              <div className="relative">
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              {/* Notifications - Hidden on mobile */}
+              <div className="relative hidden sm:block">
                 <button
                   onClick={() => setShowNotifications(!showNotifications)}
-                  className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors relative"
+                  className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#28a745] focus:ring-offset-2"
                   title="Notifications"
                 >
                   <FaBell size={20} />
                   {unreadNotifications > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
                       {unreadNotifications > 99 ? '99+' : unreadNotifications}
                     </span>
                   )}
@@ -1828,10 +1833,10 @@ const KediAdminDashboard = () => {
 
                 {/* Notification Dropdown */}
                 {showNotifications && (
-                  <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-96">
+                  <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-96">
                     <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-lg">
                       <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center">
                           <FaBell className="mr-2 text-blue-600" />
                           Notifications
                           {unreadNotifications > 0 && (
@@ -1870,7 +1875,7 @@ const KediAdminDashboard = () => {
                             onClick={() => markNotificationAsRead(notification.id)}
                           >
                             <div className="flex items-start space-x-3">
-                              <div className={`text-2xl p-2 rounded-lg ${
+                              <div className={`text-xl sm:text-2xl p-2 rounded-lg ${
                                 notification.priority === 'high' ? 'bg-red-100 text-red-600' :
                                 notification.priority === 'medium' ? 'bg-yellow-100 text-yellow-600' :
                                 'bg-blue-100 text-blue-600'
@@ -1924,32 +1929,32 @@ const KediAdminDashboard = () => {
               <div className="relative">
                 <button
                   onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="flex items-center space-x-3 text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 rounded-lg p-2 transition-colors"
+                  className="flex items-center space-x-2 sm:space-x-3 text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#28a745] focus:ring-offset-2 rounded-lg p-2 transition-all duration-200"
                 >
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: '#28a745' }}>
+                  <div className="w-8 h-8 bg-[#28a745] rounded-full flex items-center justify-center">
                     <span className="text-white font-bold text-sm">A</span>
                   </div>
-                  <span className="font-medium">Admin</span>
+                  <span className="font-medium hidden sm:block">Admin</span>
                   <FaChevronDown size={14} />
                 </button>
 
                 {dropdownOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
-                    <div className="p-4 border-b border-gray-200" style={{ backgroundColor: '#f8f9fa' }}>
+                    <div className="p-4 border-b border-gray-200 bg-[#f8f9fa]">
                       <p className="text-sm font-medium text-gray-900">Admin User</p>
                       <p className="text-sm text-gray-600">admin@kedi.rw</p>
                     </div>
                     <div className="py-2">
                       <button
                         onClick={() => showSection('settings')}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center transition-colors"
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center transition-all duration-200"
                       >
                         <FaCog className="mr-3" />
                         Settings
                       </button>
                       <button
                         onClick={logout}
-                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center transition-colors"
+                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center transition-all duration-200"
                       >
                         <FaSignOutAlt className="mr-3" />
                         Logout
@@ -1965,7 +1970,7 @@ const KediAdminDashboard = () => {
 
       {/* Mobile Menu Button */}
       <button
-        className="lg:hidden fixed top-20 left-4 z-50 bg-green-600 hover:bg-green-700 text-white p-3 rounded-lg shadow-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+        className="lg:hidden fixed top-20 left-4 z-50 bg-[#28a745] hover:bg-[#218838] text-white p-3 rounded-lg shadow-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#28a745] focus:ring-offset-2"
         onClick={toggleSidebar}
         aria-label="Toggle navigation menu"
         aria-expanded={sidebarOpen}
@@ -1975,47 +1980,66 @@ const KediAdminDashboard = () => {
 
       {/* Sidebar */}
       <div
-        className={`fixed inset-y-0 left-0 z-40 w-64 text-white transform transition-transform duration-300 ease-in-out mt-16 ${
+        className={`fixed inset-y-0 left-0 z-40 w-64 text-white transform transition-all duration-300 ease-in-out mt-16 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } lg:translate-x-0 lg:static lg:inset-0`}
+        } lg:translate-x-0 lg:static lg:inset-0 ${
+          sidebarCollapsed ? 'lg:w-16' : 'lg:w-64'
+        }`}
         style={{ backgroundColor: '#1c3c2e' }}
         role="navigation"
         aria-label="Main navigation"
       >
         <div className="flex flex-col h-full">
+          {/* Sidebar Header with Collapse Toggle */}
+          <div className="hidden lg:flex justify-end p-2 border-b border-[#28a745]">
+            <button
+              onClick={toggleSidebarCollapse}
+              className="p-2 text-[#f8f9fa] hover:bg-[#28a745] rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#28a745] focus:ring-offset-2"
+              aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              <FaChevronDown
+                size={16}
+                className={`transform transition-transform duration-200 ${sidebarCollapsed ? 'rotate-90' : '-rotate-90'}`}
+              />
+            </button>
+          </div>
+
           <nav className="flex-1 px-4 py-6 space-y-2" role="navigation" aria-label="Dashboard sections">
             <h2 className="sr-only">Dashboard Navigation</h2>
             {navigationItems.map((item) => (
               <button
                 key={item.id}
-                className={`w-full flex items-center px-4 py-3 text-left rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-green-800 ${
+                className={`w-full flex items-center px-4 py-3 text-left rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[#1c3c2e] ${
                   currentSection === item.id
-                    ? 'shadow-lg'
-                    : 'hover:bg-green-700 hover:text-white hover:shadow-md'
-                }`}
-                style={{
-                  backgroundColor: currentSection === item.id ? '#28a745' : 'transparent',
-                  color: currentSection === item.id ? 'white' : '#f8f9fa'
-                }}
+                    ? 'shadow-lg bg-[#28a745] text-white'
+                    : 'hover:bg-[#28a745] hover:text-white hover:shadow-md text-[#f8f9fa]'
+                } ${sidebarCollapsed ? 'lg:justify-center lg:px-2' : ''}`}
                 onClick={() => showSection(item.id)}
                 aria-current={currentSection === item.id ? 'page' : undefined}
                 aria-label={`Navigate to ${item.label}`}
+                title={sidebarCollapsed ? item.label : ''}
               >
-                <item.icon className="mr-3 text-lg" aria-hidden="true" />
-                <span className="font-medium">{item.label}</span>
+                <item.icon className="text-lg flex-shrink-0" aria-hidden="true" />
+                <span className={`font-medium ml-3 ${sidebarCollapsed ? 'lg:hidden' : ''}`}>
+                  {item.label}
+                </span>
               </button>
             ))}
           </nav>
 
-          <div className="p-4 border-t" style={{ borderColor: '#28a745' }}>
+          <div className="p-4 border-t border-[#28a745]">
             <button
-              className="w-full flex items-center px-4 py-3 text-left rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-2 focus:ring-offset-green-800 hover:bg-red-600 hover:shadow-md"
-              style={{ color: '#f8f9fa' }}
+              className={`w-full flex items-center px-4 py-3 text-left rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-2 focus:ring-offset-[#1c3c2e] hover:bg-red-600 hover:shadow-md text-[#f8f9fa] ${
+                sidebarCollapsed ? 'lg:justify-center lg:px-2' : ''
+              }`}
               onClick={logout}
               aria-label="Logout from admin dashboard"
+              title={sidebarCollapsed ? 'Logout' : ''}
             >
-              <FaSignOutAlt className="mr-3" aria-hidden="true" />
-              <span className="font-medium">Logout</span>
+              <FaSignOutAlt className="text-lg flex-shrink-0" aria-hidden="true" />
+              <span className={`font-medium ml-3 ${sidebarCollapsed ? 'lg:hidden' : ''}`}>
+                Logout
+              </span>
             </button>
           </div>
         </div>
@@ -2030,8 +2054,10 @@ const KediAdminDashboard = () => {
       )}
 
       {/* Main Content */}
-      <main className="lg:ml-64 min-h-screen pt-20" role="main">
-        <div className="p-4 lg:p-8">
+      <main className={`min-h-screen pt-20 transition-all duration-300 ${
+        sidebarOpen ? 'lg:ml-64' : 'lg:ml-16'
+      } ${sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'}`} role="main">
+        <div className="p-4 sm:p-6 lg:p-8">
           {/* Initial Loading Skeleton */}
           {isLoading && allUsers.length === 0 && (
             <div className="space-y-6">
@@ -2047,9 +2073,9 @@ const KediAdminDashboard = () => {
               </div>
 
               {/* Overview Cards Skeleton */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                 {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                  <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all duration-200">
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
                         <div className="flex items-center space-x-3 mb-3">
