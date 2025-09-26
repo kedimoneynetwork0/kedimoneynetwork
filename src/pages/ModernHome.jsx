@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import Navigation from '../components/Navigation';
 import ModernHeroSection from '../components/ModernHeroSection';
 import { MdSupport } from 'react-icons/md';
@@ -64,18 +65,18 @@ export default function ModernHome() {
             <div>
               <h4 style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '20px' }}>Quick Links</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <a href="/" style={{ color: '#a7f3d0', textDecoration: 'none', fontSize: '0.9rem' }}>
+                <Link to="/" style={{ color: '#a7f3d0', textDecoration: 'none', fontSize: '0.9rem' }}>
                   Ahabanza
-                </a>
-                <a href="/about" style={{ color: '#a7f3d0', textDecoration: 'none', fontSize: '0.9rem' }}>
+                </Link>
+                <Link to="/about" style={{ color: '#a7f3d0', textDecoration: 'none', fontSize: '0.9rem' }}>
                   Ibyerekeye
-                </a>
-                <a href="/signup" style={{ color: '#a7f3d0', textDecoration: 'none', fontSize: '0.9rem' }}>
+                </Link>
+                <Link to="/signup" style={{ color: '#a7f3d0', textDecoration: 'none', fontSize: '0.9rem' }}>
                   Sign Up
-                </a>
-                <a href="/login" style={{ color: '#a7f3d0', textDecoration: 'none', fontSize: '0.9rem' }}>
+                </Link>
+                <Link to="/login" style={{ color: '#a7f3d0', textDecoration: 'none', fontSize: '0.9rem' }}>
                   Sign In
-                </a>
+                </Link>
               </div>
             </div>
 

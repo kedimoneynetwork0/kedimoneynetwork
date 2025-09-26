@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FaBars, FaTimes, FaTachometerAlt, FaExchangeAlt, FaPiggyBank, FaHistory, FaGift, FaCog, FaSignOutAlt, FaUser, FaWallet, FaMoneyBillWave, FaPlus, FaSyncAlt, FaArrowLeft, FaLeaf, FaFilter, FaChevronDown, FaBell } from 'react-icons/fa';
 import {
   Chart as ChartJS,
@@ -75,6 +76,7 @@ const KediUserDashboard = () => {
   const [savings, setSavings] = useState([]);
   const [messages, setMessages] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const navigate = useNavigate();
 
   // Enhanced filtering states
   const [transactionFilters, setTransactionFilters] = useState({
@@ -254,7 +256,7 @@ const KediUserDashboard = () => {
     // Clear authentication tokens and redirect to login
     localStorage.removeItem('token');
     localStorage.removeItem('role');
-    window.location.href = '/login';
+    navigate('/login');
   };
 
   // Form submission handlers
@@ -735,73 +737,9 @@ const KediUserDashboard = () => {
               </div>
             </div>
 
-            {/* Right: User Menu */}
+            {/* Right: Minimal for mobile */}
             <div className="flex items-center space-x-4">
-              {/* Notifications */}
-              <button
-                onClick={() => setShowInbox(!showInbox)}
-                className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors relative"
-                aria-label="Notifications"
-              >
-                <FaBell size={20} />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                    {unreadCount > 99 ? '99+' : unreadCount}
-                  </span>
-                )}
-              </button>
-
-              {/* User Dropdown */}
-              <div className="relative">
-                <button
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                  aria-label="User menu"
-                >
-                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                    <span className="text-sm font-semibold text-green-700">
-                      {userData.avatar}
-                    </span>
-                  </div>
-                  <div className="hidden md:block text-left">
-                    <p className="text-sm font-medium text-gray-900">{userData.name}</p>
-                    <p className="text-xs text-gray-500">{userData.email}</p>
-                  </div>
-                  <FaChevronDown size={14} className="text-gray-500" />
-                </button>
-
-                {/* Dropdown Menu */}
-                {dropdownOpen && (
-                  <div>
-                    <div
-                      className="fixed inset-0 z-10"
-                      onClick={() => setDropdownOpen(false)}
-                    ></div>
-                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
-                      <div className="p-4 border-b border-gray-200">
-                        <p className="text-sm font-medium text-gray-900">{userData.name}</p>
-                        <p className="text-xs text-gray-500">{userData.email}</p>
-                      </div>
-                      <div className="py-2">
-                        <button
-                          onClick={() => showSection('settings')}
-                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                        >
-                          <FaCog className="inline mr-3" />
-                          Settings
-                        </button>
-                        <button
-                          onClick={logout}
-                          className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                        >
-                          <FaSignOutAlt className="inline mr-3" />
-                          Logout
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
+              {/* For desktop, sidebar has these */}
             </div>
           </div>
         </div>
@@ -823,6 +761,61 @@ const KediUserDashboard = () => {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-gray-900 truncate">{userData.name}</p>
                 <p className="text-xs text-gray-500 truncate">{userData.email}</p>
+              </div>
+            </div>
+            {/* User Actions */}
+            <div className="flex items-center justify-between mt-4">
+              {/* Notifications */}
+              <button
+                onClick={() => setShowInbox(!showInbox)}
+                className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors relative"
+                aria-label="Notifications"
+              >
+                <FaBell size={18} />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {/* User Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                  aria-label="User menu"
+                >
+                  <FaCog size={16} className="text-gray-500" />
+                </button>
+
+                {/* Dropdown Menu */}
+                {dropdownOpen && (
+                  <div>
+                    <div
+                      className="fixed inset-0 z-10"
+                      onClick={() => setDropdownOpen(false)}
+                    ></div>
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
+                      <div className="py-2">
+                        <button
+                          onClick={() => showSection('settings')}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                        >
+                          <FaCog className="inline mr-3" />
+                          Settings
+                        </button>
+                        <button
+                          onClick={logout}
+                          className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                        >
+                          <FaSignOutAlt className="inline mr-3" />
+                          Logout
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -880,19 +873,6 @@ const KediUserDashboard = () => {
                   </p>
                 </div>
                 <div className="flex items-center space-x-4">
-                  <div className="relative">
-                    <button
-                      onClick={() => setShowInbox(!showInbox)}
-                      className="p-3 bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-lg transition-all duration-200 relative hover:shadow-md"
-                    >
-                      <FaUser size={20} />
-                      {unreadCount > 0 && (
-                        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center animate-pulse">
-                          {unreadCount}
-                        </span>
-                      )}
-                    </button>
-                  </div>
                   <button
                     onClick={refreshDashboard}
                     disabled={isLoading}

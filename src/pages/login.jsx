@@ -73,15 +73,12 @@ export default function Login() {
               {showPassword ? '🙈' : '👁️'}
             </button>
           </div>
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             className="w-full bg-green-700 text-white py-2 rounded hover:bg-green-800 transition"
           >
             Login
           </button>
-          <div className="forgot-password-link mt-4 text-center">
-            <a href="/forgot-password" className="text-green-700 hover:text-green-800">Forgot Password?</a>
-          </div>
           {error && <p className="text-red-600 mt-4 text-center">{error}</p>}
         </form>
       </div>
