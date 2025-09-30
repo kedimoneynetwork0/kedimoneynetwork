@@ -1,7 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
-const { query } = require('../utils/database-sqlite');
+const { query } = require('../utils/database');
 const { adminMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
@@ -13,7 +13,7 @@ async function calculateEstimatedBalance(userId) {
     const treePlanResult = await query(`
       SELECT COALESCE(SUM(amount), 0) as total_tree_plan
       FROM tree_plans
-      WHERE user_id = ? AND status = 'active'
+      WHERE user_id = $1 AND status = 'active'
     `, [userId]);
 
     // Get stake revenue (active stakes with interest)

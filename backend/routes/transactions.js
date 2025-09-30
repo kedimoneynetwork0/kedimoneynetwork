@@ -1,5 +1,5 @@
 const express = require('express');
-const { query } = require('../utils/database-sqlite');
+const { query } = require('../utils/database');
 const { authMiddleware } = require('../middleware/auth');
 
 const router = express.Router();

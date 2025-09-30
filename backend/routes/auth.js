@@ -1,7 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const rateLimit = require('express-rate-limit');
-const { query } = require('../utils/database-sqlite');
+const { query } = require('../utils/database');
 const { generateToken } = require('../middleware/auth');
 
 const router = express.Router();
@@ -38,19 +38,19 @@ router.post('/signup', async (req, res) => {
     }
 
     // Check if phone number is already taken
-    const phoneCheck = await query(`SELECT id FROM users WHERE phone = ?`, [phone]);
+    const phoneCheck = await query(`SELECT id FROM users WHERE phone = $1`, [phone]);
     if (phoneCheck.rows.length > 0) {
       return res.status(400).json({ message: 'Phone number already exists' });
     }
 
     // Check if ID number is already taken
-    const idNumberCheck = await query(`SELECT id FROM users WHERE idNumber = ?`, [idNumber]);
+    const idNumberCheck = await query(`SELECT id FROM users WHERE idNumber = $1`, [idNumber]);
     if (idNumberCheck.rows.length > 0) {
       return res.status(400).json({ message: 'ID number already exists' });
     }
 
     // Check if referralId exists as a user id
-    const referralCheck = await query(`SELECT id FROM users WHERE id = ?`, [referralId]);
+    const referralCheck = await query(`SELECT id FROM users WHERE id = $1`, [referralId]);
     if (referralCheck.rows.length === 0) {
       return res.status(400).json({ message: 'Invalid referral ID' });
     }
@@ -65,7 +65,7 @@ router.post('/signup', async (req, res) => {
     try {
       await query(
         `INSERT INTO users (firstname, lastname, phone, password, referralId, idNumber, province, district, sector, cell, village, role, status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
         [firstname, lastname, phone, hash, referralId, idNumber, province, district, sector, cell, village, 'user', 'pending']
       );
       res.json({ message: 'Signup successful, wait for admin approval' });
@@ -97,7 +97,7 @@ router.post('/login', userLoginLimiter, async (req, res) => {
   }
 
   try {
-    const result = await query(`SELECT * FROM users WHERE phone = ?`, [phone]);
+    const result = await query(`SELECT * FROM users WHERE phone = $1`, [phone]);
     const user = result.rows[0];
 
     console.log('User found:', !!user);
@@ -151,7 +151,7 @@ router.post('/admin-login', adminLoginLimiter, async (req, res) => {
   }
 
   try {
-    const result = await query(`SELECT * FROM users WHERE phone = ? AND role = 'admin'`, [phone]);
+    const result = await query(`SELECT * FROM users WHERE phone = $1 AND role = $2`, [phone, 'admin']);
     const user = result.rows[0];
 
     console.log('Admin user found:', !!user);

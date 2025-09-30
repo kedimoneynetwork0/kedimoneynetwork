@@ -1,7 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
-const { query } = require('../utils/database-sqlite');
+const { query } = require('../utils/database');
 const { adminMiddleware } = require('../middleware/auth');
 
 console.log('News routes loaded');
