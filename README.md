@@ -30,6 +30,25 @@ A comprehensive financial management platform built with React, Node.js, and Pos
 3. **Set environment variables in your Render web service**
 4. **Deploy!** The app will automatically create tables and seed admin user
 
+## 🚂 Deployment to Railway
+
+Railway supports automatic deployment from GitHub with PostgreSQL database.
+
+### Quick Setup:
+1. Push your code to a GitHub repository
+2. Go to [Railway Dashboard](https://railway.app/)
+3. Click "New Project" → "Deploy from GitHub repo"
+4. Connect your GitHub repository
+5. Railway will automatically detect `railway.toml` and set up PostgreSQL database
+6. In the service settings, add the following environment variables:
+   ```
+   JWT_SECRET=your_super_secret_jwt_key
+   ADMIN_PASSWORD=your_secure_password
+   ADMIN_EMAIL=kedimoneynetwork@gmail.com
+   NODE_ENV=production
+   ```
+7. Deploy! The app will automatically create tables and seed admin user
+
 ## 📋 Deployment to Render
 
 ### Option 1: Using render.yaml (Recommended - Single Service)

@@ -4,21 +4,21 @@ import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 
 export default function Login() {
-  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const phoneRegex = /^\d{10}$/;
   const passwordRegex = /^(?=.*[0-9])(?=.*[!@#$%^&*]).{8,}$/;
 
   const handleSubmit = async e => {
     e.preventDefault();
     setError('');
 
-    if (!emailRegex.test(email)) {
-      setError('Invalid email format');
+    if (!phoneRegex.test(phone)) {
+      setError('Phone number must be exactly 10 digits');
       return;
     }
     if (!passwordRegex.test(password)) {
@@ -27,7 +27,7 @@ export default function Login() {
     }
 
     try {
-      const res = await login({ email, password }); // Use the API module function
+      const res = await login({ phone, password }); // Use the API module function
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('role', res.data.role);
 
@@ -49,11 +49,11 @@ export default function Login() {
         <form onSubmit={handleSubmit} className="max-w-md mx-auto p-6 bg-white rounded shadow">
           <h2 className="text-2xl font-bold mb-6 text-green-700">Login</h2>
           <div className="mb-4">
-            <input 
-              type="email" 
-              placeholder="Email" 
-              onChange={e => setEmail(e.target.value)} 
-              required 
+            <input
+              type="tel"
+              placeholder="Phone Number (10 digits)"
+              onChange={e => setPhone(e.target.value)}
+              required
               className="w-full p-2 border border-gray-300 rounded"
             />
           </div>

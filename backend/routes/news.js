@@ -1,8 +1,10 @@
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
-const { query } = require('../utils/database');
+const { query } = require('../utils/database-sqlite');
 const { adminMiddleware } = require('../middleware/auth');
+
+console.log('News routes loaded');
 
 const router = express.Router();
 
@@ -35,10 +37,12 @@ const upload = multer({
 // Get all news (public)
 router.get('/', async (req, res) => {
   try {
+    console.log('Fetching news...');
     const result = await query(`SELECT * FROM news ORDER BY created_at DESC`);
-    const rows = result.rows;
-    res.json(rows);
+    console.log('News result:', result.rows);
+    res.json(result.rows);
   } catch (err) {
+    console.error('News error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -62,8 +66,8 @@ router.post('/', adminMiddleware, upload.single('media'), async (req, res) => {
 
   try {
     const result = await query(
-      `INSERT INTO news (title, content, media_url, media_type, author) VALUES ($1, $2, $3, $4, $5)`,
-      [title, content, mediaUrl, mediaType, author]
+      `INSERT INTO news (title, content, media_url, media_type) VALUES (?, ?, ?, ?)`,
+      [title, content, mediaUrl, mediaType]
     );
     res.json({ message: 'News created successfully', id: result.lastID });
   } catch (err) {

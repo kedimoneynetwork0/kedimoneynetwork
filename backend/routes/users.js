@@ -2,7 +2,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const multer = require('multer');
 const path = require('path');
-const { query } = require('../utils/database');
+const { query } = require('../utils/database-sqlite');
 const { authMiddleware, adminMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
@@ -38,7 +38,7 @@ const upload = multer({
 router.get('/bonus', authMiddleware, async (req, res) => {
   const userId = req.user.id;
   try {
-    const result = await query(`SELECT SUM(amount) as totalBonus FROM bonuses WHERE userId = $1`, [userId]);
+    const result = await query(`SELECT SUM(amount) as totalBonus FROM bonuses WHERE userId = ?`, [userId]);
     const row = result.rows[0];
     res.json({ totalBonus: row.totalBonus || 0 });
   } catch (err) {
@@ -52,7 +52,7 @@ router.get('/dashboard', authMiddleware, async (req, res) => {
     // Get transactions with database-level calculations
     const transactionsQuery = await query(`
       SELECT * FROM transactions
-      WHERE user_id = $1
+      WHERE user_id = ?
       ORDER BY created_at DESC
       LIMIT 10
     `, [userId]);
@@ -61,7 +61,7 @@ router.get('/dashboard', authMiddleware, async (req, res) => {
     const depositsQuery = await query(`
       SELECT COALESCE(SUM(amount), 0) as total_deposits
       FROM transactions
-      WHERE user_id = $1
+      WHERE user_id = ?
       AND status = 'approved'
       AND type IN ('tree_plan', 'saving', 'deposit', 'investment')
     `, [userId]);
@@ -70,7 +70,7 @@ router.get('/dashboard', authMiddleware, async (req, res) => {
     const withdrawalsQuery = await query(`
       SELECT COALESCE(SUM(amount), 0) as total_withdrawals
       FROM transactions
-      WHERE user_id = $1
+      WHERE user_id = ?
       AND status = 'approved'
       AND type = 'withdrawal'
     `, [userId]);
@@ -79,7 +79,7 @@ router.get('/dashboard', authMiddleware, async (req, res) => {
     const loansQuery = await query(`
       SELECT COALESCE(SUM(amount), 0) as total_loans
       FROM transactions
-      WHERE user_id = $1
+      WHERE user_id = ?
       AND status = 'approved'
       AND type = 'loan'
     `, [userId]);
@@ -90,7 +90,7 @@ router.get('/dashboard', authMiddleware, async (req, res) => {
         COALESCE(SUM(amount), 0) as total_stakes,
         COALESCE(SUM(amount * interest_rate * (stake_period / 365.0)), 0) as total_interest
       FROM stakes
-      WHERE user_id = $1 AND status = 'active'
+      WHERE user_id = ? AND status = 'active'
     `, [userId]);
 
     // Calculate referral bonus (5,000 per referral) - database level
@@ -98,7 +98,7 @@ router.get('/dashboard', authMiddleware, async (req, res) => {
       SELECT COUNT(*) * 5000 as referral_bonus
       FROM users
       WHERE referralId IS NOT NULL
-      AND id = $1
+      AND id = ?
     `, [userId]);
 
     const transactions = transactionsQuery.rows;
@@ -141,7 +141,7 @@ router.get('/dashboard', authMiddleware, async (req, res) => {
 router.get('/profile', authMiddleware, async (req, res) => {
   const userId = req.user.id;
   try {
-    const result = await query(`SELECT firstname, lastname, phone, email, username, referralId, idNumber, profile_picture, estimated_balance FROM users WHERE id = $1`, [userId]);
+    const result = await query(`SELECT firstname, lastname, phone, email, username, referralId, idNumber, profile_picture, estimated_balance FROM users WHERE id = ?`, [userId]);
     const row = result.rows[0];
     if (!row) return res.status(404).json({ message: 'User not found' });
     res.json(row);
@@ -164,7 +164,7 @@ router.post('/change-password', authMiddleware, async (req, res) => {
   }
 
   try {
-    const result = await query(`SELECT password FROM users WHERE id = $1`, [userId]);
+    const result = await query(`SELECT password FROM users WHERE id = ?`, [userId]);
     const user = result.rows[0];
     if (!user) return res.status(404).json({ message: 'User not found' });
 
@@ -172,7 +172,7 @@ router.post('/change-password', authMiddleware, async (req, res) => {
     if (!match) return res.status(400).json({ message: 'Old password is incorrect' });
 
     const hash = await bcrypt.hash(newPassword, 10);
-    await query(`UPDATE users SET password = $1 WHERE id = $2`, [hash, userId]);
+    await query(`UPDATE users SET password = ? WHERE id = ?`, [hash, userId]);
     res.json({ message: 'Password updated successfully' });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
@@ -189,7 +189,7 @@ router.post('/upload-profile-picture', authMiddleware, upload.single('profilePic
   const profilePictureUrl = `/uploads/${req.file.filename}`;
 
   try {
-    await query(`UPDATE users SET profile_picture = $1 WHERE id = $2`, [profilePictureUrl, userId]);
+    await query(`UPDATE users SET profile_picture = ? WHERE id = ?`, [profilePictureUrl, userId]);
     res.json({ message: 'Profile picture uploaded successfully', profilePicture: profilePictureUrl });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
@@ -240,7 +240,7 @@ router.post('/stakes', authMiddleware, async (req, res) => {
 
   try {
     const result = await query(
-      `INSERT INTO stakes (user_id, amount, stake_period, interest_rate, end_date) VALUES ($1, $2, $3, $4, $5)`,
+      `INSERT INTO stakes (user_id, amount, stake_period, interest_rate, end_date) VALUES (?, ?, ?, ?, ?)`,
       [userId, amount, stakePeriod, interestRate, endDate.toISOString()]
     );
     res.json({ message: 'Stake deposit created successfully', id: result.lastID });
@@ -252,7 +252,7 @@ router.post('/stakes', authMiddleware, async (req, res) => {
 router.get('/stakes', authMiddleware, async (req, res) => {
   const userId = req.user.id;
   try {
-    const result = await query(`SELECT * FROM stakes WHERE user_id = $1 ORDER BY start_date DESC`, [userId]);
+    const result = await query(`SELECT * FROM stakes WHERE user_id = ? ORDER BY start_date DESC`, [userId]);
     const rows = result.rows;
     res.json({ stakes: rows });
   } catch (err) {
@@ -270,7 +270,7 @@ router.post('/withdrawals', authMiddleware, async (req, res) => {
 
   try {
     // Get stake details
-    const stakeResult = await query(`SELECT * FROM stakes WHERE id = $1 AND user_id = $2`, [stakeId, userId]);
+    const stakeResult = await query(`SELECT * FROM stakes WHERE id = ? AND user_id = ?`, [stakeId, userId]);
     const stake = stakeResult.rows[0];
 
     if (!stake) return res.status(404).json({ message: 'Stake not found' });
@@ -290,11 +290,11 @@ router.post('/withdrawals', authMiddleware, async (req, res) => {
     const totalAmount = principal + interest;
 
     // Update stake status
-    await query(`UPDATE stakes SET status = 'withdrawn' WHERE id = $1`, [stakeId]);
+    await query(`UPDATE stakes SET status = 'withdrawn' WHERE id = ?`, [stakeId]);
 
     // Create withdrawal record
     const withdrawalResult = await query(
-      `INSERT INTO withdrawals (user_id, stake_id, amount) VALUES ($1, $2, $3)`,
+      `INSERT INTO withdrawals (user_id, stake_id, amount) VALUES (?, ?, ?)`,
       [userId, stakeId, totalAmount]
     );
 
@@ -311,7 +311,7 @@ router.post('/withdrawals', authMiddleware, async (req, res) => {
 router.get('/withdrawals', authMiddleware, async (req, res) => {
   const userId = req.user.id;
   try {
-    const result = await query(`SELECT * FROM withdrawals WHERE user_id = $1 ORDER BY request_date DESC`, [userId]);
+    const result = await query(`SELECT * FROM withdrawals WHERE user_id = ? ORDER BY request_date DESC`, [userId]);
     const rows = result.rows;
     res.json({ withdrawals: rows });
   } catch (err) {
@@ -323,7 +323,7 @@ router.get('/withdrawals', authMiddleware, async (req, res) => {
 router.get('/savings', authMiddleware, async (req, res) => {
   const userId = req.user.id;
   try {
-    const result = await query(`SELECT * FROM savings WHERE user_id = $1 ORDER BY created_at DESC`, [userId]);
+    const result = await query(`SELECT * FROM savings WHERE user_id = ? ORDER BY created_at DESC`, [userId]);
     const rows = result.rows;
     res.json({ savings: rows });
   } catch (err) {
@@ -346,7 +346,7 @@ router.post('/savings/withdraw', authMiddleware, async (req, res) => {
 
   try {
     // Get savings details
-    const savingsResult = await query(`SELECT * FROM savings WHERE id = $1 AND user_id = $2`, [savingsId, userId]);
+    const savingsResult = await query(`SELECT * FROM savings WHERE id = ? AND user_id = ?`, [savingsId, userId]);
     const savings = savingsResult.rows[0];
 
     if (!savings) return res.status(404).json({ message: 'Savings account not found' });
@@ -367,12 +367,12 @@ router.post('/savings/withdraw', authMiddleware, async (req, res) => {
 
     // Create savings withdrawal record (similar to stake withdrawal)
     const withdrawalResult = await query(
-      `INSERT INTO savings_withdrawals (user_id, savings_id, amount, request_date) VALUES ($1, $2, $3, NOW())`,
+      `INSERT INTO savings_withdrawals (user_id, savings_id, amount, request_date) VALUES (?, ?, ?, NOW())`,
       [userId, savingsId, amount]
     );
 
     // Update savings balance
-    await query(`UPDATE savings SET amount = amount - $1 WHERE id = $2`, [amount, savingsId]);
+    await query(`UPDATE savings SET amount = amount - ? WHERE id = ?`, [amount, savingsId]);
 
     res.json({
       message: 'Savings withdrawal request submitted successfully',
@@ -393,7 +393,7 @@ router.get('/messages', authMiddleware, async (req, res) => {
       SELECT m.*, u.firstname as admin_firstname, u.lastname as admin_lastname
       FROM messages m
       LEFT JOIN users u ON m.admin_id = u.id
-      WHERE m.user_id = $1
+      WHERE m.user_id = ?
       ORDER BY m.created_at DESC
     `, [userId]);
     const rows = result.rows;
@@ -408,7 +408,7 @@ router.put('/messages/:id/read', authMiddleware, async (req, res) => {
   const userId = req.user.id;
 
   try {
-    await query(`UPDATE messages SET is_read = true WHERE id = $1 AND user_id = $2`, [messageId, userId]);
+    await query(`UPDATE messages SET is_read = true WHERE id = ? AND user_id = ?`, [messageId, userId]);
     res.json({ message: 'Message marked as read' });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
@@ -424,26 +424,26 @@ router.get('/balance', authMiddleware, async (req, res) => {
       SELECT
         -- Deposits: tree_plan + saving + deposit + investment
         (SELECT COALESCE(SUM(amount), 0) FROM transactions
-         WHERE user_id = $1 AND status = 'approved'
+         WHERE user_id = ? AND status = 'approved'
          AND type IN ('tree_plan', 'saving', 'deposit', 'investment')) as total_deposits,
 
         -- Withdrawals
         (SELECT COALESCE(SUM(amount), 0) FROM transactions
-         WHERE user_id = $1 AND status = 'approved' AND type = 'withdrawal') as total_withdrawals,
+         WHERE user_id = ? AND status = 'approved' AND type = 'withdrawal') as total_withdrawals,
 
         -- Loan repayments
         (SELECT COALESCE(SUM(amount), 0) FROM transactions
-         WHERE user_id = $1 AND status = 'approved' AND type = 'loan') as total_loans,
+         WHERE user_id = ? AND status = 'approved' AND type = 'loan') as total_loans,
 
         -- Active stakes and interest
         (SELECT COALESCE(SUM(amount), 0) FROM stakes
-         WHERE user_id = $1 AND status = 'active') as total_stakes,
+         WHERE user_id = ? AND status = 'active') as total_stakes,
 
         (SELECT COALESCE(SUM(amount * interest_rate * (stake_period / 365.0)), 0) FROM stakes
-         WHERE user_id = $1 AND status = 'active') as total_interest,
+         WHERE user_id = ? AND status = 'active') as total_interest,
 
         -- Referral bonus (5,000 per approved referral)
-        (SELECT COUNT(*) * 5000 FROM users WHERE referralId IS NOT NULL AND id = $1) as referral_bonus
+        (SELECT COUNT(*) * 5000 FROM users WHERE referralId IS NOT NULL AND id = ?) as referral_bonus
     `, [userId]);
 
     const calc = balanceQuery.rows[0];

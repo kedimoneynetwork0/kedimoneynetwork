@@ -11,13 +11,20 @@ export default function Signup() {
     email: '',
     username: '',
     password: '',
+    confirmPassword: '',
     referralId: '',
     idNumber: '',
+    province: '',
+    district: '',
+    sector: '',
+    cell: '',
+    village: '',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState('');
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const phoneRegex = /^\d{10}$/;
   const passwordRegex = /^(?=.*[0-9])(?=.*[!@#$%^&*]).{8,}$/;
 
   const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
@@ -26,12 +33,20 @@ export default function Signup() {
     e.preventDefault();
     setMessage('');
 
+    if (!phoneRegex.test(form.phone)) {
+      setMessage('Phone number must be exactly 10 digits');
+      return;
+    }
     if (!emailRegex.test(form.email)) {
       setMessage('Invalid email format');
       return;
     }
     if (!passwordRegex.test(form.password)) {
       setMessage('Password must be at least 8 chars with a number and special char');
+      return;
+    }
+    if (form.password !== form.confirmPassword) {
+      setMessage('Passwords do not match');
       return;
     }
 
@@ -68,20 +83,65 @@ export default function Signup() {
             />
           </div>
           <div className="mb-4">
-            <input 
-              name="phone" 
-              placeholder="Phone" 
-              onChange={handleChange} 
-              required 
+            <input
+              name="phone"
+              placeholder="Phone Number (10 digits)"
+              onChange={handleChange}
+              required
               className="w-full p-2 border border-gray-300 rounded"
             />
           </div>
           <div className="mb-4">
-            <input 
-              name="email" 
-              placeholder="Email" 
-              onChange={handleChange} 
-              required 
+            <input
+              name="email"
+              placeholder="Email"
+              onChange={handleChange}
+              required
+              className="w-full p-2 border border-gray-300 rounded"
+            />
+          </div>
+          <div className="mb-4">
+            <input
+              name="province"
+              placeholder="Province"
+              onChange={handleChange}
+              required
+              className="w-full p-2 border border-gray-300 rounded"
+            />
+          </div>
+          <div className="mb-4">
+            <input
+              name="district"
+              placeholder="District"
+              onChange={handleChange}
+              required
+              className="w-full p-2 border border-gray-300 rounded"
+            />
+          </div>
+          <div className="mb-4">
+            <input
+              name="sector"
+              placeholder="Sector"
+              onChange={handleChange}
+              required
+              className="w-full p-2 border border-gray-300 rounded"
+            />
+          </div>
+          <div className="mb-4">
+            <input
+              name="cell"
+              placeholder="Cell"
+              onChange={handleChange}
+              required
+              className="w-full p-2 border border-gray-300 rounded"
+            />
+          </div>
+          <div className="mb-4">
+            <input
+              name="village"
+              placeholder="Village"
+              onChange={handleChange}
+              required
               className="w-full p-2 border border-gray-300 rounded"
             />
           </div>
@@ -110,6 +170,16 @@ export default function Signup() {
             >
               {showPassword ? '🙈' : '👁️'}
             </button>
+          </div>
+          <div className="mb-4">
+            <input
+              type="password"
+              name="confirmPassword"
+              placeholder="Confirm Password"
+              onChange={handleChange}
+              required
+              className="w-full p-2 border border-gray-300 rounded"
+            />
           </div>
           <div className="mb-4">
             <input 
