@@ -27,7 +27,7 @@ import {
   getUserStats,
   formatCurrency
 } from '../utils/calculations';
-import './admin-dashboard.css'; // Import original dashboard styles
+import './kedi-user-dashboard.css'; // Import modern dashboard styles
 
 const KediUserDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -559,15 +559,8 @@ const KediUserDashboard = () => {
   };
 
   const getStatusBadge = (status) => {
-    const statusClasses = {
-      approved: 'bg-green-100 text-green-800',
-      pending: 'bg-yellow-100 text-yellow-800',
-      rejected: 'bg-red-100 text-red-800',
-      active: 'bg-green-100 text-green-800'
-    };
-
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusClasses[status] || 'bg-gray-100 text-gray-800'}`}>
+      <span className={`status-badge status-${status}`}>
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
     );
@@ -688,27 +681,27 @@ const KediUserDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8f9fa] font-['Poppins',sans-serif]">
+    <div className="kedi-dashboard">
       {/* Top Navbar */}
-      <nav className="bg-white shadow-lg border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+      <nav className="dashboard-navbar">
+        <div className="navbar-content">
+          <div className="navbar-flex">
             {/* Left: Logo and App Name */}
-            <div className="flex items-center space-x-4">
+            <div className="navbar-left">
               <button
-                className="lg:hidden p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-all duration-200"
+                className="lg:hidden navbar-menu-btn p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-all duration-200"
                 onClick={toggleSidebar}
                 aria-label="Toggle sidebar"
               >
                 <FaBars size={20} />
               </button>
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#28a745' }}>
+              <div className="navbar-logo">
+                <div className="logo-icon">
                   <span className="text-white font-bold text-sm">K</span>
                 </div>
                 <div className="hidden sm:block">
-                  <h1 className="text-lg font-semibold text-gray-900">KEDI Business & Agri Funds</h1>
-                  <p className="text-xs text-gray-500">User Dashboard</p>
+                  <h1 className="logo-text">KEDI Business & Agri Funds</h1>
+                  <p className="logo-subtitle">User Dashboard</p>
                 </div>
               </div>
             </div>
@@ -722,34 +715,32 @@ const KediUserDashboard = () => {
       </nav>
 
       {/* Sidebar */}
-      <aside className={`fixed top-16 left-0 z-40 h-[calc(100vh-4rem)] w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out ${
-        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      } lg:translate-x-0`}>
-        <div className="flex flex-col h-full">
+      <aside className={`dashboard-sidebar ${sidebarOpen ? 'open' : ''}`}>
+        <div className="sidebar-content">
           {/* Sidebar Header */}
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                <span className="text-lg font-bold text-green-700">
+          <div className="sidebar-header">
+            <div className="user-profile">
+              <div className="user-avatar">
+                <span className="text-lg font-bold text-white">
                   {userData.avatar}
                 </span>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-900 truncate">{userData.name}</p>
-                <p className="text-xs text-gray-500 truncate">{userData.email}</p>
+              <div className="user-info">
+                <h3 className="truncate">{userData.name}</h3>
+                <p className="truncate">{userData.email}</p>
               </div>
             </div>
             {/* User Actions */}
-            <div className="flex items-center justify-between mt-4">
+            <div className="user-actions">
               {/* Notifications */}
               <button
                 onClick={() => setShowInbox(!showInbox)}
-                className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors relative"
+                className="action-btn"
                 aria-label="Notifications"
               >
                 <FaBell size={18} />
                 {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  <span className="notification-badge">
                     {unreadCount > 99 ? '99+' : unreadCount}
                   </span>
                 )}
@@ -759,10 +750,10 @@ const KediUserDashboard = () => {
               <div className="relative">
                 <button
                   onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                  className="action-btn"
                   aria-label="User menu"
                 >
-                  <FaCog size={16} className="text-gray-500" />
+                  <FaCog size={16} />
                 </button>
 
                 {/* Dropdown Menu */}
@@ -797,26 +788,27 @@ const KediUserDashboard = () => {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 px-4 py-6 space-y-1">
-            {navigationItems.map((item) => (
-              <button
-                key={item.id}
-                className={`w-full flex items-center px-4 py-3 text-left rounded-lg transition-all duration-200 ${
-                  currentSection === item.id
-                    ? 'bg-green-50 text-green-700 border-r-2 border-green-600'
-                    : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
-                }`}
-                onClick={() => showSection(item.id)}
-              >
-                <item.icon className="mr-3 text-lg" />
-                <span className="font-medium">{item.label}</span>
-              </button>
-            ))}
+          <nav className="sidebar-nav">
+            <ul className="nav-list">
+              {navigationItems.map((item) => (
+                <li key={item.id} className="nav-item">
+                  <button
+                    className={`nav-link ${currentSection === item.id ? 'active' : ''}`}
+                    onClick={() => showSection(item.id)}
+                  >
+                    <span className="nav-icon">
+                      <item.icon />
+                    </span>
+                    <span>{item.label}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
           </nav>
 
           {/* Sidebar Footer */}
-          <div className="p-4 border-t border-gray-200">
-            <div className="text-xs text-gray-500 text-center">
+          <div className="sidebar-footer">
+            <div className="footer-text">
               KEDI Money Network © 2024
             </div>
           </div>
@@ -832,13 +824,13 @@ const KediUserDashboard = () => {
       )}
 
       {/* Main Content */}
-      <main className="lg:ml-64 pt-16 min-h-screen">
-        <div className="p-6 lg:p-8">
+      <main className="dashboard-main">
+        <div className="main-content">
         {/* Dashboard Section */}
         {currentSection === 'dashboard' && (
           <div className="space-y-6">
             {/* Welcome Section */}
-            <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow duration-300">
+            <div className="dashboard-card">
               <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
                 <div>
                   <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -852,13 +844,10 @@ const KediUserDashboard = () => {
                   <button
                     onClick={refreshDashboard}
                     disabled={isLoading}
-                    className="inline-flex items-center px-6 py-3 text-white font-medium rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:-translate-y-1"
-                    style={{ backgroundColor: '#28a745' }}
-                    onMouseEnter={(e) => !isLoading && (e.target.style.backgroundColor = '#218838')}
-                    onMouseLeave={(e) => !isLoading && (e.target.style.backgroundColor = '#28a745')}
+                    className="btn btn-primary"
                   >
                     {isLoading ? (
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                      <div className="loading-spinner mr-2"></div>
                     ) : (
                       <FaSyncAlt className="mr-2" />
                     )}
@@ -869,117 +858,97 @@ const KediUserDashboard = () => {
             </div>
 
             {/* Balance Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-3">
-                      <div className="p-3 bg-green-100 rounded-lg">
-                        <FaWallet className="text-xl text-green-600" />
-                      </div>
-                      <span className="text-sm font-medium text-gray-600">Estimated Balance</span>
-                    </div>
-                    <div className="text-3xl font-bold text-green-600 mb-1">
-                      {formatCurrency(calculateRealBalance())} RWF
-                    </div>
-                    <p className="text-gray-500 text-sm">
-                      Total wallet balance
-                    </p>
+            <div className="dashboard-grid">
+              <div className="dashboard-card balance-card">
+                <div className="card-header">
+                  <div className="card-icon primary">
+                    <FaWallet />
                   </div>
+                </div>
+                <div className="card-content">
+                  <h3 className="card-title">Estimated Balance</h3>
+                  <h2>{formatCurrency(calculateRealBalance())} RWF</h2>
+                  <p className="card-subtitle">Total wallet balance</p>
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-3">
-                      <div className="p-3 bg-blue-100 rounded-lg">
-                        <FaGift className="text-xl text-blue-600" />
-                      </div>
-                      <span className="text-sm font-medium text-gray-600">Referral Bonus</span>
-                    </div>
-                    <div className="text-3xl font-bold text-blue-600 mb-1">
-                      {formatCurrency(userData.bonus || 0)} RWF
-                    </div>
-                    <p className="text-gray-500 text-sm">
-                      Total referral earnings
-                    </p>
+              <div className="dashboard-card">
+                <div className="card-header">
+                  <div className="card-icon success">
+                    <FaGift />
                   </div>
+                </div>
+                <div className="card-content">
+                  <h3 className="card-title">Referral Bonus</h3>
+                  <h2>{formatCurrency(userData.bonus || 0)} RWF</h2>
+                  <p className="card-subtitle">Total referral earnings</p>
                 </div>
               </div>
             </div>
 
             {/* Quick Actions */}
-            <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow duration-300">
+            <div className="quick-actions">
               <h3 className="text-xl font-semibold text-gray-900 mb-6">Quick Actions</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="actions-grid">
                 <button
                   onClick={() => showSection('transaction')}
-                  className="flex items-center justify-center px-6 py-4 text-white font-medium rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1"
-                  style={{ backgroundColor: '#28a745' }}
-                  onMouseEnter={(e) => e.target.style.backgroundColor = '#218838'}
-                  onMouseLeave={(e) => e.target.style.backgroundColor = '#28a745'}
+                  className="action-btn"
                 >
-                  <FaPlus className="mr-2" />
+                  <FaPlus className="action-icon" />
                   Make Transaction
                 </button>
 
                 <button
                   onClick={() => showSection('stake')}
-                  className="flex items-center justify-center px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1"
+                  className="action-btn secondary"
                 >
-                  <FaPiggyBank className="mr-2" />
+                  <FaPiggyBank className="action-icon" />
                   Deposit Stake
                 </button>
 
                 <button
                   onClick={() => showSection('history')}
-                  className="flex items-center justify-center px-6 py-4 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1"
+                  className="action-btn"
+                  style={{ backgroundColor: 'var(--info-color)' }}
                 >
-                  <FaMoneyBillWave className="mr-2" />
-                  Withdraw
+                  <FaMoneyBillWave className="action-icon" />
+                  View History
                 </button>
               </div>
             </div>
 
             {/* Recent Transactions */}
-            <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow duration-300">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-semibold text-gray-900">Recent Transactions</h3>
+            <div className="dashboard-card">
+              <div className="card-header">
+                <h3 className="card-title">Recent Transactions</h3>
                 <button
                   onClick={() => showSection('history')}
-                  className="text-green-600 hover:text-green-700 font-medium text-sm transition-colors hover:underline"
+                  className="btn btn-secondary"
                 >
                   View All →
                 </button>
               </div>
 
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-lg">
+              <div className="data-table-container">
                 <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-100">
+                  <table className="data-table">
+                    <thead>
                       <tr>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Date</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Type</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Amount</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>Amount</th>
+                        <th>Status</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-200">
+                    <tbody>
                       {getRecentTransactions(transactions, 3).map((txn, index) => (
-                        <tr key={txn.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 transition-colors`}>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {new Date(txn.created_at).toLocaleDateString()}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                            {txn.type}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
+                        <tr key={txn.id}>
+                          <td>{new Date(txn.created_at).toLocaleDateString()}</td>
+                          <td>{txn.type}</td>
+                          <td className="font-semibold text-green-600">
                             {formatCurrency(txn.amount)} RWF
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            {getStatusBadge(txn.status)}
-                          </td>
+                          <td>{getStatusBadge(txn.status)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -995,47 +964,41 @@ const KediUserDashboard = () => {
             </div>
 
             {/* Active Stakes */}
-            <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow duration-300">
-              <h3 className="text-xl font-semibold text-gray-900 mb-6">Active Stakes</h3>
+            <div className="dashboard-card">
+              <h3 className="card-title">Active Stakes</h3>
 
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-lg">
+              <div className="data-table-container">
                 <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-100">
+                  <table className="data-table">
+                    <thead>
                       <tr>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Principal</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Duration</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Rate</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Interest</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Total Value</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
+                        <th>Principal</th>
+                        <th>Duration</th>
+                        <th>Rate</th>
+                        <th>Interest</th>
+                        <th>Total Value</th>
+                        <th>Status</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-200">
+                    <tbody>
                       {(Array.isArray(stakes) ? stakes : []).filter(stake => stake && stake.status === 'active').map((stake, index) => {
                         const interestEarned = stake.amount * stake.interest_rate * (stake.stake_period / 365);
                         const totalValue = stake.amount + interestEarned;
 
                         return (
-                          <tr key={stake.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 transition-colors`}>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                          <tr key={stake.id}>
+                            <td className="font-semibold text-gray-900">
                               {formatCurrency(stake.amount)} RWF
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                              {stake.stake_period} days
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                              {(stake.interest_rate * 100)}%
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 font-medium">
+                            <td>{stake.stake_period} days</td>
+                            <td>{(stake.interest_rate * 100)}%</td>
+                            <td className="text-blue-600 font-medium">
                               {formatCurrency(interestEarned)} RWF
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
+                            <td className="font-semibold text-green-600">
                               {formatCurrency(totalValue)} RWF
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              {getStatusBadge(stake.status)}
-                            </td>
+                            <td>{getStatusBadge(stake.status)}</td>
                           </tr>
                         );
                       })}
@@ -1052,22 +1015,26 @@ const KediUserDashboard = () => {
             </div>
 
             {/* Personal Analytics */}
-            <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow duration-300">
-              <h3 className="text-xl font-semibold text-gray-900 mb-6">Your Analytics</h3>
+            <div className="dashboard-card">
+              <h3 className="card-title">Your Analytics</h3>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Transaction Activity */}
-                <div className="bg-gray-50 rounded-lg p-4 shadow-md hover:shadow-lg transition-shadow duration-300">
-                  <h4 className="text-lg font-medium text-gray-900 mb-4">Transaction Activity</h4>
-                  <div className="h-48">
+                <div className="chart-container">
+                  <div className="chart-header">
+                    <h4 className="chart-title">Transaction Activity</h4>
+                  </div>
+                  <div className="chart-wrapper">
                     <Line data={generateUserTransactionData()} options={userChartOptions} />
                   </div>
                 </div>
 
                 {/* Balance Growth */}
-                <div className="bg-gray-50 rounded-lg p-4 shadow-md hover:shadow-lg transition-shadow duration-300">
-                  <h4 className="text-lg font-medium text-gray-900 mb-4">Balance Growth</h4>
-                  <div className="h-48">
+                <div className="chart-container">
+                  <div className="chart-header">
+                    <h4 className="chart-title">Balance Growth</h4>
+                  </div>
+                  <div className="chart-wrapper">
                     <Line data={generateUserBalanceData()} options={userChartOptions} />
                   </div>
                 </div>
@@ -1079,13 +1046,14 @@ const KediUserDashboard = () => {
         {/* Transaction Section */}
         {currentSection === 'transaction' && (
           <div>
-            <div className="dashboard-card">
-              <h3>Make a Transaction</h3>
+            <div className="form-container">
+              <h3 className="card-title">Make a Transaction</h3>
 
               <form onSubmit={handleTransactionSubmit}>
                 <div className="form-group">
-                  <label>Transaction Type</label>
+                  <label className="form-label">Transaction Type</label>
                   <select
+                    className="form-select"
                     value={transactionForm.type}
                     onChange={(e) => setTransactionForm({...transactionForm, type: e.target.value})}
                     required
@@ -1098,8 +1066,9 @@ const KediUserDashboard = () => {
                 </div>
 
                 <div className="form-group">
-                  <label>Amount (RWF)</label>
+                  <label className="form-label">Amount (RWF)</label>
                   <input
+                    className="form-input"
                     type="number"
                     value={transactionForm.amount}
                     onChange={(e) => setTransactionForm({...transactionForm, amount: e.target.value})}
@@ -1109,8 +1078,9 @@ const KediUserDashboard = () => {
                 </div>
 
                 <div className="form-group">
-                  <label>Transaction ID</label>
+                  <label className="form-label">Transaction ID</label>
                   <input
+                    className="form-input"
                     type="text"
                     value={transactionForm.txnId}
                     onChange={(e) => setTransactionForm({...transactionForm, txnId: e.target.value})}
@@ -1123,10 +1093,10 @@ const KediUserDashboard = () => {
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="action-button"
+                    className="btn btn-primary"
                   >
                     {isLoading ? (
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      <div className="loading-spinner mr-2"></div>
                     ) : (
                       <FaExchangeAlt className="mr-2" />
                     )}
@@ -1135,7 +1105,7 @@ const KediUserDashboard = () => {
                   <button
                     type="button"
                     onClick={() => showSection('dashboard')}
-                    className="action-button secondary"
+                    className="btn btn-secondary"
                   >
                     Cancel
                   </button>
@@ -1924,60 +1894,21 @@ const KediUserDashboard = () => {
     {showPaymentModal && (
       <div>
         {/* Modal Overlay */}
-        <div
-          className="modal-overlay"
-          onClick={handlePaymentCancel}
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            backgroundColor: 'rgba(0, 0, 0, 0.6)',
-            zIndex: '1000',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            backdropFilter: 'blur(4px)'
-          }}
-        ></div>
+        <div className="modal-overlay" onClick={handlePaymentCancel}></div>
 
         {/* Modal Content */}
-        <div
-          className="payment-modal"
-          style={{
-            position: 'fixed',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            zIndex: '1001',
-            backgroundColor: 'white',
-            borderRadius: '16px',
-            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15), 0 8px 16px rgba(0, 0, 0, 0.1)',
-            maxWidth: '500px',
-            width: '90%',
-            padding: '0',
-            overflow: 'hidden',
-            transition: 'all 0.3s ease'
-          }}
-        >
+        <div className="modal-content">
           {/* Modal Header */}
-          <div
-            style={{
-              background: 'linear-gradient(135deg, #2e8b57 0%, #228b22 100%)',
-              color: 'white',
-              padding: '24px',
-              textAlign: 'center'
-            }}
-          >
+          <div className="modal-header">
             <div style={{ fontSize: '48px', marginBottom: '12px' }}>📱</div>
-            <h3 style={{ margin: '0', fontSize: '24px', fontWeight: '600' }}>
+            <h3 className="modal-title">
               Payment Verification Required
             </h3>
+            <button className="modal-close" onClick={handlePaymentCancel}>×</button>
           </div>
 
           {/* Modal Body */}
-          <div style={{ padding: '32px 24px' }}>
+          <div className="modal-body">
             <div style={{ textAlign: 'center', marginBottom: '24px' }}>
               <p style={{
                 fontSize: '16px',
@@ -2057,67 +1988,17 @@ const KediUserDashboard = () => {
           </div>
 
           {/* Modal Footer */}
-          <div style={{
-            padding: '24px',
-            backgroundColor: '#f9fafb',
-            borderTop: '1px solid #e5e7eb',
-            display: 'flex',
-            gap: '12px',
-            justifyContent: 'flex-end'
-          }}>
+          <div className="modal-footer">
             <button
               onClick={handlePaymentCancel}
-              style={{
-                padding: '12px 24px',
-                border: '2px solid #d1d5db',
-                backgroundColor: 'white',
-                color: '#6b7280',
-                borderRadius: '8px',
-                fontSize: '14px',
-                fontWeight: '500',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.borderColor = '#9ca3af';
-                e.target.style.color = '#374151';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.borderColor = '#d1d5db';
-                e.target.style.color = '#6b7280';
-              }}
+              className="btn btn-secondary"
             >
               Cancel
             </button>
             <button
               onClick={handlePaymentConfirm}
               disabled={isLoading}
-              style={{
-                padding: '12px 24px',
-                border: 'none',
-                backgroundColor: '#2e8b57',
-                color: 'white',
-                borderRadius: '8px',
-                fontSize: '14px',
-                fontWeight: '500',
-                cursor: isLoading ? 'not-allowed' : 'pointer',
-                transition: 'all 0.2s ease',
-                opacity: isLoading ? 0.7 : 1
-              }}
-              onMouseEnter={(e) => {
-                if (!isLoading) {
-                  e.target.style.backgroundColor = '#228b22';
-                  e.target.style.transform = 'translateY(-1px)';
-                  e.target.style.boxShadow = '0 4px 12px rgba(46, 139, 87, 0.3)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isLoading) {
-                  e.target.style.backgroundColor = '#2e8b57';
-                  e.target.style.transform = 'translateY(0)';
-                  e.target.style.boxShadow = 'none';
-                }
-              }}
+              className="btn btn-primary"
             >
               {isLoading ? (
                 <div style={{
@@ -2125,14 +2006,7 @@ const KediUserDashboard = () => {
                   alignItems: 'center',
                   gap: '8px'
                 }}>
-                  <div style={{
-                    width: '16px',
-                    height: '16px',
-                    border: '2px solid #ffffff',
-                    borderTop: '2px solid transparent',
-                    borderRadius: '50%',
-                    animation: 'spin 1s linear infinite'
-                  }}></div>
+                  <div className="loading-spinner"></div>
                   Processing...
                 </div>
               ) : (

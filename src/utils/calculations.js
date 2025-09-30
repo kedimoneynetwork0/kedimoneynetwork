@@ -23,7 +23,7 @@ export function calculateStakesInterest(stakes = []) {
 
 /**
  * Calculate user balance from transactions and stakes
- * Balance = Total Interest + Total Saving + Tree Plan
+ * Balance = Total Interest + Total Saving (Tree Plan appears in history but not in wallet balance)
  */
 export function calculateBalance(transactions = [], stakes = [], referralBonus = 0) {
   // Calculate total interest from active stakes
@@ -34,13 +34,13 @@ export function calculateBalance(transactions = [], stakes = [], referralBonus =
     .filter(txn => txn && txn.status === 'approved' && txn.type === 'saving')
     .reduce((total, txn) => total + (txn.amount || 0), 0);
 
-  // Calculate total tree plan (approved tree_plan transactions)
-  const totalTreePlan = (Array.isArray(transactions) ? transactions : [])
-    .filter(txn => txn && txn.status === 'approved' && txn.type === 'tree_plan')
-    .reduce((total, txn) => total + (txn.amount || 0), 0);
+  // Tree Plan transactions appear in history but are NOT included in wallet balance calculation
+  // const totalTreePlan = (Array.isArray(transactions) ? transactions : [])
+  //   .filter(txn => txn && txn.status === 'approved' && txn.type === 'tree_plan')
+  //   .reduce((total, txn) => total + (txn.amount || 0), 0);
 
-  // Balance calculation: Total Interest + Total Saving + Tree Plan
-  const balance = totalInterest + totalSaving + totalTreePlan;
+  // Balance calculation: Total Interest + Total Saving (excluding Tree Plan)
+  const balance = totalInterest + totalSaving;
 
   return Math.max(0, balance); // Ensure balance doesn't go negative
 }
@@ -65,27 +65,28 @@ export function getRecentTransactions(transactions = [], limit = 10) {
 }
 
 /**
- * Check if transaction type is a deposit
+ * Check if transaction type is a deposit (affects wallet balance)
+ * Note: tree_plan appears in history but does not affect wallet balance
  */
 export function isDepositType(type) {
-  const depositTypes = ['tree_plan', 'saving', 'deposit', 'investment'];
+  const depositTypes = ['saving', 'deposit', 'investment'];
   return depositTypes.includes(type);
 }
 
 /**
- * Calculate total deposits from approved transactions
- * Simple addition logic: 500 + 1000 = 1500
+ * Calculate total deposits from approved transactions (excluding tree_plan)
+ * Simple addition logic: only savings deposits affect balance
  *
  * @param {Array} transactions - Array of transaction objects
- * @returns {number} Total sum of all approved deposits
+ * @returns {number} Total sum of approved deposits that affect wallet balance
  *
  * @example
  * const transactions = [
- *   { type: 'tree_plan', amount: 500, status: 'approved' },
+ *   { type: 'tree_plan', amount: 500, status: 'approved' }, // Not included in balance
  *   { type: 'saving', amount: 1000, status: 'approved' },
  *   { type: 'withdrawal', amount: 200, status: 'approved' }
  * ];
- * calculateTotalDeposits(transactions); // Returns 1500
+ * calculateTotalDeposits(transactions); // Returns 1000 (only savings)
  */
 export function calculateTotalDeposits(transactions = []) {
   return (Array.isArray(transactions) ? transactions : [])
@@ -103,8 +104,8 @@ export function calculateTotalWithdrawals(transactions = []) {
 }
 
 /**
- * Get deposit breakdown by type
- * Returns: { tree_plan: 500, saving: 1000, total: 1500 }
+ * Get deposit breakdown by type (excludes tree_plan as it doesn't affect balance)
+ * Returns: { saving: 1000, total: 1000 }
  */
 export function getDepositBreakdown(transactions = []) {
   const breakdown = {};
@@ -125,7 +126,7 @@ export function getDepositBreakdown(transactions = []) {
 }
 
 /**
- * Simple deposit sum function (as requested: 500 + 1000 = 1500)
+ * Simple deposit sum function (excludes tree_plan: only savings = 1000)
  */
 export function sumDeposits(transactions = []) {
   return (Array.isArray(transactions) ? transactions : [])
@@ -182,11 +183,12 @@ export function filterTransactions(transactions = [], typeFilter = 'all', status
 
 /**
  * Get transaction type options
+ * Note: tree_plan appears in history but does not affect wallet balance
  */
 export function getTransactionTypes() {
   return [
     { value: 'all', label: 'All Types' },
-    { value: 'tree_plan', label: 'Tree Plan' },
+    { value: 'tree_plan', label: 'Tree Plan (History Only)' },
     { value: 'saving', label: 'Savings' },
     { value: 'loan', label: 'Loan' },
     { value: 'withdrawal', label: 'Withdrawal' }
@@ -268,14 +270,14 @@ export function getUserStats(user, transactions = [], stakes = []) {
 
 /**
  * Demo function to test deposit calculation logic
- * Example: 500 + 1000 = 1500
+ * Example: 1000 (only savings, tree_plan not included in balance)
  */
 export function testDepositCalculation() {
   const sampleTransactions = [
-    { type: 'tree_plan', amount: 500, status: 'approved' },
+    { type: 'tree_plan', amount: 500, status: 'approved' }, // Not included in balance
     { type: 'saving', amount: 1000, status: 'approved' },
     { type: 'withdrawal', amount: 200, status: 'approved' },
-    { type: 'tree_plan', amount: 300, status: 'pending' } // This won't be included
+    { type: 'tree_plan', amount: 300, status: 'pending' } // This won't be included anyway
   ];
 
   const totalDeposits = calculateTotalDeposits(sampleTransactions);
@@ -283,14 +285,14 @@ export function testDepositCalculation() {
 
   console.log('Deposit Calculation Test:');
   console.log('Sample transactions:', sampleTransactions);
-  console.log('Total deposits (500 + 1000):', totalDeposits); // Should be 1500
+  console.log('Total deposits (only savings: 1000):', totalDeposits); // Should be 1000
   console.log('Deposit breakdown:', breakdown);
-  // Expected: { tree_plan: 500, saving: 1000, total: 1500 }
+  // Expected: { saving: 1000, total: 1000 } (tree_plan not included)
 
   return {
     totalDeposits,
     breakdown,
-    expected: 1500,
-    correct: totalDeposits === 1500
+    expected: 1000,
+    correct: totalDeposits === 1000
   };
 }

@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
+    "seed-admin": "node seed-admin.js",
     "migrate": "node migrate-data.js",
     "test": "jest --detectOpenHandles --forceExit"
   },

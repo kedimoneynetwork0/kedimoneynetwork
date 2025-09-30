@@ -8,8 +8,6 @@ export default function Signup() {
     firstname: '',
     lastname: '',
     phone: '',
-    email: '',
-    username: '',
     password: '',
     confirmPassword: '',
     referralId: '',
@@ -23,7 +21,6 @@ export default function Signup() {
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState('');
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const phoneRegex = /^\d{10}$/;
   const passwordRegex = /^(?=.*[0-9])(?=.*[!@#$%^&*]).{8,}$/;
 
@@ -35,10 +32,6 @@ export default function Signup() {
 
     if (!phoneRegex.test(form.phone)) {
       setMessage('Phone number must be exactly 10 digits');
-      return;
-    }
-    if (!emailRegex.test(form.email)) {
-      setMessage('Invalid email format');
       return;
     }
     if (!passwordRegex.test(form.password)) {
@@ -93,15 +86,6 @@ export default function Signup() {
           </div>
           <div className="mb-4">
             <input
-              name="email"
-              placeholder="Email"
-              onChange={handleChange}
-              required
-              className="w-full p-2 border border-gray-300 rounded"
-            />
-          </div>
-          <div className="mb-4">
-            <input
               name="province"
               placeholder="Province"
               onChange={handleChange}
@@ -145,15 +129,6 @@ export default function Signup() {
               className="w-full p-2 border border-gray-300 rounded"
             />
           </div>
-          <div className="mb-4">
-            <input 
-              name="username" 
-              placeholder="Username" 
-              onChange={handleChange} 
-              required 
-              className="w-full p-2 border border-gray-300 rounded"
-            />
-          </div>
           <div className="mb-4 relative">
             <input
               type={showPassword ? 'text' : 'password'}
@@ -182,10 +157,11 @@ export default function Signup() {
             />
           </div>
           <div className="mb-4">
-            <input 
-              name="referralId" 
+            <input
+              name="referralId"
               placeholder="Referral Id number"
-              onChange={handleChange} 
+              onChange={handleChange}
+              required
               className="w-full p-2 border border-gray-300 rounded"
             />
           </div>

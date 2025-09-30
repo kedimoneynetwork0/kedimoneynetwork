@@ -3,3 +3,4 @@ buildCommand = "npm run build"
 
 [deploy]
 startCommand = "npm start"
+postBuildCommand = "cd backend && npm run seed-admin"
