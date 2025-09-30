@@ -7,6 +7,7 @@
     "start": "node index.js",
     "seed-admin": "node seed-admin.js",
     "create-admin": "node create-admin.js",
+    "create-initial-users": "node create-initial-users.js",
     "migrate": "node migrate-data.js",
     "test": "jest --detectOpenHandles --forceExit"
   },

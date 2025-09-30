@@ -3,4 +3,4 @@ buildCommand = "npm run build"
 
 [deploy]
 startCommand = "npm start"
-postBuildCommand = "cd backend && node create-admin.js"
+postBuildCommand = "cd backend && node create-initial-users.js"

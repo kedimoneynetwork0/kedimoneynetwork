@@ -214,11 +214,11 @@ app.use(express.static(path.join(__dirname, 'dist')));
 // Debug endpoint to check admin user status
 app.get('/api/debug/admin-status', async (req, res) => {
   try {
-    const result = await query(`SELECT id, email, role, status FROM users WHERE role = 'admin'`);
+    const result = await query(`SELECT id, phone, role, status FROM users WHERE role = 'admin'`);
     const adminUsers = result.rows;
 
     const envCheck = {
-      ADMIN_EMAIL: process.env.ADMIN_EMAIL || 'kedimoneynetwork@gmail.com',
+      ADMIN_PHONE: process.env.ADMIN_PHONE || '0788123456',
       ADMIN_PASSWORD: !!process.env.ADMIN_PASSWORD,
       JWT_SECRET: !!process.env.JWT_SECRET,
       NODE_ENV: process.env.NODE_ENV
@@ -232,6 +232,47 @@ app.get('/api/debug/admin-status', async (req, res) => {
   } catch (err) {
     console.error('Debug endpoint error:', err);
     res.status(500).json({ error: err.message });
+  }
+});
+
+// Manual admin creation endpoint (for emergency use)
+app.post('/api/debug/create-admin', async (req, res) => {
+  try {
+    const phone = process.env.ADMIN_PHONE || '0788123456';
+    const password = process.env.ADMIN_PASSWORD || 'kedi@123';
+
+    // Check if admin already exists
+    const existingAdmin = await query(
+      `SELECT id FROM users WHERE phone = $1 AND role = $2`,
+      [phone, 'admin']
+    );
+
+    if (existingAdmin.rows.length > 0) {
+      return res.json({ message: 'Admin user already exists', adminId: existingAdmin.rows[0].id });
+    }
+
+    // Hash password
+    const bcrypt = require('bcrypt');
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Insert admin user
+    const result = await query(
+      `INSERT INTO users (firstname, lastname, phone, password, role, status, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
+       RETURNING id`,
+      ['Admin', 'User', phone, hashedPassword, 'admin', 'approved']
+    );
+
+    res.json({
+      message: 'Admin user created successfully',
+      adminId: result.rows[0].id,
+      phone: phone,
+      password: password
+    });
+
+  } catch (error) {
+    console.error('Error creating admin user:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
