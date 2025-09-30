@@ -1,10 +1,19 @@
+require('dotenv').config();
 const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcrypt');
 
 const db = new sqlite3.Database('./db.sqlite');
 
-const phone = '0788123456'; // Admin phone number
-const password = 'kedi@123';
+// Get admin credentials from environment variables
+const phone = process.env.ADMIN_PHONE;
+const password = process.env.ADMIN_PASSWORD;
+
+// Validate required environment variables
+if (!phone || !password) {
+  console.error('Error: ADMIN_PHONE and ADMIN_PASSWORD environment variables are required');
+  console.error('Please set them in your .env file or environment');
+  process.exit(1);
+}
 
 async function seedAdmin() {
   const hash = await bcrypt.hash(password, 10);
@@ -40,6 +49,7 @@ async function seedAdmin() {
           console.log(`Phone: ${phone}`);
           console.log(`Password: ${password}`);
           console.log(`Admin ID: ${this.lastID}`);
+          console.log(`Note: Credentials loaded from environment variables`);
           db.close();
         }
       );
