@@ -13,6 +13,9 @@ dotenv.config();
 
 const app = express();
 
+// Trust proxy for Railway deployment (fixes rate limiting warning)
+app.set('trust proxy', 1);
+
 app.use(cors());
 app.use(bodyParser.json());
 app.use(morgan('combined'));
@@ -185,40 +188,8 @@ const createTables = async () => {
   }
 };
 
-// Seed admin user
-async function seedAdmin() {
-  const adminEmail = process.env.ADMIN_EMAIL || 'kedimoneynetwork@gmail.com';
-  const adminPassword = process.env.ADMIN_PASSWORD;
-
-  console.log('Seeding admin user...');
-  console.log('Admin Email:', adminEmail);
-  console.log('Admin Password set:', !!adminPassword);
-
-  if (!adminPassword) {
-    console.error('Error: ADMIN_PASSWORD environment variable is not set.');
-    return;
-  }
-
-  const hash = await bcrypt.hash(adminPassword, 10);
-
-  try {
-    const res = await query(`SELECT * FROM users WHERE email = ? AND role = ?`, [adminEmail, 'admin']);
-    const row = res.rows[0];
-    if (row) {
-      console.log('Admin user already exists');
-      return;
-    }
-
-    await query(
-      `INSERT INTO users (firstname, lastname, phone, email, username, password, referralId, idNumber, province, district, sector, cell, village, role, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      ['Admin', 'User', '0795772698', adminEmail, 'admin', hash, null, '0000000000', 'Kigali', 'Gasabo', 'Remera', 'Gisimenti', 'Kacyiru', 'admin', 'approved']
-    );
-    console.log(`Admin user seeded successfully: ${adminEmail}`);
-  } catch (err) {
-    console.error('Error seeding admin user:', err.message);
-  }
-}
+// Admin seeding is now handled by the separate seed-admin.js script
+// This prevents conflicts and allows for environment variable configuration
 
 // Use routes
 app.use('/api/auth', authRoutes);
@@ -275,7 +246,7 @@ const PORT = process.env.PORT || 4000;
 if (require.main === module) {
   // Initialize database and start server
   createTables().then(() => {
-    seedAdmin();
+    // Admin seeding is now handled by the separate seed-admin.js script
     app.listen(PORT, () => {
       console.log(`Backend listening on port ${PORT}`);
     });

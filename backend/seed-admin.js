@@ -1,8 +1,6 @@
 require('dotenv').config();
-const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcrypt');
-
-const db = new sqlite3.Database('./db.sqlite');
+const { query } = require('./utils/database');
 
 // Get admin credentials from environment variables
 const phone = process.env.ADMIN_PHONE;
@@ -16,45 +14,38 @@ if (!phone || !password) {
 }
 
 async function seedAdmin() {
-  const hash = await bcrypt.hash(password, 10);
+  try {
+    const hash = await bcrypt.hash(password, 10);
 
-  // Create table with current schema (matching database-sqlite.js)
-  db.run(
-    `CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      firstname TEXT,
-      lastname TEXT,
-      phone TEXT,
-      email TEXT UNIQUE,
-      username TEXT UNIQUE,
-      password TEXT,
-      referralId TEXT,
-      idNumber TEXT,
-      role TEXT,
-      status TEXT,
-      profile_picture TEXT,
-      estimated_balance REAL DEFAULT 0,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )`,
-    (err) => {
-      if (err) return console.error(err.message);
+    // Check if admin user already exists
+    const existingAdmin = await query(
+      `SELECT id FROM users WHERE phone = $1 AND role = $2`,
+      [phone, 'admin']
+    );
 
-      // Insert admin user with minimal required fields
-      db.run(
-        `INSERT OR IGNORE INTO users (firstname, lastname, phone, password, role, status) VALUES (?, ?, ?, ?, ?, ?)`,
-        ['Admin', 'User', phone, hash, 'admin', 'approved'],
-        function(err) {
-          if (err) return console.error(err.message);
-          console.log(`Admin user seeded successfully!`);
-          console.log(`Phone: ${phone}`);
-          console.log(`Password: ${password}`);
-          console.log(`Admin ID: ${this.lastID}`);
-          console.log(`Note: Credentials loaded from environment variables`);
-          db.close();
-        }
-      );
+    if (existingAdmin.rows.length > 0) {
+      console.log('Admin user already exists');
+      return;
     }
-  );
+
+    // Insert admin user with minimal required fields
+    const result = await query(
+      `INSERT INTO users (firstname, lastname, phone, password, role, status)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id`,
+      ['Admin', 'User', phone, hash, 'admin', 'approved']
+    );
+
+    console.log(`Admin user seeded successfully!`);
+    console.log(`Phone: ${phone}`);
+    console.log(`Password: ${password}`);
+    console.log(`Admin ID: ${result.rows[0].id}`);
+    console.log(`Note: Credentials loaded from environment variables`);
+
+  } catch (err) {
+    console.error('Error seeding admin user:', err.message);
+    process.exit(1);
+  }
 }
 
 seedAdmin();
