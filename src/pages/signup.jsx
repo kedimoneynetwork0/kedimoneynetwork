@@ -159,9 +159,8 @@ export default function Signup() {
           <div className="mb-4">
             <input
               name="referralId"
-              placeholder="Referral Id number"
+              placeholder="Referral Id number (optional)"
               onChange={handleChange}
-              required
               className="w-full p-2 border border-gray-300 rounded"
             />
           </div>

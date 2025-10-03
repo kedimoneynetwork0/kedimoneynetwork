@@ -19,12 +19,26 @@ const adminLoginLimiter = rateLimit({
   message: 'Too many login attempts from this IP, please try again after 15 seconds',
 });
 
+// Function to generate next user ID
+async function generateUserId() {
+  try {
+    const result = await query(`SELECT COUNT(*) as count FROM users WHERE role = 'user'`);
+    const userCount = parseInt(result.rows[0].count) + 1;
+    const paddedNumber = userCount.toString().padStart(3, '0');
+    return `KEDI${paddedNumber}RW25`;
+  } catch (err) {
+    console.error('Error generating user ID:', err);
+    // Fallback
+    return `KEDI${Date.now()}RW25`;
+  }
+}
+
 // Signup
 router.post('/signup', async (req, res) => {
   try {
     const { firstname, lastname, phone, password, referralId, idNumber, province, district, sector, cell, village } = req.body;
 
-    const requiredFields = { firstname, lastname, phone, password, referralId, idNumber, province, district, sector, cell, village };
+    const requiredFields = { firstname, lastname, phone, password, idNumber, province, district, sector, cell, village };
     for (let [key, value] of Object.entries(requiredFields)) {
       if (!value || value.trim() === '') {
         return res.status(400).json({ message: `${key} is required` });
@@ -49,11 +63,17 @@ router.post('/signup', async (req, res) => {
       return res.status(400).json({ message: 'ID number already exists' });
     }
 
-    // Check if referralId exists as a user id
-    const referralCheck = await query(`SELECT id FROM users WHERE id = $1`, [referralId]);
-    if (referralCheck.rows.length === 0) {
-      return res.status(400).json({ message: 'Invalid referral ID' });
+    // Check if referralId exists as a user id (optional)
+    if (referralId) {
+      const referralCheck = await query(`SELECT id FROM users WHERE id = $1`, [referralId]);
+      if (referralCheck.rows.length === 0) {
+        return res.status(400).json({ message: 'Invalid referral ID' });
+      }
     }
+
+    // Generate user ID and email
+    const userId = await generateUserId();
+    const email = phone; // Use phone as email for uniqueness
 
     const passwordRegex = /^(?=.*[0-9])(?=.*[!@#$%^&*]).{8,}$/;
     if (!passwordRegex.test(password)) {
@@ -64,11 +84,11 @@ router.post('/signup', async (req, res) => {
 
     try {
       await query(
-        `INSERT INTO users (firstname, lastname, phone, password, referralId, idNumber, province, district, sector, cell, village, role, status)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
-        [firstname, lastname, phone, hash, referralId, idNumber, province, district, sector, cell, village, 'user', 'pending']
+        `INSERT INTO users (firstname, lastname, phone, email, username, password, referralId, idNumber, province, district, sector, cell, village, role, status)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+        [firstname, lastname, phone, email, userId, hash, referralId || null, idNumber, province, district, sector, cell, village, 'user', 'pending']
       );
-      res.json({ message: 'Signup successful, wait for admin approval' });
+      res.json({ message: `Signup successful, your user ID is ${userId}. Wait for admin approval` });
     } catch (err) {
       console.error('Signup error:', err);
       return res.status(500).json({ message: 'Server error' });

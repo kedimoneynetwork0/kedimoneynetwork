@@ -30,10 +30,10 @@ async function seedAdmin() {
 
     // Insert admin user with minimal required fields
     const result = await query(
-      `INSERT INTO users (firstname, lastname, phone, password, role, status)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO users (firstname, lastname, phone, email, username, password, role, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING id`,
-      ['Admin', 'User', phone, hash, 'admin', 'approved']
+      ['Admin', 'User', phone, 'admin@kedi.com', 'admin', hash, 'admin', 'approved']
     );
 
     console.log(`Admin user seeded successfully!`);
