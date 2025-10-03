@@ -37,7 +37,7 @@ import {
   getTransactionStatuses,
   formatCurrency
 } from '../utils/calculations';
-import '../styles/kedi-dashboard.css'; // Import new KEDI dashboard styles
+import '../styles/admin-dashboard.css'; // Import modern admin dashboard styles
 
 const KediAdminDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -1772,6 +1772,16 @@ const KediAdminDashboard = () => {
 
   return (
     <div className="kedi-dashboard">
+      {/* Mobile Menu Button */}
+      <button
+        className="mobile-menu-toggle"
+        onClick={toggleSidebar}
+        aria-label="Toggle navigation menu"
+        aria-expanded={sidebarOpen}
+      >
+        <FaBars size={20} aria-hidden="true" />
+      </button>
+
       {/* Top Navbar */}
       <nav className="kedi-navbar">
         <div className="kedi-navbar-content">
@@ -1954,13 +1964,8 @@ const KediAdminDashboard = () => {
       </button>
 
       {/* Sidebar */}
-      <div
-        className={`fixed inset-y-0 left-0 z-40 w-64 text-white transform transition-all duration-300 ease-in-out mt-16 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } lg:translate-x-0 lg:static lg:inset-0 ${
-          sidebarCollapsed ? 'lg:w-16' : 'lg:w-64'
-        }`}
-        style={{ backgroundColor: '#1c3c2e' }}
+      <aside
+        className={`${sidebarOpen ? 'show' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}
         role="navigation"
         aria-label="Main navigation"
       >
@@ -2018,21 +2023,14 @@ const KediAdminDashboard = () => {
             </button>
           </div>
         </div>
-      </div>
+      </aside>
 
       {/* Mobile Overlay */}
-      {sidebarOpen && (
-        <div
-          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30 mt-16"
-          onClick={toggleSidebar}
-        ></div>
-      )}
+      <div className="overlay" onClick={toggleSidebar}></div>
 
       {/* Main Content */}
-      <main className={`min-h-screen pt-20 transition-all duration-300 ${
-        sidebarOpen ? 'lg:ml-64' : 'lg:ml-16'
-      } ${sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'}`} role="main">
-        <div className="p-4 sm:p-6 lg:p-8">
+      <main className={`${sidebarOpen ? '' : 'expanded'}`} role="main">
+        <div className="content">
           {/* Initial Loading Skeleton */}
           {isLoading && allUsers.length === 0 && (
             <div className="space-y-6">
@@ -2142,7 +2140,7 @@ const KediAdminDashboard = () => {
             </div>
 
             {/* Overview Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="stats-grid">
               <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
@@ -2162,7 +2160,7 @@ const KediAdminDashboard = () => {
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+              <div className="stat-card">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-3">
@@ -2181,7 +2179,7 @@ const KediAdminDashboard = () => {
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+              <div className="stat-card">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-3">
@@ -2200,7 +2198,7 @@ const KediAdminDashboard = () => {
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+              <div className="stat-card">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-3">
@@ -2223,13 +2221,10 @@ const KediAdminDashboard = () => {
             {/* Quick Actions */}
             <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow duration-300">
               <h3 className="text-xl font-semibold text-gray-900 mb-6">Quick Actions</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="actions">
                 <button
                   onClick={() => showSection('users')}
-                  className="flex items-center justify-center px-6 py-4 text-white font-medium rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1"
-                  style={{ backgroundColor: '#28a745' }}
-                  onMouseEnter={(e) => e.target.style.backgroundColor = '#218838'}
-                  onMouseLeave={(e) => e.target.style.backgroundColor = '#28a745'}
+                  className="btn btn-primary"
                 >
                   <FaUsers className="mr-2" />
                   Manage Users
@@ -2237,7 +2232,7 @@ const KediAdminDashboard = () => {
 
                 <button
                   onClick={() => showSection('pending')}
-                  className="flex items-center justify-center px-6 py-4 bg-yellow-600 hover:bg-yellow-700 text-white font-medium rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1"
+                  className="btn btn-secondary"
                 >
                   <FaClock className="mr-2" />
                   Approve Pending
@@ -2245,7 +2240,7 @@ const KediAdminDashboard = () => {
 
                 <button
                   onClick={() => showSection('transactions')}
-                  className="flex items-center justify-center px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1"
+                  className="btn btn-secondary"
                 >
                   <FaExchangeAlt className="mr-2" />
                   View Transactions
@@ -2253,7 +2248,7 @@ const KediAdminDashboard = () => {
 
                 <button
                   onClick={() => showSection('announcements')}
-                  className="flex items-center justify-center px-6 py-4 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1"
+                  className="btn btn-secondary"
                 >
                   <FaBullhorn className="mr-2" />
                   Post Announcement
@@ -2804,10 +2799,9 @@ const KediAdminDashboard = () => {
                 )}
               </div>
 
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50">
+              <div className="table-container">
+                <table>
+                  <thead>
                       <tr>
                         {bulkActionMode && (
                           <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
@@ -3045,7 +3039,6 @@ const KediAdminDashboard = () => {
                           ))}
                         </tbody>
                       </table>
-                    </div>
                   </div>
 
                   <PaginationControls
@@ -4532,5 +4525,7 @@ const KediAdminDashboard = () => {
     </div>
   );
 };
+
+export default KediAdminDashboard;
 
 export default KediAdminDashboard;

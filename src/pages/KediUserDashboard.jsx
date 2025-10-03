@@ -27,7 +27,7 @@ import {
   getUserStats,
   formatCurrency
 } from '../utils/calculations';
-import './kedi-user-dashboard.css'; // Import modern dashboard styles
+import '../styles/admin-dashboard.css'; // Import modern admin dashboard styles
 
 const KediUserDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -682,6 +682,15 @@ const KediUserDashboard = () => {
 
   return (
     <div className="kedi-dashboard">
+      {/* Mobile Menu Button */}
+      <button
+        className="mobile-menu-toggle"
+        onClick={toggleSidebar}
+        aria-label="Toggle navigation menu"
+        aria-expanded={sidebarOpen}
+      >
+        <FaBars size={20} aria-hidden="true" />
+      </button>
       {/* Top Navbar */}
       <nav className="dashboard-navbar">
         <div className="navbar-content">
@@ -715,7 +724,7 @@ const KediUserDashboard = () => {
       </nav>
 
       {/* Sidebar */}
-      <aside className={`dashboard-sidebar ${sidebarOpen ? 'open' : ''}`}>
+      <aside className={`${sidebarOpen ? 'show' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}>
         <div className="sidebar-content">
           {/* Sidebar Header */}
           <div className="sidebar-header">
@@ -824,9 +833,9 @@ const KediUserDashboard = () => {
       )}
 
       {/* Main Content */}
-      <main className="dashboard-main">
-        <div className="main-content">
-        {/* Dashboard Section */}
+      <main className={`${sidebarOpen ? '' : 'expanded'}`} role="main">
+        <div className="content">
+          {/* Dashboard Section */}
         {currentSection === 'dashboard' && (
           <div className="space-y-6">
             {/* Welcome Section */}
@@ -858,8 +867,8 @@ const KediUserDashboard = () => {
             </div>
 
             {/* Balance Cards */}
-            <div className="dashboard-grid">
-              <div className="dashboard-card balance-card">
+            <div className="stats-grid">
+              <div className="stat-card">
                 <div className="card-header">
                   <div className="card-icon primary">
                     <FaWallet />
@@ -887,12 +896,12 @@ const KediUserDashboard = () => {
             </div>
 
             {/* Quick Actions */}
-            <div className="quick-actions">
+            <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow duration-300">
               <h3 className="text-xl font-semibold text-gray-900 mb-6">Quick Actions</h3>
-              <div className="actions-grid">
+              <div className="actions">
                 <button
                   onClick={() => showSection('transaction')}
-                  className="action-btn"
+                  className="btn btn-primary"
                 >
                   <FaPlus className="action-icon" />
                   Make Transaction
@@ -900,18 +909,17 @@ const KediUserDashboard = () => {
 
                 <button
                   onClick={() => showSection('stake')}
-                  className="action-btn secondary"
+                  className="btn btn-secondary"
                 >
-                  <FaPiggyBank className="action-icon" />
+                  <FaPiggyBank className="mr-2" />
                   Deposit Stake
                 </button>
 
                 <button
                   onClick={() => showSection('history')}
-                  className="action-btn"
-                  style={{ backgroundColor: 'var(--info-color)' }}
+                  className="btn btn-secondary"
                 >
-                  <FaMoneyBillWave className="action-icon" />
+                  <FaMoneyBillWave className="mr-2" />
                   View History
                 </button>
               </div>
@@ -929,9 +937,8 @@ const KediUserDashboard = () => {
                 </button>
               </div>
 
-              <div className="data-table-container">
-                <div className="overflow-x-auto">
-                  <table className="data-table">
+              <div className="table-container">
+                <table>
                     <thead>
                       <tr>
                         <th>Date</th>
@@ -967,9 +974,8 @@ const KediUserDashboard = () => {
             <div className="dashboard-card">
               <h3 className="card-title">Active Stakes</h3>
 
-              <div className="data-table-container">
-                <div className="overflow-x-auto">
-                  <table className="data-table">
+              <div className="table-container">
+                <table>
                     <thead>
                       <tr>
                         <th>Principal</th>
@@ -1004,7 +1010,6 @@ const KediUserDashboard = () => {
                       })}
                     </tbody>
                   </table>
-                </div>
                 {(Array.isArray(stakes) ? stakes : []).filter(stake => stake && stake.status === 'active').length === 0 && (
                   <div className="text-center py-8">
                     <FaPiggyBank className="text-4xl text-gray-300 mx-auto mb-3" />
