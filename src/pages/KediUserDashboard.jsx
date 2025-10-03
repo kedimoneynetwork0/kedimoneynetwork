@@ -835,7 +835,6 @@ const KediUserDashboard = () => {
       {/* Main Content */}
       <main className={`${sidebarOpen ? '' : 'expanded'}`} role="main">
         <div className="content">
-          {/* Dashboard Section */}
         {currentSection === 'dashboard' && (
           <div className="space-y-6">
             {/* Welcome Section */}
@@ -939,34 +938,27 @@ const KediUserDashboard = () => {
 
               <div className="table-container">
                 <table>
-                    <thead>
-                      <tr>
-                        <th>Date</th>
-                        <th>Type</th>
-                        <th>Amount</th>
-                        <th>Status</th>
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Type</th>
+                      <th>Amount</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {getRecentTransactions(transactions, 3).map((txn, index) => (
+                      <tr key={txn.id}>
+                        <td>{new Date(txn.created_at).toLocaleDateString()}</td>
+                        <td>{txn.type}</td>
+                        <td className="font-semibold text-green-600">
+                          {formatCurrency(txn.amount)} RWF
+                        </td>
+                        <td>{getStatusBadge(txn.status)}</td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {getRecentTransactions(transactions, 3).map((txn, index) => (
-                        <tr key={txn.id}>
-                          <td>{new Date(txn.created_at).toLocaleDateString()}</td>
-                          <td>{txn.type}</td>
-                          <td className="font-semibold text-green-600">
-                            {formatCurrency(txn.amount)} RWF
-                          </td>
-                          <td>{getStatusBadge(txn.status)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                {getRecentTransactions(transactions, 3).length === 0 && (
-                  <div className="text-center py-8">
-                    <FaExchangeAlt className="text-4xl text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-500">No recent transactions</p>
-                  </div>
-                )}
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
 

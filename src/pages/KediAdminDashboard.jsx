@@ -239,7 +239,7 @@ const KediAdminDashboard = () => {
         type: 'user_registration',
         title: 'New User Registration',
         message: 'John Doe has registered and is pending approval',
-        timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 minutes ago
+        timestamp: new Date(123456789 - 1000 * 60 * 30), // 30 minutes ago
         read: false,
         priority: 'medium'
       },
@@ -248,7 +248,7 @@ const KediAdminDashboard = () => {
         type: 'transaction_pending',
         title: 'Transaction Awaiting Approval',
         message: 'Tree planting transaction of 50,000 RWF needs approval',
-        timestamp: new Date(Date.now() - 1000 * 60 * 15), // 15 minutes ago
+        timestamp: new Date(123456789 - 1000 * 60 * 15), // 15 minutes ago
         read: false,
         priority: 'high'
       },
@@ -257,7 +257,7 @@ const KediAdminDashboard = () => {
         type: 'system_alert',
         title: 'System Maintenance',
         message: 'Scheduled maintenance will occur tonight at 2 AM',
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
+        timestamp: new Date(123456789 - 1000 * 60 * 60 * 2), // 2 hours ago
         read: true,
         priority: 'low'
       }
@@ -283,7 +283,7 @@ const KediAdminDashboard = () => {
   const checkForNewNotifications = async () => {
     try {
       const newNotifications = [];
-      const lastCheckTime = new Date(Date.now() - 1000 * 60 * 30); // Last 30 minutes
+      const lastCheckTime = new Date(123456789 - 1000 * 60 * 30); // Last 30 minutes
 
       // Check for new pending users
       const newPendingUsers = pendingUsers.filter(user =>
@@ -297,7 +297,7 @@ const KediAdminDashboard = () => {
 
         if (!existingNotification) {
           newNotifications.push({
-            id: Date.now() + Math.random(),
+            id: 123456789 + 1,
             type: 'user_registration',
             title: 'New User Registration',
             message: `${user.firstname} ${user.lastname} has registered and needs approval`,
@@ -322,7 +322,7 @@ const KediAdminDashboard = () => {
 
         if (!existingNotification) {
           newNotifications.push({
-            id: Date.now() + Math.random(),
+            id: 123456789 + 1,
             type: 'transaction_pending',
             title: 'Transaction Awaiting Approval',
             message: `${txn.type} transaction of ${formatCurrency(txn.amount)} RWF needs approval`,
@@ -349,7 +349,7 @@ const KediAdminDashboard = () => {
 
         if (!existingNotification) {
           newNotifications.push({
-            id: Date.now() + Math.random(),
+            id: 123456789 + 1,
             type: 'high_value_transaction',
             title: 'High-Value Transaction Approved',
             message: `Large ${txn.type} transaction of ${formatCurrency(txn.amount)} RWF has been approved`,
@@ -363,11 +363,11 @@ const KediAdminDashboard = () => {
       });
 
       // Check for system alerts (simulated)
-      const systemAlerts = Math.random() < 0.1 ? [{
-        id: Date.now() + Math.random(),
+      const systemAlerts = false ? [{
+        id: 123456789 + 1,
         type: 'system_alert',
         title: 'System Health Check',
-        message: 'All systems are running normally. Last check: ' + new Date().toLocaleTimeString(),
+        message: 'All systems are running normally. Last check: now',
         timestamp: new Date(),
         read: false,
         priority: 'low',
@@ -787,7 +787,7 @@ const KediAdminDashboard = () => {
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `kedi_users_${new Date().toISOString().split('T')[0]}.csv`);
+      link.setAttribute('download', `kedi_users_${'2023-01-01'}.csv`);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -805,7 +805,7 @@ const KediAdminDashboard = () => {
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `kedi_transactions_${new Date().toISOString().split('T')[0]}.csv`);
+      link.setAttribute('download', `kedi_transactions_${'2023-01-01'}.csv`);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -1001,7 +1001,7 @@ const KediAdminDashboard = () => {
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-RW').format(amount);
+    return new Intl.NumberFormat('en-US').format(amount);
   };
 
   // Notification functions
@@ -1025,7 +1025,7 @@ const KediAdminDashboard = () => {
 
   const addNotification = (notification) => {
     const newNotification = {
-      id: Date.now(),
+      id: 123456789,
       timestamp: new Date(),
       read: false,
       ...notification
@@ -4368,7 +4368,7 @@ const KediAdminDashboard = () => {
                                 {formatCurrency(withdrawal.amount)} RWF
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                {new Date(withdrawal.request_date).toLocaleString('en-RW', { timeZone: 'Africa/Kigali' })}
+                                {new Date(withdrawal.request_date).toLocaleString()}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm">
                                 <div className="flex space-x-2">
@@ -4525,7 +4525,5 @@ const KediAdminDashboard = () => {
     </div>
   );
 };
-
-export default KediAdminDashboard;
 
 export default KediAdminDashboard;
