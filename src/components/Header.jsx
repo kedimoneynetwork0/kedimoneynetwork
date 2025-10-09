@@ -97,7 +97,7 @@ export default function Header() {
                     {news.title}
                   </Link>
                   <span className="text-gray-400 ml-1 text-xs">
-                    {new Date(news.created_at).toLocaleDateString('en-RW', {
+                    {new Date(news.created_at).toLocaleDateString('en', {
                       month: 'short',
                       day: 'numeric',
                       timeZone: 'Africa/Kigali'
