@@ -406,9 +406,6 @@ const KediUserDashboard = () => {
     }
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-RW').format(amount);
-  };
 
   // Calculate real balance based on approved transactions, stakes, and withdrawals
   const calculateRealBalance = () => {
@@ -1060,26 +1057,26 @@ const KediUserDashboard = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {getRecentTransactions(transactions, 3).map((txn, index) => (
-                        <tr key={txn.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 transition-colors`}>
+                      {(Array.isArray(transactions) ? getRecentTransactions(transactions, 3) : []).map((txn, index) => (
+                        <tr key={txn?.id || index} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 transition-colors`}>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {new Date(txn.created_at).toLocaleDateString()}
+                            {txn?.created_at ? new Date(txn.created_at).toLocaleDateString() : 'N/A'}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                            {txn.type}
+                            {txn?.type || 'N/A'}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
-                            {formatCurrency(txn.amount)} RWF
+                            {formatCurrency(txn?.amount || 0)} RWF
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            {getStatusBadge(txn.status)}
+                            {getStatusBadge(txn?.status || 'pending')}
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
-                {getRecentTransactions(transactions, 3).length === 0 && (
+                {(Array.isArray(transactions) ? getRecentTransactions(transactions, 3).length : 0) === 0 && (
                   <div className="text-center py-8">
                     <FaExchangeAlt className="text-4xl text-gray-300 mx-auto mb-3" />
                     <p className="text-gray-500">No recent transactions</p>
@@ -1154,7 +1151,13 @@ const KediUserDashboard = () => {
                 <div className="bg-gray-50 rounded-lg p-4 shadow-md hover:shadow-lg transition-shadow duration-300">
                   <h4 className="text-lg font-medium text-gray-900 mb-4">Transaction Activity</h4>
                   <div className="h-48">
-                    <Line data={generateUserTransactionData()} options={userChartOptions} />
+                    {transactions && Array.isArray(transactions) ? (
+                      <Line data={generateUserTransactionData()} options={userChartOptions} />
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-gray-500">
+                        Loading chart data...
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -1162,7 +1165,13 @@ const KediUserDashboard = () => {
                 <div className="bg-gray-50 rounded-lg p-4 shadow-md hover:shadow-lg transition-shadow duration-300">
                   <h4 className="text-lg font-medium text-gray-900 mb-4">Balance Growth</h4>
                   <div className="h-48">
-                    <Line data={generateUserBalanceData()} options={userChartOptions} />
+                    {transactions && Array.isArray(transactions) ? (
+                      <Line data={generateUserBalanceData()} options={userChartOptions} />
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-gray-500">
+                        Loading chart data...
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
