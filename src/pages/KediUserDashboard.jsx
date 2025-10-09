@@ -33,11 +33,7 @@ import '../styles/advanced-theme.css'; // Import advanced theme styles
 
 const KediUserDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-    // Load from localStorage or default to false
-    const saved = localStorage.getItem('sidebarCollapsed');
-    return saved ? JSON.parse(saved) : false;
-  });
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [currentSection, setCurrentSection] = useState('dashboard');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -139,6 +135,12 @@ const KediUserDashboard = () => {
   useEffect(() => {
     loadUserData();
     loadMessages();
+
+    // Load sidebar collapsed state
+    const saved = localStorage.getItem('sidebarCollapsed');
+    if (saved) {
+      setSidebarCollapsed(JSON.parse(saved));
+    }
 
     const handleResize = () => {
       if (window.innerWidth > 768) {
