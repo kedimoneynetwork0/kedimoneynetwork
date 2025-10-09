@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getNews } from '../api';
-import '../pages/home.css';
+// import '../pages/home.css';
 
 export default function Header() {
   const [latestNews, setLatestNews] = useState([]);

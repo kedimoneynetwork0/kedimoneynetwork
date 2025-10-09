@@ -11,14 +11,17 @@ export const useTheme = () => {
 };
 
 export const ThemeProvider = ({ children }) => {
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    // Check localStorage first, then system preference
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    // Set initial theme
     const saved = localStorage.getItem('kedi-theme');
     if (saved) {
-      return saved === 'dark';
+      setIsDarkMode(saved === 'dark');
+    } else {
+      setIsDarkMode(window.matchMedia('(prefers-color-scheme: dark)').matches);
     }
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
-  });
+  }, []);
 
   useEffect(() => {
     // Update CSS custom properties when theme changes
