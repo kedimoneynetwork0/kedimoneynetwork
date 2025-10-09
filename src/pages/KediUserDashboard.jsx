@@ -407,45 +407,6 @@ const KediUserDashboard = () => {
   };
 
 
-  // Calculate real balance based on approved transactions, stakes, and withdrawals
-  const calculateRealBalance = () => {
-    let balance = 0;
-
-    // Add approved transactions (deposits/investments)
-    transactions.forEach(txn => {
-      if (txn.status === 'approved') {
-        balance += txn.amount;
-      }
-    });
-
-    // Add referral bonus
-    balance += userData.bonus;
-
-    // Add stake principals and calculate interest for matured stakes
-    stakes.forEach(stake => {
-      if (stake.status === 'active') {
-        balance += stake.amount; // Principal amount
-
-        // Calculate interest for matured stakes
-        const currentDate = new Date().toLocaleString('en-RW', { timeZone: 'Africa/Kigali' });
-        const endDate = new Date(stake.end_date).toLocaleString('en-RW', { timeZone: 'Africa/Kigali' });
-        if (new Date(currentDate) >= new Date(endDate)) {
-          const interest = stake.amount * stake.interest_rate;
-          balance += interest;
-        }
-      }
-    });
-
-    // Subtract processed withdrawals
-    withdrawals.forEach(withdrawal => {
-      if (withdrawal.status === 'approved') {
-        balance -= withdrawal.amount;
-      }
-    });
-
-    return Math.max(0, balance); // Ensure balance doesn't go negative
-  };
-
   // Filter stakes that can be withdrawn (matured and not yet withdrawn)
   const withdrawableStakes = (Array.isArray(stakes) ? stakes : []).filter(stake => {
     if (!stake || !stake.end_date) return false;
@@ -606,6 +567,45 @@ const KediUserDashboard = () => {
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
     );
+  };
+
+  // Calculate real balance based on approved transactions, stakes, and withdrawals
+  const calculateRealBalance = () => {
+    let balance = 0;
+
+    // Add approved transactions (deposits/investments)
+    transactions.forEach(txn => {
+      if (txn.status === 'approved') {
+        balance += txn.amount;
+      }
+    });
+
+    // Add referral bonus
+    balance += userData.bonus;
+
+    // Add stake principals and calculate interest for matured stakes
+    stakes.forEach(stake => {
+      if (stake.status === 'active') {
+        balance += stake.amount; // Principal amount
+
+        // Calculate interest for matured stakes
+        const currentDate = new Date().toLocaleString('en-RW', { timeZone: 'Africa/Kigali' });
+        const endDate = new Date(stake.end_date).toLocaleString('en-RW', { timeZone: 'Africa/Kigali' });
+        if (new Date(currentDate) >= new Date(endDate)) {
+          const interest = stake.amount * stake.interest_rate;
+          balance += interest;
+        }
+      }
+    });
+
+    // Subtract processed withdrawals
+    withdrawals.forEach(withdrawal => {
+      if (withdrawal.status === 'approved') {
+        balance -= withdrawal.amount;
+      }
+    });
+
+    return Math.max(0, balance); // Ensure balance doesn't go negative
   };
 
   // Chart data generation functions for user dashboard
