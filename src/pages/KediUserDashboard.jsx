@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaBars, FaTimes, FaTachometerAlt, FaExchangeAlt, FaPiggyBank, FaHistory, FaGift, FaCog, FaSignOutAlt, FaUser, FaWallet, FaMoneyBillWave, FaPlus, FaSyncAlt, FaArrowLeft, FaLeaf, FaFilter, FaChevronDown, FaBell } from 'react-icons/fa';
+import ThemeToggle from '../components/ThemeToggle';
+import SkeletonLoader from '../components/SkeletonLoader';
 import { Line, Bar } from 'react-chartjs-2';
 import ChartJS from '../utils/chartConfig'; // Import chart configuration
 import {
@@ -726,39 +728,39 @@ const KediUserDashboard = () => {
   return (
     <div className="min-h-screen bg-[#f8f9fa] font-['Poppins',sans-serif] scroll-smooth">
       {/* Top Navbar */}
-      <nav className="bg-white shadow-lg border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
+      <nav className="glass-card shadow-lg border-b fixed top-0 left-0 right-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Left: Logo and App Name */}
             <div className="flex items-center space-x-4">
               <button
-                className="lg:hidden p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-all duration-200"
+                className="lg:hidden p-2 rounded-lg text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-slate-100 hover:bg-gray-100 dark:hover:bg-slate-700 transition-all duration-200"
                 onClick={toggleSidebar}
                 aria-label="Toggle sidebar"
               >
                 <FaBars size={20} />
               </button>
               <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#28a745' }}>
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br from-green-500 to-green-600">
                   <span className="text-white font-bold text-sm">K</span>
                 </div>
                 <div className="hidden sm:block">
-                  <h1 className="text-lg font-semibold text-gray-900">KEDI Business & Agri Funds</h1>
-                  <p className="text-xs text-gray-500">User Dashboard</p>
+                  <h1 className="text-lg font-semibold text-gradient font-display">KEDI Business & Agri Funds</h1>
+                  <p className="text-xs text-gray-500 dark:text-slate-400">User Dashboard</p>
                 </div>
               </div>
             </div>
 
-            {/* Right: Minimal for mobile */}
+            {/* Right: Theme toggle and other controls */}
             <div className="flex items-center space-x-4">
-              {/* For desktop, sidebar has these */}
+              <ThemeToggle />
             </div>
           </div>
         </div>
       </nav>
 
       {/* Sidebar */}
-      <aside className={`fixed top-16 left-0 z-40 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 transform transition-all duration-300 ease-in-out ${
+      <aside className={`fixed top-16 left-0 z-40 h-[calc(100vh-4rem)] glass-sidebar border-r transform transition-all duration-300 ease-in-out ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       } lg:translate-x-0 ${sidebarCollapsed ? 'lg:w-16' : 'lg:w-64'}`}>
         <div className="flex flex-col h-full">

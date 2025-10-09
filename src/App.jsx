@@ -10,6 +10,8 @@ import AdminLogin from './pages/AdminLogin';
 import NewsDetail from './pages/NewsDetail';
 import UserManagement from './pages/UserManagement';
 import ErrorBoundary from './components/ErrorBoundary';
+import { ThemeProvider } from './contexts/ThemeContext';
+import './styles/advanced-theme.css';
 
 function App() {
   const role = localStorage.getItem('role');
@@ -17,8 +19,9 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <Router>
-        <Routes>
+      <ThemeProvider>
+        <Router>
+          <Routes>
           <Route path="/" element={<ModernHome />} />
           <Route path="/home" element={<ModernHome />} />
           <Route path="/about" element={<About />} />
@@ -53,8 +56,9 @@ function App() {
 
           {/* catch all */}
           <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
-      </Router>
+          </Routes>
+        </Router>
+      </ThemeProvider>
     </ErrorBoundary>
   );
 }
