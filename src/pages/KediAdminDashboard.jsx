@@ -37,7 +37,7 @@ import {
   getTransactionStatuses,
   formatCurrency
 } from '../utils/calculations';
-import '../styles/kedi-dashboard.css'; // Import new KEDI dashboard styles
+import '../styles/advanced-theme.css'; // Import advanced theme styles
 
 const KediAdminDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
