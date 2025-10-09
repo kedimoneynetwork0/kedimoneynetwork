@@ -29,7 +29,7 @@ import {
   getUserStats,
   formatCurrency
 } from '../utils/calculations';
-import './admin-dashboard.css'; // Import original dashboard styles
+import '../styles/advanced-theme.css'; // Import advanced theme styles
 
 const KediUserDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
