@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getAllUsers, getUserDetails, downloadUsersCSV } from '../api';
 import Header from '../components/Header';
-import './admin-dashboard.css';
+import '../styles/advanced-theme.css';
 
 export default function UserManagement() {
   const [allUsers, setAllUsers] = useState([]);
