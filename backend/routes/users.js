@@ -141,7 +141,7 @@ router.get('/dashboard', authMiddleware, async (req, res) => {
 router.get('/profile', authMiddleware, async (req, res) => {
   const userId = req.user.id;
   try {
-    const result = await query(`SELECT firstname, lastname, phone, email, username, referralId, idNumber, profile_picture, estimated_balance FROM users WHERE id = $1`, [userId]);
+    const result = await query(`SELECT firstname, lastname, phone, username, referralId, idNumber, profile_picture, estimated_balance FROM users WHERE id = $1`, [userId]);
     const row = result.rows[0];
     if (!row) return res.status(404).json({ message: 'User not found' });
     res.json(row);

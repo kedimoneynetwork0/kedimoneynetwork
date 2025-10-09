@@ -41,11 +41,15 @@ const createTables = async () => {
       firstname VARCHAR(255),
       lastname VARCHAR(255),
       phone VARCHAR(20),
-      email VARCHAR(255) UNIQUE NOT NULL,
       username VARCHAR(255) UNIQUE NOT NULL,
       password VARCHAR(255),
       referralId VARCHAR(255),
       idNumber VARCHAR(20),
+      province VARCHAR(255),
+      district VARCHAR(255),
+      sector VARCHAR(255),
+      cell VARCHAR(255),
+      village VARCHAR(255),
       role VARCHAR(50),
       status VARCHAR(50),
       profile_picture VARCHAR(500),
@@ -163,18 +167,6 @@ const createTables = async () => {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);
 
-    // Savings table for user savings accounts
-    await query(`
-      CREATE TABLE IF NOT EXISTS savings (
-      id SERIAL PRIMARY KEY,
-      user_id INTEGER REFERENCES users(id),
-      amount DECIMAL(10,2),
-      interest_rate DECIMAL(5,4) DEFAULT 0.05,
-      maturity_date TIMESTAMP,
-      status VARCHAR(50) DEFAULT 'active',
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )`);
-
     // Loan Repayment table for tracking loan repayments
     await query(`
       CREATE TABLE IF NOT EXISTS loan_repayments (
@@ -194,11 +186,11 @@ const createTables = async () => {
 
 // Seed admin user
 async function seedAdmin() {
-  const adminEmail = process.env.ADMIN_EMAIL || 'kedimoneynetwork@gmail.com';
+  const adminPhone = process.env.ADMIN_PHONE || '0795772698';
   const adminPassword = process.env.ADMIN_PASSWORD;
 
   console.log('Seeding admin user...');
-  console.log('Admin Email:', adminEmail);
+  console.log('Admin Phone:', adminPhone);
   console.log('Admin Password set:', !!adminPassword);
 
   if (!adminPassword) {
@@ -209,7 +201,7 @@ async function seedAdmin() {
   const hash = await bcrypt.hash(adminPassword, 10);
 
   try {
-    const res = await query(`SELECT * FROM users WHERE email = $1 AND role = $2`, [adminEmail, 'admin']);
+    const res = await query(`SELECT * FROM users WHERE phone = $1 AND role = $2`, [adminPhone, 'admin']);
     const row = res.rows[0];
     if (row) {
       console.log('Admin user already exists');
@@ -217,11 +209,11 @@ async function seedAdmin() {
     }
 
     await query(
-      `INSERT INTO users (firstname, lastname, phone, email, username, password, referralId, idNumber, role, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-      ['Admin', 'User', '0000000000', adminEmail, 'admin', hash, null, '0000000000', 'admin', 'approved']
+      `INSERT INTO users (firstname, lastname, phone, username, password, referralId, idNumber, province, district, sector, cell, village, role, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+      ['Admin', 'User', adminPhone, 'admin', hash, null, '0000000000', 'Kigali', 'Gasabo', 'Remera', 'Gisimenti', 'Kacyiru', 'admin', 'approved']
     );
-    console.log(`Admin user seeded successfully: ${adminEmail}`);
+    console.log(`Admin user seeded successfully: ${adminPhone}`);
   } catch (err) {
     console.error('Error seeding admin user:', err.message);
   }
@@ -250,11 +242,11 @@ app.use(express.static(path.join(__dirname, 'dist')));
 // Debug endpoint to check admin user status
 app.get('/api/debug/admin-status', async (req, res) => {
   try {
-    const result = await query(`SELECT id, email, role, status FROM users WHERE role = 'admin'`);
+    const result = await query(`SELECT id, phone, role, status FROM users WHERE role = 'admin'`);
     const adminUsers = result.rows;
 
     const envCheck = {
-      ADMIN_EMAIL: process.env.ADMIN_EMAIL || 'kedimoneynetwork@gmail.com',
+      ADMIN_PHONE: process.env.ADMIN_PHONE || '0795772698',
       ADMIN_PASSWORD: !!process.env.ADMIN_PASSWORD,
       JWT_SECRET: !!process.env.JWT_SECRET,
       NODE_ENV: process.env.NODE_ENV
@@ -276,13 +268,18 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
-// Start server
+// Start server only if this file is run directly (not imported for testing)
 const PORT = process.env.PORT || 4000;
 
-// Initialize database and start server
-createTables().then(() => {
-  seedAdmin();
-  app.listen(PORT, () => {
-    console.log(`Backend listening on port ${PORT}`);
+if (require.main === module) {
+  // Initialize database and start server
+  createTables().then(() => {
+    seedAdmin();
+    app.listen(PORT, () => {
+      console.log(`Backend listening on port ${PORT}`);
+    });
   });
-});
+}
+
+// Export app for testing
+module.exports = app;

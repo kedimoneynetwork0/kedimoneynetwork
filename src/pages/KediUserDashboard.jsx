@@ -31,10 +31,16 @@ import './admin-dashboard.css'; // Import original dashboard styles
 
 const KediUserDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    // Load from localStorage or default to false
+    const saved = localStorage.getItem('sidebarCollapsed');
+    return saved ? JSON.parse(saved) : false;
+  });
   const [currentSection, setCurrentSection] = useState('dashboard');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
 
   // Real data from API
   const [userData, setUserData] = useState({
@@ -210,7 +216,37 @@ const KediUserDashboard = () => {
   };
 
   const toggleSidebarCollapse = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
+    const newCollapsed = !sidebarCollapsed;
+    setSidebarCollapsed(newCollapsed);
+    localStorage.setItem('sidebarCollapsed', JSON.stringify(newCollapsed));
+  };
+
+  // Touch handlers for mobile swipe gestures
+  const handleTouchStart = (e) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > 50;
+    const isRightSwipe = distance < -50;
+
+    // Swipe right to open sidebar on mobile
+    if (isRightSwipe && window.innerWidth <= 768 && !sidebarOpen) {
+      setSidebarOpen(true);
+    }
+
+    // Swipe left to close sidebar on mobile
+    if (isLeftSwipe && window.innerWidth <= 768 && sidebarOpen) {
+      setSidebarOpen(false);
+    }
   };
 
   const showSection = (section) => {
@@ -688,7 +724,7 @@ const KediUserDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8f9fa] font-['Poppins',sans-serif]">
+    <div className="min-h-screen bg-[#f8f9fa] font-['Poppins',sans-serif] scroll-smooth">
       {/* Top Navbar */}
       <nav className="bg-white shadow-lg border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -722,22 +758,33 @@ const KediUserDashboard = () => {
       </nav>
 
       {/* Sidebar */}
-      <aside className={`fixed top-16 left-0 z-40 h-[calc(100vh-4rem)] w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out ${
+      <aside className={`fixed top-16 left-0 z-40 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 transform transition-all duration-300 ease-in-out ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      } lg:translate-x-0`}>
+      } lg:translate-x-0 ${sidebarCollapsed ? 'lg:w-16' : 'lg:w-64'}`}>
         <div className="flex flex-col h-full">
           {/* Sidebar Header */}
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                <span className="text-lg font-bold text-green-700">
-                  {userData.avatar}
-                </span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-900 truncate">{userData.name}</p>
-                <p className="text-xs text-gray-500 truncate">{userData.email}</p>
-              </div>
+          <div className="p-4 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              {!sidebarCollapsed && (
+                <div className="flex items-center space-x-3 flex-1 min-w-0">
+                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                    <span className="text-lg font-bold text-green-700">
+                      {userData.avatar}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 truncate">{userData.name}</p>
+                    <p className="text-xs text-gray-500 truncate">User Dashboard</p>
+                  </div>
+                </div>
+              )}
+              <button
+                onClick={toggleSidebarCollapse}
+                className="hidden lg:flex items-center justify-center w-8 h-8 rounded-lg hover:bg-gray-100 transition-colors"
+                aria-label="Toggle sidebar collapse"
+              >
+                <FaBars className={`text-gray-500 transition-transform duration-200 ${sidebarCollapsed ? 'rotate-90' : ''}`} />
+              </button>
             </div>
             {/* User Actions */}
             <div className="flex items-center justify-between mt-4">
@@ -797,19 +844,22 @@ const KediUserDashboard = () => {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 px-4 py-6 space-y-1">
+          <nav className="flex-1 px-3 py-6 space-y-1">
             {navigationItems.map((item) => (
               <button
                 key={item.id}
-                className={`w-full flex items-center px-4 py-3 text-left rounded-lg transition-all duration-200 ${
+                className={`w-full flex items-center px-3 py-3 text-left rounded-lg transition-all duration-200 group ${
                   currentSection === item.id
                     ? 'bg-green-50 text-green-700 border-r-2 border-green-600'
                     : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
-                }`}
+                } ${sidebarCollapsed ? 'lg:justify-center lg:px-2' : ''}`}
                 onClick={() => showSection(item.id)}
+                title={sidebarCollapsed ? item.label : ''}
               >
-                <item.icon className="mr-3 text-lg" />
-                <span className="font-medium">{item.label}</span>
+                <item.icon className={`text-lg ${sidebarCollapsed ? 'lg:mr-0' : 'mr-3'}`} />
+                <span className={`font-medium transition-opacity duration-200 ${sidebarCollapsed ? 'lg:hidden lg:opacity-0' : 'lg:opacity-100'}`}>
+                  {item.label}
+                </span>
               </button>
             ))}
           </nav>
@@ -832,7 +882,14 @@ const KediUserDashboard = () => {
       )}
 
       {/* Main Content */}
-      <main className="lg:ml-64 pt-16 min-h-screen">
+      <main
+        className={`pt-16 min-h-screen transition-all duration-300 ease-in-out ${
+          sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'
+        }`}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
         <div className="p-6 lg:p-8">
         {/* Dashboard Section */}
         {currentSection === 'dashboard' && (
@@ -869,8 +926,8 @@ const KediUserDashboard = () => {
             </div>
 
             {/* Balance Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+              <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl hover:-translate-y-2 transition-all duration-300 cursor-pointer hover:border-green-200 group">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-3">
@@ -889,7 +946,7 @@ const KediUserDashboard = () => {
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+              <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl hover:-translate-y-2 transition-all duration-300 cursor-pointer hover:border-green-200 group">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-3">
@@ -907,18 +964,53 @@ const KediUserDashboard = () => {
                   </div>
                 </div>
               </div>
+
+              <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl hover:-translate-y-2 transition-all duration-300 cursor-pointer hover:border-green-200 group">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3 mb-3">
+                      <div className="p-3 bg-purple-100 rounded-lg">
+                        <FaExchangeAlt className="text-xl text-purple-600" />
+                      </div>
+                      <span className="text-sm font-medium text-gray-600">Total Transactions</span>
+                    </div>
+                    <div className="text-3xl font-bold text-purple-600 mb-1">
+                      {transactions.length}
+                    </div>
+                    <p className="text-gray-500 text-sm">
+                      All time transactions
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl hover:-translate-y-2 transition-all duration-300 cursor-pointer hover:border-green-200 group">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3 mb-3">
+                      <div className="p-3 bg-orange-100 rounded-lg">
+                        <FaPiggyBank className="text-xl text-orange-600" />
+                      </div>
+                      <span className="text-sm font-medium text-gray-600">Active Stakes</span>
+                    </div>
+                    <div className="text-3xl font-bold text-orange-600 mb-1">
+                      {stakes.filter(stake => stake.status === 'active').length}
+                    </div>
+                    <p className="text-gray-500 text-sm">
+                      Currently active stakes
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Quick Actions */}
             <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow duration-300">
               <h3 className="text-xl font-semibold text-gray-900 mb-6">Quick Actions</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
                 <button
                   onClick={() => showSection('transaction')}
-                  className="flex items-center justify-center px-6 py-4 text-white font-medium rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1"
-                  style={{ backgroundColor: '#28a745' }}
-                  onMouseEnter={(e) => e.target.style.backgroundColor = '#218838'}
-                  onMouseLeave={(e) => e.target.style.backgroundColor = '#28a745'}
+                  className="flex items-center justify-center px-6 py-4 text-white font-medium rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
                 >
                   <FaPlus className="mr-2" />
                   Make Transaction
@@ -926,7 +1018,7 @@ const KediUserDashboard = () => {
 
                 <button
                   onClick={() => showSection('stake')}
-                  className="flex items-center justify-center px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1"
+                  className="flex items-center justify-center px-6 py-4 text-white font-medium rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
                 >
                   <FaPiggyBank className="mr-2" />
                   Deposit Stake
@@ -934,7 +1026,7 @@ const KediUserDashboard = () => {
 
                 <button
                   onClick={() => showSection('history')}
-                  className="flex items-center justify-center px-6 py-4 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1"
+                  className="flex items-center justify-center px-6 py-4 text-white font-medium rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700"
                 >
                   <FaMoneyBillWave className="mr-2" />
                   Withdraw
@@ -1055,7 +1147,7 @@ const KediUserDashboard = () => {
             <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow duration-300">
               <h3 className="text-xl font-semibold text-gray-900 mb-6">Your Analytics</h3>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                 {/* Transaction Activity */}
                 <div className="bg-gray-50 rounded-lg p-4 shadow-md hover:shadow-lg transition-shadow duration-300">
                   <h4 className="text-lg font-medium text-gray-900 mb-4">Transaction Activity</h4>

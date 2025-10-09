@@ -6,7 +6,7 @@ export default function About() {
     <div>
       <Header />
       <div style={styles.container}>
-        <h1 style={styles.title}>Kedi Money Network</h1>
+        <h1 style={styles.title}>Kedi Business And Agri funds</h1>
         <p style={styles.text}>
           Kedi Money Network ni platform itanga uburyo bworoshye kandi bwizewe bwo guhererekanya amafaranga, 
           gukurikirana imishinga, no gufasha abakoresha kubona amahirwe yo kwinjira mu isoko ry’imari.

@@ -37,7 +37,7 @@ import {
   getTransactionStatuses,
   formatCurrency
 } from '../utils/calculations';
-import './admin-dashboard.css'; // Import original dashboard styles
+import '../styles/kedi-dashboard.css'; // Import new KEDI dashboard styles
 
 const KediAdminDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -131,6 +131,7 @@ const KediAdminDashboard = () => {
     content: '',
     media: null
   });
+  const [editingNews, setEditingNews] = useState(null);
 
   const navigationItems = [
     { id: 'overview', label: 'Overview', icon: FaTachometerAlt },
@@ -1770,175 +1771,173 @@ const KediAdminDashboard = () => {
   }, [transactionFilters, advancedSearch]);
 
   return (
-    <div className="min-h-screen bg-[#f8f9fa] font-['Poppins',sans-serif]">
+    <div className="kedi-dashboard">
       {/* Top Navbar */}
-      <nav className="bg-white shadow-lg border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Left side - Logo and app name */}
-            <div className="flex items-center">
-              <div className="flex-shrink-0 flex items-center">
-                <div className="w-8 h-8 bg-[#28a745] rounded-lg flex items-center justify-center mr-3">
-                  <span className="text-white font-bold text-sm">KEDI</span>
-                </div>
-                <h1 className="text-lg sm:text-xl font-bold text-[#1c3c2e] hidden sm:block">
-                  KEDI BUSINESS & AGRI FUNDS
-                </h1>
-                <h1 className="text-lg font-bold text-[#1c3c2e] sm:hidden">
-                  KEDI
-                </h1>
+      <nav className="kedi-navbar">
+        <div className="kedi-navbar-content">
+          {/* Left side - Logo and app name */}
+          <div className="flex items-center">
+            <div className="flex-shrink-0 flex items-center">
+              <div className="w-8 h-8 bg-[#28a745] rounded-lg flex items-center justify-center mr-3">
+                <span className="text-white font-bold text-sm">KEDI</span>
               </div>
+              <h1 className="text-lg sm:text-xl font-bold text-[#1c3c2e] hidden sm:block">
+                KEDI BUSINESS & AGRI FUNDS
+              </h1>
+              <h1 className="text-lg font-bold text-[#1c3c2e] sm:hidden">
+                KEDI
+              </h1>
             </div>
+          </div>
 
-            {/* Right side - User dropdown */}
-            <div className="flex items-center space-x-2 sm:space-x-4">
-              {/* Notifications - Hidden on mobile */}
-              <div className="relative hidden sm:block">
-                <button
-                  onClick={() => setShowNotifications(!showNotifications)}
-                  className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#28a745] focus:ring-offset-2"
-                  title="Notifications"
-                >
-                  <FaBell size={20} />
-                  {unreadNotifications > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
-                      {unreadNotifications > 99 ? '99+' : unreadNotifications}
-                    </span>
-                  )}
-                </button>
+          {/* Right side - User dropdown */}
+          <div className="flex items-center space-x-2 sm:space-x-4">
+            {/* Notifications - Hidden on mobile */}
+            <div className="relative hidden sm:block">
+              <button
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#28a745] focus:ring-offset-2"
+                title="Notifications"
+              >
+                <FaBell size={20} />
+                {unreadNotifications > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
+                    {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                  </span>
+                )}
+              </button>
 
-                {/* Notification Dropdown */}
-                {showNotifications && (
-                  <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-96">
-                    <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-lg">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center">
-                          <FaBell className="mr-2 text-blue-600" />
-                          Notifications
-                          {unreadNotifications > 0 && (
-                            <span className="ml-2 bg-red-500 text-white text-xs font-bold rounded-full px-2 py-1">
-                              {unreadNotifications}
-                            </span>
-                          )}
-                        </h3>
+              {/* Notification Dropdown */}
+              {showNotifications && (
+                <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-96">
+                  <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-lg">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center">
+                        <FaBell className="mr-2 text-blue-600" />
+                        Notifications
                         {unreadNotifications > 0 && (
-                          <button
-                            onClick={markAllNotificationsAsRead}
-                            className="text-sm text-blue-600 hover:text-blue-700 font-medium underline"
-                          >
-                            Mark all read
-                          </button>
+                          <span className="ml-2 bg-red-500 text-white text-xs font-bold rounded-full px-2 py-1">
+                            {unreadNotifications}
+                          </span>
                         )}
-                      </div>
-                    </div>
-
-                    <div className="max-h-96 overflow-y-auto">
-                      {notifications.length === 0 ? (
-                        <div className="p-8 text-center">
-                          <FaBell className="text-4xl text-gray-300 mx-auto mb-3" />
-                          <p className="text-gray-500">No notifications yet</p>
-                        </div>
-                      ) : (
-                        notifications.map((notification) => (
-                          <div
-                            key={notification.id}
-                            className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-all duration-200 ${
-                              !notification.read ? getNotificationPriorityColor(notification.priority) : ''
-                            } ${!notification.read ? 'border-l-4' : ''} ${
-                              notification.priority === 'high' ? 'border-l-red-500' :
-                              notification.priority === 'medium' ? 'border-l-yellow-500' : 'border-l-blue-500'
-                            }`}
-                            onClick={() => markNotificationAsRead(notification.id)}
-                          >
-                            <div className="flex items-start space-x-3">
-                              <div className={`text-xl sm:text-2xl p-2 rounded-lg ${
-                                notification.priority === 'high' ? 'bg-red-100 text-red-600' :
-                                notification.priority === 'medium' ? 'bg-yellow-100 text-yellow-600' :
-                                'bg-blue-100 text-blue-600'
-                              }`}>
-                                {getNotificationIcon(notification.type)}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between">
-                                  <h4 className={`text-sm font-semibold truncate ${
-                                    !notification.read ? 'text-gray-900' : 'text-gray-700'
-                                  }`}>
-                                    {notification.title}
-                                    {notification.priority === 'high' && (
-                                      <span className="ml-2 text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full font-medium">
-                                        HIGH
-                                      </span>
-                                    )}
-                                  </h4>
-                                  <span className="text-xs text-gray-500 ml-2 flex-shrink-0">
-                                    {getTimeAgo(notification.timestamp)}
-                                  </span>
-                                </div>
-                                <p className={`text-sm mt-1 ${
-                                  !notification.read ? 'text-gray-700' : 'text-gray-600'
-                                }`}>
-                                  {notification.message}
-                                </p>
-                                {!notification.read && (
-                                  <div className="mt-2 flex items-center">
-                                    <span className="inline-block w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-                                    <span className="text-xs text-blue-600 font-medium">New</span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        ))
+                      </h3>
+                      {unreadNotifications > 0 && (
+                        <button
+                          onClick={markAllNotificationsAsRead}
+                          className="text-sm text-blue-600 hover:text-blue-700 font-medium underline"
+                        >
+                          Mark all read
+                        </button>
                       )}
                     </div>
-
-                    <div className="p-4 border-t border-gray-200">
-                      <button className="w-full text-center text-blue-600 hover:text-blue-700 font-medium text-sm">
-                        View All Notifications
-                      </button>
-                    </div>
                   </div>
-                )}
-              </div>
 
-              {/* User Dropdown */}
-              <div className="relative">
-                <button
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="flex items-center space-x-2 sm:space-x-3 text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#28a745] focus:ring-offset-2 rounded-lg p-2 transition-all duration-200"
-                >
-                  <div className="w-8 h-8 bg-[#28a745] rounded-full flex items-center justify-center">
-                    <span className="text-white font-bold text-sm">A</span>
+                  <div className="max-h-96 overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <div className="p-8 text-center">
+                        <FaBell className="text-4xl text-gray-300 mx-auto mb-3" />
+                        <p className="text-gray-500">No notifications yet</p>
+                      </div>
+                    ) : (
+                      notifications.map((notification) => (
+                        <div
+                          key={notification.id}
+                          className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-all duration-200 ${
+                            !notification.read ? getNotificationPriorityColor(notification.priority) : ''
+                          } ${!notification.read ? 'border-l-4' : ''} ${
+                            notification.priority === 'high' ? 'border-l-red-500' :
+                            notification.priority === 'medium' ? 'border-l-yellow-500' : 'border-l-blue-500'
+                          }`}
+                          onClick={() => markNotificationAsRead(notification.id)}
+                        >
+                          <div className="flex items-start space-x-3">
+                            <div className={`text-xl sm:text-2xl p-2 rounded-lg ${
+                              notification.priority === 'high' ? 'bg-red-100 text-red-600' :
+                              notification.priority === 'medium' ? 'bg-yellow-100 text-yellow-600' :
+                              'bg-blue-100 text-blue-600'
+                            }`}>
+                              {getNotificationIcon(notification.type)}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between">
+                                <h4 className={`text-sm font-semibold truncate ${
+                                  !notification.read ? 'text-gray-900' : 'text-gray-700'
+                                }`}>
+                                  {notification.title}
+                                  {notification.priority === 'high' && (
+                                    <span className="ml-2 text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full font-medium">
+                                      HIGH
+                                    </span>
+                                  )}
+                                </h4>
+                                <span className="text-xs text-gray-500 ml-2 flex-shrink-0">
+                                  {getTimeAgo(notification.timestamp)}
+                                </span>
+                              </div>
+                              <p className={`text-sm mt-1 ${
+                                !notification.read ? 'text-gray-700' : 'text-gray-600'
+                              }`}>
+                                {notification.message}
+                              </p>
+                              {!notification.read && (
+                                <div className="mt-2 flex items-center">
+                                  <span className="inline-block w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                                  <span className="text-xs text-blue-600 font-medium">New</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
-                  <span className="font-medium hidden sm:block">Admin</span>
-                  <FaChevronDown size={14} />
-                </button>
 
-                {dropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
-                    <div className="p-4 border-b border-gray-200 bg-[#f8f9fa]">
-                      <p className="text-sm font-medium text-gray-900">Admin User</p>
-                      <p className="text-sm text-gray-600">admin@kedi.rw</p>
-                    </div>
-                    <div className="py-2">
-                      <button
-                        onClick={() => showSection('settings')}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center transition-all duration-200"
-                      >
-                        <FaCog className="mr-3" />
-                        Settings
-                      </button>
-                      <button
-                        onClick={logout}
-                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center transition-all duration-200"
-                      >
-                        <FaSignOutAlt className="mr-3" />
-                        Logout
-                      </button>
-                    </div>
+                  <div className="p-4 border-t border-gray-200">
+                    <button className="w-full text-center text-blue-600 hover:text-blue-700 font-medium text-sm">
+                      View All Notifications
+                    </button>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
+            </div>
+
+            {/* User Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+                className="flex items-center space-x-2 sm:space-x-3 text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#28a745] focus:ring-offset-2 rounded-lg p-2 transition-all duration-200"
+              >
+                <div className="w-8 h-8 bg-[#28a745] rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">A</span>
+                </div>
+                <span className="font-medium hidden sm:block">Admin</span>
+                <FaChevronDown size={14} />
+              </button>
+
+              {dropdownOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
+                  <div className="p-4 border-b border-gray-200 bg-[#f8f9fa]">
+                    <p className="text-sm font-medium text-gray-900">Admin User</p>
+                    <p className="text-sm text-gray-600">admin@kedi.rw</p>
+                  </div>
+                  <div className="py-2">
+                    <button
+                      onClick={() => showSection('settings')}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center transition-all duration-200"
+                    >
+                      <FaCog className="mr-3" />
+                      Settings
+                    </button>
+                    <button
+                      onClick={logout}
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center transition-all duration-200"
+                    >
+                      <FaSignOutAlt className="mr-3" />
+                      Logout
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -2824,6 +2823,7 @@ const KediAdminDashboard = () => {
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Email</th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Phone</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Location</th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">ID Number</th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Role</th>
@@ -2855,6 +2855,16 @@ const KediAdminDashboard = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                             {user.phone || 'N/A'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            <div className="text-xs">
+                              {user.province && <div><strong>P:</strong> {user.province}</div>}
+                              {user.district && <div><strong>D:</strong> {user.district}</div>}
+                              {user.sector && <div><strong>S:</strong> {user.sector}</div>}
+                              {user.cell && <div><strong>C:</strong> {user.cell}</div>}
+                              {user.village && <div><strong>V:</strong> {user.village}</div>}
+                              {!user.province && !user.district && !user.sector && !user.cell && !user.village && 'N/A'}
+                            </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-600">
                             {user.idNumber || 'N/A'}
@@ -3791,6 +3801,26 @@ const KediAdminDashboard = () => {
                         <div className="flex justify-between">
                           <span className="font-medium text-gray-600">Phone:</span>
                           <span>{userDetails.user?.phone || 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium text-gray-600">Province:</span>
+                          <span>{userDetails.user?.province || 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium text-gray-600">District:</span>
+                          <span>{userDetails.user?.district || 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium text-gray-600">Sector:</span>
+                          <span>{userDetails.user?.sector || 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium text-gray-600">Cell:</span>
+                          <span>{userDetails.user?.cell || 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium text-gray-600">Village:</span>
+                          <span>{userDetails.user?.village || 'N/A'}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="font-medium text-gray-600">ID Number:</span>
