@@ -57,6 +57,11 @@ const createTables = async () => {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);
 
+    // Ensure all columns exist (for existing tables that may be missing columns)
+    await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_picture VARCHAR(500)`);
+    await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS estimated_balance DECIMAL(10,2) DEFAULT 0`);
+    await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`);
+
     await query(`
       CREATE TABLE IF NOT EXISTS transactions (
       id SERIAL PRIMARY KEY,
@@ -272,12 +277,24 @@ app.get('*', (req, res) => {
 const PORT = process.env.PORT || 4000;
 
 if (require.main === module) {
-  // Initialize database and start server
-  createTables().then(() => {
-    seedAdmin();
-    app.listen(PORT, () => {
-      console.log(`Backend listening on port ${PORT}`);
+  // Test database connection
+  query('SELECT 1').then(() => {
+    console.log('Database connection successful');
+    // Initialize database and start server
+    createTables().then(() => {
+      seedAdmin();
+      app.listen(PORT, () => {
+        console.log(`Backend listening on port ${PORT}`);
+      });
+    }).catch((err) => {
+      console.error('Error creating tables:', err.message);
+      console.error('Error stack:', err.stack);
+      process.exit(1);
     });
+  }).catch((err) => {
+    console.error('Database connection failed:', err.message);
+    console.error('Error stack:', err.stack);
+    process.exit(1);
   });
 }
 

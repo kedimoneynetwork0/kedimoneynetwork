@@ -64,7 +64,8 @@ router.post('/signup', async (req, res) => {
       );
       res.json({ message: 'Signup successful, wait for admin approval' });
     } catch (err) {
-      console.error('Signup error:', err);
+      console.error('Signup error:', err.message);
+      console.error('Signup error stack:', err.stack);
       return res.status(500).json({ message: 'Server error' });
     }
   } catch (error) {
