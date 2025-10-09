@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import ImageSlideshow from '../components/ImageSlideshow';
@@ -7,8 +7,13 @@ import { FaFacebookF, FaInstagram, FaTwitter, FaYoutube } from 'react-icons/fa';
 import './home.css';
 
 export default function Home() {
-  // Check if user is logged in
-  const isLoggedIn = localStorage.getItem('token') && localStorage.getItem('role');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const role = localStorage.getItem('role');
+    setIsLoggedIn(token && role);
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">

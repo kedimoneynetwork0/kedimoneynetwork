@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import ModernHome from './pages/ModernHome';
 import About from './pages/about';
 import Login from './pages/login';
@@ -14,8 +15,13 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import './styles/advanced-theme.css';
 
 function App() {
-  const role = localStorage.getItem('role');
-  const token = localStorage.getItem('token');
+  const [role, setRole] = useState(null);
+  const [token, setToken] = useState(null);
+
+  useEffect(() => {
+    setRole(localStorage.getItem('role'));
+    setToken(localStorage.getItem('token'));
+  }, []);
 
   return (
     <ErrorBoundary>
