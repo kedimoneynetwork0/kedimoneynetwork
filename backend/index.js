@@ -6,7 +6,40 @@ const dotenv = require('dotenv');
 const morgan = require('morgan');
 const path = require('path');
 const fs = require('fs');
-const { query } = require('./utils/database');
+const dbUtils = process.env.NODE_ENV === 'production'
+  ? require('./utils/database')
+  : require('./utils/database-sqlite');
+
+const { query: rawQuery } = dbUtils;
+
+// Helper function to handle different query syntaxes
+const query = (sql, params = []) => {
+  if (process.env.NODE_ENV === 'production') {
+    // PostgreSQL syntax - already correct
+    return rawQuery(sql, params);
+  } else {
+    // SQLite syntax - convert $1, $2, etc. to ?
+    let convertedSql = sql;
+    const convertedParams = [];
+
+    // Convert PostgreSQL style parameters ($1, $2, etc.) to SQLite style (?)
+    let paramIndex = 1;
+    while (convertedSql.includes(`$${paramIndex}`)) {
+      convertedSql = convertedSql.replace(new RegExp(`\\$${paramIndex}`, 'g'), '?');
+      if (params[paramIndex - 1] !== undefined) {
+        convertedParams.push(params[paramIndex - 1]);
+      }
+      paramIndex++;
+    }
+
+    // If no $ parameters found, use params as-is
+    if (convertedParams.length === 0 && params.length > 0) {
+      convertedParams.push(...params);
+    }
+
+    return rawQuery(convertedSql, convertedParams);
+  }
+};
 
 // Load environment variables
 dotenv.config();
@@ -37,150 +70,155 @@ const createTables = async () => {
   try {
     await query(`
       CREATE TABLE IF NOT EXISTS users (
-      id SERIAL PRIMARY KEY,
-      firstname VARCHAR(255),
-      lastname VARCHAR(255),
-      phone VARCHAR(20),
-      username VARCHAR(255) UNIQUE NOT NULL,
-      password VARCHAR(255),
-      referralId VARCHAR(255),
-      idNumber VARCHAR(20),
-      province VARCHAR(255),
-      district VARCHAR(255),
-      sector VARCHAR(255),
-      cell VARCHAR(255),
-      village VARCHAR(255),
-      role VARCHAR(50),
-      status VARCHAR(50),
-      profile_picture VARCHAR(500),
-      estimated_balance DECIMAL(10,2) DEFAULT 0,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      firstname TEXT,
+      lastname TEXT,
+      phone TEXT,
+      email TEXT UNIQUE,
+      username TEXT UNIQUE,
+      password TEXT,
+      referralId TEXT,
+      idNumber TEXT,
+      role TEXT,
+      status TEXT,
+      profile_picture TEXT,
+      estimated_balance REAL DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
-
-    // Ensure all columns exist (for existing tables that may be missing columns)
-    await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_picture VARCHAR(500)`);
-    await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS estimated_balance DECIMAL(10,2) DEFAULT 0`);
-    await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`);
 
     await query(`
       CREATE TABLE IF NOT EXISTS transactions (
-      id SERIAL PRIMARY KEY,
-      user_id INTEGER REFERENCES users(id),
-      type VARCHAR(50),
-      amount DECIMAL(10,2),
-      txn_id VARCHAR(255),
-      status VARCHAR(50),
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      type TEXT,
+      amount REAL,
+      txn_id TEXT,
+      status TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users (id)
     )`);
 
     await query(`
       CREATE TABLE IF NOT EXISTS bonuses (
-      id SERIAL PRIMARY KEY,
-      userId INTEGER REFERENCES users(id),
-      amount DECIMAL(10,2),
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      userId INTEGER,
+      amount REAL,
       description TEXT,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (userId) REFERENCES users (id)
     )`);
 
     await query(`
       CREATE TABLE IF NOT EXISTS password_reset_requests (
-      id SERIAL PRIMARY KEY,
-      userId INTEGER REFERENCES users(id),
-      email VARCHAR(255),
-      requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      userId INTEGER,
+      email TEXT,
+      requested_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (userId) REFERENCES users (id)
     )`);
 
     await query(`
       CREATE TABLE IF NOT EXISTS stakes (
-      id SERIAL PRIMARY KEY,
-      user_id INTEGER REFERENCES users(id),
-      amount DECIMAL(10,2),
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      amount REAL,
       stake_period INTEGER,
-      interest_rate DECIMAL(5,4),
-      start_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      end_date TIMESTAMP,
-      status VARCHAR(50) DEFAULT 'active'
+      interest_rate REAL,
+      start_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+      end_date DATETIME,
+      status TEXT DEFAULT 'active',
+      FOREIGN KEY (user_id) REFERENCES users (id)
     )`);
 
     await query(`
       CREATE TABLE IF NOT EXISTS withdrawals (
-      id SERIAL PRIMARY KEY,
-      user_id INTEGER REFERENCES users(id),
-      stake_id INTEGER REFERENCES stakes(id),
-      amount DECIMAL(10,2),
-      request_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      status VARCHAR(50) DEFAULT 'pending',
-      processed_date TIMESTAMP
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      stake_id INTEGER,
+      amount REAL,
+      request_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+      status TEXT DEFAULT 'pending',
+      processed_date DATETIME,
+      FOREIGN KEY (user_id) REFERENCES users (id),
+      FOREIGN KEY (stake_id) REFERENCES stakes (id)
     )`);
 
     await query(`
       CREATE TABLE IF NOT EXISTS news (
-      id SERIAL PRIMARY KEY,
-      title VARCHAR(500),
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT,
       content TEXT,
-      media_url VARCHAR(500),
-      media_type VARCHAR(50),
-      author INTEGER REFERENCES users(id),
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      media_url TEXT,
+      media_type TEXT,
+      author INTEGER,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (author) REFERENCES users (id)
     )`);
 
     await query(`
       CREATE TABLE IF NOT EXISTS messages (
-      id SERIAL PRIMARY KEY,
-      user_id INTEGER REFERENCES users(id),
-      admin_id INTEGER REFERENCES users(id),
-      subject VARCHAR(255),
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      admin_id INTEGER,
+      subject TEXT,
       message TEXT,
-      is_read BOOLEAN DEFAULT false,
-      type VARCHAR(50) DEFAULT 'notification',
-      activity_type VARCHAR(50),
+      is_read INTEGER DEFAULT 0,
+      type TEXT DEFAULT 'notification',
+      activity_type TEXT,
       activity_id INTEGER,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users (id),
+      FOREIGN KEY (admin_id) REFERENCES users (id)
     )`);
 
     await query(`
       CREATE TABLE IF NOT EXISTS savings (
-      id SERIAL PRIMARY KEY,
-      user_id INTEGER REFERENCES users(id),
-      amount DECIMAL(10,2),
-      interest_rate DECIMAL(5,4) DEFAULT 0.05,
-      maturity_date TIMESTAMP,
-      status VARCHAR(50) DEFAULT 'active',
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      amount REAL,
+      interest_rate REAL DEFAULT 0.05,
+      maturity_date DATETIME,
+      status TEXT DEFAULT 'active',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users (id)
     )`);
 
     await query(`
       CREATE TABLE IF NOT EXISTS savings_withdrawals (
-      id SERIAL PRIMARY KEY,
-      user_id INTEGER REFERENCES users(id),
-      savings_id INTEGER REFERENCES savings(id),
-      amount DECIMAL(10,2),
-      request_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      status VARCHAR(50) DEFAULT 'pending',
-      processed_date TIMESTAMP
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      savings_id INTEGER,
+      amount REAL,
+      request_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+      status TEXT DEFAULT 'pending',
+      processed_date DATETIME,
+      FOREIGN KEY (user_id) REFERENCES users (id),
+      FOREIGN KEY (savings_id) REFERENCES savings (id)
     )`);
 
     // Tree Plan table for tree planting investments
     await query(`
       CREATE TABLE IF NOT EXISTS tree_plans (
-      id SERIAL PRIMARY KEY,
-      user_id INTEGER REFERENCES users(id),
-      amount DECIMAL(10,2),
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      amount REAL,
       trees_planted INTEGER,
-      location VARCHAR(255),
-      status VARCHAR(50) DEFAULT 'active',
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      location TEXT,
+      status TEXT DEFAULT 'active',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users (id)
     )`);
 
     // Loan Repayment table for tracking loan repayments
     await query(`
       CREATE TABLE IF NOT EXISTS loan_repayments (
-      id SERIAL PRIMARY KEY,
-      user_id INTEGER REFERENCES users(id),
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
       loan_id INTEGER,
-      amount DECIMAL(10,2),
-      payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      status VARCHAR(50) DEFAULT 'completed'
+      amount REAL,
+      payment_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+      status TEXT DEFAULT 'completed',
+      FOREIGN KEY (user_id) REFERENCES users (id)
     )`);
 
     console.log('Tables created or already exist.');
@@ -206,7 +244,7 @@ async function seedAdmin() {
   const hash = await bcrypt.hash(adminPassword, 10);
 
   try {
-    const res = await query(`SELECT * FROM users WHERE phone = $1 AND role = $2`, [adminPhone, 'admin']);
+    const res = await query(`SELECT * FROM users WHERE phone = ? AND role = ?`, [adminPhone, 'admin']);
     const row = res.rows[0];
     if (row) {
       console.log('Admin user already exists');
@@ -214,9 +252,9 @@ async function seedAdmin() {
     }
 
     await query(
-      `INSERT INTO users (firstname, lastname, phone, username, password, referralId, idNumber, province, district, sector, cell, village, role, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
-      ['Admin', 'User', adminPhone, 'admin', hash, null, '0000000000', 'Kigali', 'Gasabo', 'Remera', 'Gisimenti', 'Kacyiru', 'admin', 'approved']
+      `INSERT INTO users (firstname, lastname, phone, username, password, referralId, idNumber, role, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ['Admin', 'User', adminPhone, 'admin', hash, null, '0000000000', 'admin', 'approved']
     );
     console.log(`Admin user seeded successfully: ${adminPhone}`);
   } catch (err) {
@@ -247,7 +285,7 @@ app.use(express.static(path.join(__dirname, 'dist')));
 // Debug endpoint to check admin user status
 app.get('/api/debug/admin-status', async (req, res) => {
   try {
-    const result = await query(`SELECT id, phone, role, status FROM users WHERE role = 'admin'`);
+    const result = await query(`SELECT id, phone, role, status FROM users WHERE role = ?`, ['admin']);
     const adminUsers = result.rows;
 
     const envCheck = {

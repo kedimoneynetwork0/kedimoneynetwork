@@ -1,7 +1,40 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const rateLimit = require('express-rate-limit');
-const { query } = require('../utils/database');
+const dbUtils = process.env.NODE_ENV === 'production'
+  ? require('../utils/database')
+  : require('../utils/database-sqlite');
+
+const { query: rawQuery } = dbUtils;
+
+// Helper function to handle different query syntaxes
+const query = (sql, params = []) => {
+  if (process.env.NODE_ENV === 'production') {
+    // PostgreSQL syntax - already correct
+    return rawQuery(sql, params);
+  } else {
+    // SQLite syntax - convert $1, $2, etc. to ?
+    let convertedSql = sql;
+    const convertedParams = [];
+
+    // Convert PostgreSQL style parameters ($1, $2, etc.) to SQLite style (?)
+    let paramIndex = 1;
+    while (convertedSql.includes(`$${paramIndex}`)) {
+      convertedSql = convertedSql.replace(new RegExp(`\\$${paramIndex}`, 'g'), '?');
+      if (params[paramIndex - 1] !== undefined) {
+        convertedParams.push(params[paramIndex - 1]);
+      }
+      paramIndex++;
+    }
+
+    // If no $ parameters found, use params as-is
+    if (convertedParams.length === 0 && params.length > 0) {
+      convertedParams.push(...params);
+    }
+
+    return rawQuery(convertedSql, convertedParams);
+  }
+};
 const { generateToken } = require('../middleware/auth');
 
 const router = express.Router();
@@ -22,9 +55,9 @@ const adminLoginLimiter = rateLimit({
 // Signup
 router.post('/signup', async (req, res) => {
   try {
-    const { firstname, lastname, phone, username, password, referralId, idNumber, province, district, sector, cell, village } = req.body;
+    const { firstname, lastname, phone, username, password, referralId, idNumber } = req.body;
 
-    const requiredFields = { firstname, lastname, phone, username, password, idNumber, province, district, sector, cell, village };
+    const requiredFields = { firstname, lastname, phone, username, password, idNumber };
     for (let [key, value] of Object.entries(requiredFields)) {
       if (!value || value.trim() === '') {
         return res.status(400).json({ message: `${key} is required` });
@@ -58,9 +91,9 @@ router.post('/signup', async (req, res) => {
 
     try {
       await query(
-        `INSERT INTO users (firstname, lastname, phone, username, password, referralId, idNumber, province, district, sector, cell, village, role, status)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
-        [firstname, lastname, phone, username, hash, referralId || null, idNumber, province, district, sector, cell, village, 'user', 'pending']
+        `INSERT INTO users (firstname, lastname, phone, username, password, referralId, idNumber, role, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [firstname, lastname, phone, username, hash, referralId || null, idNumber, 'user', 'pending']
       );
       res.json({ message: 'Signup successful, wait for admin approval' });
     } catch (err) {
@@ -146,7 +179,7 @@ router.post('/admin-login', adminLoginLimiter, async (req, res) => {
   }
 
   try {
-    const result = await query(`SELECT * FROM users WHERE phone = $1 AND role = 'admin'`, [phone]);
+    const result = await query(`SELECT * FROM users WHERE phone = $1 AND role = $2`, [phone, 'admin']);
     const user = result.rows[0];
 
     console.log('Admin user found:', !!user);

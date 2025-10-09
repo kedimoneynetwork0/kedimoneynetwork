@@ -1,7 +1,40 @@
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
-const { query } = require('../utils/database');
+const dbUtils = process.env.NODE_ENV === 'production'
+  ? require('../utils/database')
+  : require('../utils/database-sqlite');
+
+const { query: rawQuery } = dbUtils;
+
+// Helper function to handle different query syntaxes
+const query = (sql, params = []) => {
+  if (process.env.NODE_ENV === 'production') {
+    // PostgreSQL syntax - already correct
+    return rawQuery(sql, params);
+  } else {
+    // SQLite syntax - convert $1, $2, etc. to ?
+    let convertedSql = sql;
+    const convertedParams = [];
+
+    // Convert PostgreSQL style parameters ($1, $2, etc.) to SQLite style (?)
+    let paramIndex = 1;
+    while (convertedSql.includes(`$${paramIndex}`)) {
+      convertedSql = convertedSql.replace(new RegExp(`\\$${paramIndex}`, 'g'), '?');
+      if (params[paramIndex - 1] !== undefined) {
+        convertedParams.push(params[paramIndex - 1]);
+      }
+      paramIndex++;
+    }
+
+    // If no $ parameters found, use params as-is
+    if (convertedParams.length === 0 && params.length > 0) {
+      convertedParams.push(...params);
+    }
+
+    return rawQuery(convertedSql, convertedParams);
+  }
+};
 const { adminMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
@@ -100,7 +133,7 @@ const upload = multer({
 // Admin user management
 router.get('/pending-users', adminMiddleware, async (req, res) => {
   try {
-    const result = await query(`SELECT id, phone, firstname, lastname FROM users WHERE status = 'pending'`);
+    const result = await query(`SELECT id, phone, firstname, lastname FROM users WHERE status = $1`, ['pending']);
     const rows = result.rows;
     res.json(rows);
   } catch (err) {
@@ -129,7 +162,7 @@ router.put('/users/:id/approve', adminMiddleware, async (req, res) => {
 router.get('/users', adminMiddleware, async (req, res) => {
   try {
     const { search } = req.query;
-    let queryStr = `SELECT id, firstname, lastname, phone, username, idNumber, province, district, sector, cell, village, status, profile_picture FROM users`;
+    let queryStr = `SELECT id, firstname, lastname, phone, username, idNumber, status, profile_picture FROM users`;
     let params = [];
 
     if (search) {
@@ -154,7 +187,7 @@ router.get('/users/:id/details', adminMiddleware, async (req, res) => {
   try {
     // Get user basic info
     const userResult = await query(`
-      SELECT id, firstname, lastname, phone, username, referralId, idNumber, province, district, sector, cell, village, role, status, profile_picture
+      SELECT id, firstname, lastname, phone, username, referralId, idNumber, role, status, profile_picture
       FROM users WHERE id = $1
     `, [userId]);
 
@@ -625,7 +658,7 @@ function generateCSV(data, headers) {
 router.get('/download/users', adminMiddleware, async (req, res) => {
   try {
     const result = await query(`
-      SELECT id, firstname, lastname, phone, email, username, referralId, idNumber, province, district, sector, cell, village, role, status, profile_picture, estimated_balance
+      SELECT id, firstname, lastname, phone, email, username, referralId, idNumber, role, status, profile_picture, estimated_balance
       FROM users
       ORDER BY id DESC
     `);
@@ -642,11 +675,6 @@ router.get('/download/users', adminMiddleware, async (req, res) => {
       'Username',
       'Referral ID',
       'ID Number',
-      'Province',
-      'District',
-      'Sector',
-      'Cell',
-      'Village',
       'Role',
       'Status',
       'Profile Picture',
@@ -663,11 +691,6 @@ router.get('/download/users', adminMiddleware, async (req, res) => {
       'Username': user.username,
       'Referral ID': user.referralId || '',
       'ID Number': user.idNumber,
-      'Province': user.province || '',
-      'District': user.district || '',
-      'Sector': user.sector || '',
-      'Cell': user.cell || '',
-      'Village': user.village || '',
       'Role': user.role,
       'Status': user.status,
       'Profile Picture': user.profile_picture || '',
