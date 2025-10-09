@@ -5,36 +5,7 @@ const dbUtils = process.env.NODE_ENV === 'production'
   ? require('../utils/database')
   : require('../utils/database-sqlite');
 
-const { query: rawQuery } = dbUtils;
-
-// Helper function to handle different query syntaxes
-const query = (sql, params = []) => {
-  if (process.env.NODE_ENV === 'production') {
-    // PostgreSQL syntax - already correct
-    return rawQuery(sql, params);
-  } else {
-    // SQLite syntax - convert $1, $2, etc. to ?
-    let convertedSql = sql;
-    const convertedParams = [];
-
-    // Convert PostgreSQL style parameters ($1, $2, etc.) to SQLite style (?)
-    let paramIndex = 1;
-    while (convertedSql.includes(`$${paramIndex}`)) {
-      convertedSql = convertedSql.replace(new RegExp(`\\$${paramIndex}`, 'g'), '?');
-      if (params[paramIndex - 1] !== undefined) {
-        convertedParams.push(params[paramIndex - 1]);
-      }
-      paramIndex++;
-    }
-
-    // If no $ parameters found, use params as-is
-    if (convertedParams.length === 0 && params.length > 0) {
-      convertedParams.push(...params);
-    }
-
-    return rawQuery(convertedSql, convertedParams);
-  }
-};
+const { query } = dbUtils;
 const { generateToken } = require('../middleware/auth');
 
 const router = express.Router();
@@ -89,12 +60,27 @@ router.post('/signup', async (req, res) => {
 
     const hash = await bcrypt.hash(password, 10);
 
+    const params = [firstname, lastname, phone, `${username}@temp.com`, username, hash, referralId || null, idNumber, 'user', 'pending'];
+
     try {
-      await query(
-        `INSERT INTO users (firstname, lastname, phone, username, password, referralId, idNumber, role, status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [firstname, lastname, phone, username, hash, referralId || null, idNumber, 'user', 'pending']
-      );
+      // Use direct database query to avoid helper function issues
+      const dbUtils = process.env.NODE_ENV === 'production'
+        ? require('../utils/database')
+        : require('../utils/database-sqlite');
+
+      if (process.env.NODE_ENV === 'production') {
+        await dbUtils.query(
+          `INSERT INTO users (firstname, lastname, phone, email, username, password, referralId, idNumber, role, status)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+          params
+        );
+      } else {
+        await dbUtils.query(
+          `INSERT INTO users (firstname, lastname, phone, email, username, password, referralId, idNumber, role, status)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          params
+        );
+      }
       res.json({ message: 'Signup successful, wait for admin approval' });
     } catch (err) {
       console.error('Signup error:', err.message);

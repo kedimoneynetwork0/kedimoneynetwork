@@ -17,14 +17,23 @@ const query = (sql, params = []) => {
     let convertedSql = sql;
     const convertedParams = [];
 
-    // Convert PostgreSQL style parameters ($1, $2, etc.) to SQLite style (?)
-    let paramIndex = 1;
-    while (convertedSql.includes(`$${paramIndex}`)) {
-      convertedSql = convertedSql.replace(new RegExp(`\\$${paramIndex}`, 'g'), '?');
-      if (params[paramIndex - 1] !== undefined) {
-        convertedParams.push(params[paramIndex - 1]);
+    // Replace $N with ? in order from highest to lowest to avoid conflicts
+    const paramNumbers = [];
+    const paramRegex = /\$(\d+)/g;
+    let match;
+    while ((match = paramRegex.exec(sql)) !== null) {
+      paramNumbers.push(parseInt(match[1]));
+    }
+
+    // Remove duplicates and sort descending
+    const uniqueParamNumbers = [...new Set(paramNumbers)].sort((a, b) => b - a);
+
+    for (const num of uniqueParamNumbers) {
+      const regex = new RegExp(`\\$${num}`, 'g');
+      convertedSql = convertedSql.replace(regex, '?');
+      if (params[num - 1] !== undefined) {
+        convertedParams.push(params[num - 1]);
       }
-      paramIndex++;
     }
 
     // If no $ parameters found, use params as-is
