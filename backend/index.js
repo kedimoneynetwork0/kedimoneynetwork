@@ -55,6 +55,9 @@ dotenv.config();
 
 const app = express();
 
+// Trust proxy for accurate IP detection (required for express-rate-limit)
+app.set('trust proxy', 1);
+
 app.use(cors());
 app.use(bodyParser.json());
 app.use(morgan('combined'));
