@@ -221,7 +221,7 @@ export default function UserManagement() {
                     <div className="transaction-detail">
                       <span className="detail-label">Registration Date</span>
                       <span className="detail-value">
-                        {new Date(userDetails.user.created_at).toLocaleString('en-RW', { timeZone: 'Africa/Kigali' })}
+                        {new Date(userDetails.user.created_at).toLocaleString('en', { timeZone: 'Africa/Kigali' })}
                       </span>
                     </div>
                     <div className="transaction-detail">
@@ -274,7 +274,7 @@ export default function UserManagement() {
                                 {txn.status}
                               </span>
                             </td>
-                            <td>{new Date(txn.created_at).toLocaleString('en-RW', { timeZone: 'Africa/Kigali' })}</td>
+                            <td>{new Date(txn.created_at).toLocaleString('en', { timeZone: 'Africa/Kigali' })}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -307,8 +307,8 @@ export default function UserManagement() {
                             <td>{stake.amount} RWF</td>
                             <td>{stake.stake_period} days</td>
                             <td>{(stake.interest_rate * 100)}%</td>
-                            <td>{new Date(stake.start_date).toLocaleDateString('en-RW', { timeZone: 'Africa/Kigali' })}</td>
-                            <td>{new Date(stake.end_date).toLocaleDateString('en-RW', { timeZone: 'Africa/Kigali' })}</td>
+                            <td>{new Date(stake.start_date).toLocaleDateString('en', { timeZone: 'Africa/Kigali' })}</td>
+                            <td>{new Date(stake.end_date).toLocaleDateString('en', { timeZone: 'Africa/Kigali' })}</td>
                             <td>
                               <span className={`status-badge status-${stake.status}`}>
                                 {stake.status}
@@ -341,7 +341,7 @@ export default function UserManagement() {
                         {userDetails.withdrawals.map((withdrawal) => (
                           <tr key={withdrawal.id}>
                             <td>{withdrawal.amount} RWF</td>
-                            <td>{new Date(withdrawal.request_date).toLocaleString('en-RW', { timeZone: 'Africa/Kigali' })}</td>
+                            <td>{new Date(withdrawal.request_date).toLocaleString('en', { timeZone: 'Africa/Kigali' })}</td>
                             <td>
                               <span className={`status-badge status-${withdrawal.status}`}>
                                 {withdrawal.status}
@@ -375,7 +375,7 @@ export default function UserManagement() {
                           <tr key={bonus.id}>
                             <td>{bonus.amount} RWF</td>
                             <td>{bonus.description}</td>
-                            <td>{new Date(bonus.created_at).toLocaleString('en-RW', { timeZone: 'Africa/Kigali' })}</td>
+                            <td>{new Date(bonus.created_at).toLocaleString('en', { timeZone: 'Africa/Kigali' })}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -412,7 +412,7 @@ export default function UserManagement() {
                                 {plan.status}
                               </span>
                             </td>
-                            <td>{new Date(plan.created_at).toLocaleString('en-RW', { timeZone: 'Africa/Kigali' })}</td>
+                            <td>{new Date(plan.created_at).toLocaleString('en', { timeZone: 'Africa/Kigali' })}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -443,13 +443,13 @@ export default function UserManagement() {
                           <tr key={saving.id}>
                             <td>{saving.amount} RWF</td>
                             <td>{(saving.interest_rate * 100)}%</td>
-                            <td>{new Date(saving.maturity_date).toLocaleDateString('en-RW', { timeZone: 'Africa/Kigali' })}</td>
+                            <td>{new Date(saving.maturity_date).toLocaleDateString('en', { timeZone: 'Africa/Kigali' })}</td>
                             <td>
                               <span className={`status-badge status-${saving.status}`}>
                                 {saving.status}
                               </span>
                             </td>
-                            <td>{new Date(saving.created_at).toLocaleString('en-RW', { timeZone: 'Africa/Kigali' })}</td>
+                            <td>{new Date(saving.created_at).toLocaleString('en', { timeZone: 'Africa/Kigali' })}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -477,7 +477,7 @@ export default function UserManagement() {
                         {userDetails.loanRepayments.map((repayment) => (
                           <tr key={repayment.id}>
                             <td>{repayment.amount} RWF</td>
-                            <td>{new Date(repayment.payment_date).toLocaleString('en-RW', { timeZone: 'Africa/Kigali' })}</td>
+                            <td>{new Date(repayment.payment_date).toLocaleString('en', { timeZone: 'Africa/Kigali' })}</td>
                             <td>
                               <span className={`status-badge status-${repayment.status}`}>
                                 {repayment.status}
@@ -539,7 +539,7 @@ export default function UserManagement() {
                               {user.status}
                             </span>
                           </td>
-                          <td>{new Date(user.created_at).toLocaleDateString('en-RW', { timeZone: 'Africa/Kigali' })}</td>
+                          <td>{new Date(user.created_at).toLocaleDateString('en', { timeZone: 'Africa/Kigali' })}</td>
                           <td>
                             <button
                               onClick={() => handleViewUserDetails(user)}

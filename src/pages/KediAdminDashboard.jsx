@@ -1001,7 +1001,7 @@ const KediAdminDashboard = () => {
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-RW').format(amount);
+    return new Intl.NumberFormat('en').format(amount);
   };
 
   // Notification functions
@@ -4375,7 +4375,7 @@ const KediAdminDashboard = () => {
                                 {formatCurrency(withdrawal.amount)} RWF
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                {new Date(withdrawal.request_date).toLocaleString('en-RW', { timeZone: 'Africa/Kigali' })}
+                                {new Date(withdrawal.request_date).toLocaleString('en', { timeZone: 'Africa/Kigali' })}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm">
                                 <div className="flex space-x-2">

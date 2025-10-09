@@ -410,8 +410,8 @@ const KediUserDashboard = () => {
   // Filter stakes that can be withdrawn (matured and not yet withdrawn)
   const withdrawableStakes = (Array.isArray(stakes) ? stakes : []).filter(stake => {
     if (!stake || !stake.end_date) return false;
-    const currentDate = new Date().toLocaleString('en-RW', { timeZone: 'Africa/Kigali' });
-    const endDate = new Date(stake.end_date).toLocaleString('en-RW', { timeZone: 'Africa/Kigali' });
+    const currentDate = new Date().toLocaleString('en', { timeZone: 'Africa/Kigali' });
+    const endDate = new Date(stake.end_date).toLocaleString('en', { timeZone: 'Africa/Kigali' });
     return new Date(currentDate) >= new Date(endDate) && stake.status === 'active';
   });
 
@@ -589,8 +589,8 @@ const KediUserDashboard = () => {
         balance += stake.amount; // Principal amount
 
         // Calculate interest for matured stakes
-        const currentDate = new Date().toLocaleString('en-RW', { timeZone: 'Africa/Kigali' });
-        const endDate = new Date(stake.end_date).toLocaleString('en-RW', { timeZone: 'Africa/Kigali' });
+        const currentDate = new Date().toLocaleString('en', { timeZone: 'Africa/Kigali' });
+        const endDate = new Date(stake.end_date).toLocaleString('en', { timeZone: 'Africa/Kigali' });
         if (new Date(currentDate) >= new Date(endDate)) {
           const interest = stake.amount * stake.interest_rate;
           balance += interest;
@@ -1978,7 +1978,7 @@ const KediUserDashboard = () => {
                     <div>
                       <h4 style={{ margin: '0 0 5px 0', color: '#28a745' }}>{msg.subject}</h4>
                       <small style={{ color: '#6c757d' }}>
-                        From: {msg.admin_firstname} {msg.admin_lastname} • {new Date(msg.created_at).toLocaleString('en-RW', { timeZone: 'Africa/Kigali' })}
+                        From: {msg.admin_firstname} {msg.admin_lastname} • {new Date(msg.created_at).toLocaleString('en', { timeZone: 'Africa/Kigali' })}
                       </small>
                     </div>
                     {!msg.is_read && (

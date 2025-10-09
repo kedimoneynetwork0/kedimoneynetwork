@@ -98,7 +98,7 @@ export default function HeroSection() {
             </p>
             <div className="flex items-center justify-between">
               <span className="text-gray-300 text-xs">
-                {new Date(featuredNews.created_at).toLocaleDateString('en-RW', {
+                {new Date(featuredNews.created_at).toLocaleDateString('en', {
                   month: 'short',
                   day: 'numeric',
                   timeZone: 'Africa/Kigali'
