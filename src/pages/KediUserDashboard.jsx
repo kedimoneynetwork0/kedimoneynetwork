@@ -133,8 +133,9 @@ const KediUserDashboard = () => {
 
   // Load user data on component mount
   useEffect(() => {
-    loadUserData();
-    loadMessages();
+    // Temporarily disabled for debugging
+    // loadUserData();
+    // loadMessages();
 
     // Load sidebar collapsed state
     const saved = localStorage.getItem('sidebarCollapsed');
