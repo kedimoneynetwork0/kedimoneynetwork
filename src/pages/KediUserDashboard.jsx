@@ -32,6 +32,68 @@ import {
 import '../styles/advanced-theme.css'; // Import advanced theme styles
 
 const KediUserDashboard = () => {
+  // State declarations
+  const [userData, setUserData] = useState({
+    name: 'User',
+    email: '',
+    avatar: 'U',
+    balance: 0,
+    bonus: 0,
+    profilePicture: '',
+    stats: {}
+  });
+  const [transactions, setTransactions] = useState([]);
+  const [stakes, setStakes] = useState([]);
+  const [withdrawals, setWithdrawals] = useState([]);
+  const [savings, setSavings] = useState([]);
+  const [messages, setMessages] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(localStorage.getItem('sidebarCollapsed') === 'true');
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+  const [currentSection, setCurrentSection] = useState('dashboard');
+  const [showInbox, setShowInbox] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [transactionForm, setTransactionForm] = useState({ type: '', amount: '', txnId: '' });
+  const [stakeForm, setStakeForm] = useState({ amount: '', period: 30 });
+  const [withdrawalForm, setWithdrawalForm] = useState({ stakeId: '' });
+  const [savingsWithdrawalForm, setSavingsWithdrawalForm] = useState({ savingsId: '', amount: '' });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [transactionFilters, setTransactionFilters] = useState({ type: 'all', status: 'all', dateRange: 'all' });
+  const [advancedUserSearch, setAdvancedUserSearch] = useState({
+    showAdvanced: false,
+    dateFrom: '',
+    dateTo: '',
+    minAmount: '',
+    maxAmount: ''
+  });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [supportForm, setSupportForm] = useState({ subject: '', message: '' });
+  const [profileForm, setProfileForm] = useState({ firstname: '', lastname: '', phone: '', email: '' });
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+
+  // Navigation items
+  const navigationItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: FaTachometerAlt },
+    { id: 'transaction', label: 'Make Transaction', icon: FaExchangeAlt },
+    { id: 'stake', label: 'Deposit Stake', icon: FaPiggyBank },
+    { id: 'history', label: 'Transaction History', icon: FaHistory },
+    { id: 'bonus', label: 'Referral Bonus', icon: FaGift },
+    { id: 'inbox', label: 'Messages', icon: FaBell },
+    { id: 'support', label: 'Support', icon: FaCog },
+    { id: 'settings', label: 'Settings', icon: FaUser }
+  ];
+
+  // Load data on component mount
+  useEffect(() => {
+    loadUserData();
+    loadMessages();
+  }, []);
+
   // Load all user data from API
   const loadUserData = async () => {
     setIsLoading(true);
