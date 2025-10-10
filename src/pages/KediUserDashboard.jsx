@@ -1152,28 +1152,16 @@ const KediUserDashboard = () => {
                 {/* Transaction Activity */}
                 <div className="bg-gray-50 rounded-lg p-4 shadow-md hover:shadow-lg transition-shadow duration-300">
                   <h4 className="text-lg font-medium text-gray-900 mb-4">Transaction Activity</h4>
-                  <div className="h-48">
-                    {transactions && Array.isArray(transactions) ? (
-                      <Line data={generateUserTransactionData()} options={userChartOptions} />
-                    ) : (
-                      <div className="flex items-center justify-center h-full text-gray-500">
-                        Loading chart data...
-                      </div>
-                    )}
+                  <div className="h-48 flex items-center justify-center text-gray-500">
+                    Charts temporarily disabled for debugging
                   </div>
                 </div>
 
                 {/* Balance Growth */}
                 <div className="bg-gray-50 rounded-lg p-4 shadow-md hover:shadow-lg transition-shadow duration-300">
                   <h4 className="text-lg font-medium text-gray-900 mb-4">Balance Growth</h4>
-                  <div className="h-48">
-                    {transactions && Array.isArray(transactions) ? (
-                      <Line data={generateUserBalanceData()} options={userChartOptions} />
-                    ) : (
-                      <div className="flex items-center justify-center h-full text-gray-500">
-                        Loading chart data...
-                      </div>
-                    )}
+                  <div className="h-48 flex items-center justify-center text-gray-500">
+                    Charts temporarily disabled for debugging
                   </div>
                 </div>
               </div>

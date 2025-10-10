@@ -12,24 +12,18 @@ import {
   ArcElement,
 } from 'chart.js';
 
-// Create and configure Chart.js instance
-const configuredChartJS = ChartJS;
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler,
+  ArcElement
+);
 
-// Register components only once
-if (!configuredChartJS.registered) {
-  configuredChartJS.register(
-    CategoryScale,
-    LinearScale,
-    PointElement,
-    LineElement,
-    BarElement,
-    Title,
-    Tooltip,
-    Legend,
-    Filler,
-    ArcElement
-  );
-  configuredChartJS.registered = true;
-}
-
-export default configuredChartJS;
+export default ChartJS;
