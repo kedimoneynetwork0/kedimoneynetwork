@@ -3,8 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { FaBars, FaTimes, FaTachometerAlt, FaExchangeAlt, FaPiggyBank, FaHistory, FaGift, FaCog, FaSignOutAlt, FaUser, FaWallet, FaMoneyBillWave, FaPlus, FaSyncAlt, FaArrowLeft, FaLeaf, FaFilter, FaChevronDown, FaBell } from 'react-icons/fa';
 import ThemeToggle from '../components/ThemeToggle';
 import SkeletonLoader from '../components/SkeletonLoader';
-import { Line, Bar } from 'react-chartjs-2';
-import ChartJS from '../utils/chartConfig'; // Import chart configuration
 import {
   getUserBonus,
   getUserDashboard,
@@ -552,119 +550,6 @@ const KediUserDashboard = () => {
     return Math.max(0, balance); // Ensure balance doesn't go negative
   };
 
-  // Chart data generation functions for user dashboard
-  const generateUserTransactionData = () => {
-    // Get last 6 months of transaction data
-    const last6Months = [];
-    const transactionCounts = [];
-
-    for (let i = 5; i >= 0; i--) {
-      const date = new Date();
-      date.setMonth(date.getMonth() - i);
-      last6Months.push(date.toLocaleDateString('en-US', { month: 'short' }));
-
-      // Count transactions for this month
-      const monthTransactions = (Array.isArray(transactions) ? transactions : []).filter(txn => {
-        if (!txn || !txn.created_at) return false;
-        const txnDate = new Date(txn.created_at);
-        return txnDate.getMonth() === date.getMonth() && txnDate.getFullYear() === date.getFullYear();
-      });
-      transactionCounts.push(monthTransactions.length);
-    }
-
-    return {
-      labels: last6Months,
-      datasets: [{
-        label: 'Transactions',
-        data: transactionCounts,
-        borderColor: 'rgb(34, 197, 94)',
-        backgroundColor: 'rgba(34, 197, 94, 0.1)',
-        tension: 0.4,
-        fill: true,
-      }]
-    };
-  };
-
-  const generateUserBalanceData = () => {
-    // Mock balance growth data
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-    const balances = [50000, 75000, 95000, 120000, 145000, calculateRealBalance()];
-
-    return {
-      labels: months,
-      datasets: [{
-        label: 'Balance (RWF)',
-        data: balances,
-        borderColor: 'rgb(59, 130, 246)',
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-        tension: 0.4,
-        fill: true,
-      }]
-    };
-  };
-
-  const userChartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: 'top',
-        labels: {
-          usePointStyle: true,
-          padding: 15,
-          font: {
-            size: 12,
-            weight: '500'
-          }
-        }
-      },
-      tooltip: {
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        titleColor: 'white',
-        bodyColor: 'white',
-        borderColor: 'rgba(255, 255, 255, 0.2)',
-        borderWidth: 1,
-        cornerRadius: 8,
-        displayColors: true,
-        padding: 12,
-        callbacks: {
-          label: function(context) {
-            if (context.dataset.label.includes('Balance')) {
-              return `${context.dataset.label}: ${formatCurrency(context.parsed.y)}`;
-            }
-            return `${context.dataset.label}: ${context.parsed.y}`;
-          }
-        }
-      }
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        grid: {
-          color: 'rgba(0, 0, 0, 0.1)',
-        },
-        ticks: {
-          callback: function(value) {
-            if (this.chart.data.datasets[0].label.includes('Balance')) {
-              return formatCurrency(value);
-            }
-            return value;
-          }
-        }
-      },
-      x: {
-        grid: {
-          display: false,
-        }
-      }
-    },
-    elements: {
-      point: {
-        radius: 4,
-        hoverRadius: 6,
-      }
-    }
-  };
 
   return (
     <div className="min-h-screen bg-[#f8f9fa] font-['Poppins',sans-serif] scroll-smooth">
