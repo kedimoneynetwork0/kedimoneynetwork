@@ -6,7 +6,7 @@ const dotenv = require('dotenv');
 const morgan = require('morgan');
 const path = require('path');
 const fs = require('fs');
-const { query } = require('./utils/database-sqlite');
+const { query } = require('./utils/database');
 
 // Load environment variables
 dotenv.config();
@@ -37,7 +37,7 @@ const createTables = async () => {
   try {
     await query(`
       CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       firstname VARCHAR(255),
       lastname VARCHAR(255),
       phone VARCHAR(20),
@@ -61,7 +61,7 @@ const createTables = async () => {
 
     await query(`
       CREATE TABLE IF NOT EXISTS transactions (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       user_id INTEGER REFERENCES users(id),
       type VARCHAR(50),
       amount DECIMAL(10,2),
@@ -72,7 +72,7 @@ const createTables = async () => {
 
     await query(`
       CREATE TABLE IF NOT EXISTS bonuses (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       userId INTEGER REFERENCES users(id),
       amount DECIMAL(10,2),
       description TEXT,
@@ -81,7 +81,7 @@ const createTables = async () => {
 
     await query(`
       CREATE TABLE IF NOT EXISTS password_reset_requests (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       userId INTEGER REFERENCES users(id),
       email VARCHAR(255),
       requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -89,7 +89,7 @@ const createTables = async () => {
 
     await query(`
       CREATE TABLE IF NOT EXISTS stakes (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       user_id INTEGER REFERENCES users(id),
       amount DECIMAL(10,2),
       stake_period INTEGER,
@@ -101,7 +101,7 @@ const createTables = async () => {
 
     await query(`
       CREATE TABLE IF NOT EXISTS withdrawals (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       user_id INTEGER REFERENCES users(id),
       stake_id INTEGER REFERENCES stakes(id),
       amount DECIMAL(10,2),
@@ -112,7 +112,7 @@ const createTables = async () => {
 
     await query(`
       CREATE TABLE IF NOT EXISTS news (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       title VARCHAR(500),
       content TEXT,
       media_url VARCHAR(500),
@@ -123,7 +123,7 @@ const createTables = async () => {
 
     await query(`
       CREATE TABLE IF NOT EXISTS messages (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       user_id INTEGER REFERENCES users(id),
       admin_id INTEGER REFERENCES users(id),
       subject VARCHAR(255),
@@ -137,7 +137,7 @@ const createTables = async () => {
 
     await query(`
       CREATE TABLE IF NOT EXISTS savings (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       user_id INTEGER REFERENCES users(id),
       amount DECIMAL(10,2),
       interest_rate DECIMAL(5,4) DEFAULT 0.05,
@@ -148,7 +148,7 @@ const createTables = async () => {
 
     await query(`
       CREATE TABLE IF NOT EXISTS savings_withdrawals (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       user_id INTEGER REFERENCES users(id),
       savings_id INTEGER REFERENCES savings(id),
       amount DECIMAL(10,2),
@@ -160,7 +160,7 @@ const createTables = async () => {
     // Tree Plan table for tree planting investments
     await query(`
       CREATE TABLE IF NOT EXISTS tree_plans (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       user_id INTEGER REFERENCES users(id),
       amount DECIMAL(10,2),
       trees_planted INTEGER,
@@ -172,7 +172,7 @@ const createTables = async () => {
     // Loan Repayment table for tracking loan repayments
     await query(`
       CREATE TABLE IF NOT EXISTS loan_repayments (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       user_id INTEGER REFERENCES users(id),
       loan_id INTEGER,
       amount DECIMAL(10,2),
@@ -203,7 +203,7 @@ async function seedAdmin() {
   const hash = await bcrypt.hash(adminPassword, 10);
 
   try {
-    const res = await query(`SELECT * FROM users WHERE email = ? AND role = ?`, [adminEmail, 'admin']);
+    const res = await query(`SELECT * FROM users WHERE email = $1 AND role = $2`, [adminEmail, 'admin']);
     const row = res.rows[0];
     if (row) {
       console.log('Admin user already exists');
@@ -212,7 +212,7 @@ async function seedAdmin() {
 
     await query(
       `INSERT INTO users (firstname, lastname, phone, email, username, password, referralId, referral_id, idNumber, province, district, sector, cell, village, role, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
       ['Admin', 'User', '0795772698', adminEmail, 'admin', hash, null, 'KEDI001RW25', '0000000000', 'Kigali', 'Gasabo', 'Remera', 'Gisimenti', 'Kacyiru', 'admin', 'approved']
     );
     console.log(`Admin user seeded successfully: ${adminEmail}`);
