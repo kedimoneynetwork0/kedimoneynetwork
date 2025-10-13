@@ -1,7 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
-const { query } = require('../utils/database-sqlite');
+const { query } = require('../utils/database');
 const { adminMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
@@ -13,35 +13,35 @@ async function calculateEstimatedBalance(userId) {
     const treePlanResult = await query(`
       SELECT COALESCE(SUM(amount), 0) as total_tree_plan
       FROM tree_plans
-      WHERE user_id = ? AND status = 'active'
+      WHERE user_id = $1 AND status = 'active'
     `, [userId]);
 
     // Get stake revenue (active stakes with interest)
     const stakeResult = await query(`
       SELECT COALESCE(SUM(amount * (1 + interest_rate)), 0) as total_stake_revenue
       FROM stakes
-      WHERE user_id = ? AND status = 'active'
+      WHERE user_id = $1 AND status = 'active'
     `, [userId]);
 
     // Get savings with interest
     const savingsResult = await query(`
       SELECT COALESCE(SUM(amount * (1 + interest_rate)), 0) as total_savings
       FROM savings
-      WHERE user_id = ? AND status = 'active'
+      WHERE user_id = $1 AND status = 'active'
     `, [userId]);
 
     // Get loan repayments (to subtract)
     const loanRepaymentResult = await query(`
       SELECT COALESCE(SUM(amount), 0) as total_loan_repayments
       FROM loan_repayments
-      WHERE user_id = ? AND status = 'completed'
+      WHERE user_id = $1 AND status = 'completed'
     `, [userId]);
 
     // Get bonuses
     const bonusResult = await query(`
       SELECT COALESCE(SUM(amount), 0) as total_bonuses
       FROM bonuses
-      WHERE userId = ?
+      WHERE userId = $1
     `, [userId]);
 
     const treePlan = parseFloat(treePlanResult.rows[0].total_tree_plan) || 0;
@@ -119,7 +119,7 @@ router.put('/users/:id/approve', adminMiddleware, async (req, res) => {
   const newStatus = approve ? 'approved' : 'rejected';
 
   try {
-    await query(`UPDATE users SET status = ? WHERE id = ?`, [newStatus, userId]);
+    await query(`UPDATE users SET status = $1 WHERE id = $2`, [newStatus, userId]);
     res.json({ message: `User ${approve ? 'approved' : 'rejected'} successfully` });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
@@ -133,7 +133,7 @@ router.get('/users', adminMiddleware, async (req, res) => {
     let params = [];
 
     if (search) {
-      queryStr += ` WHERE firstname LIKE ? OR lastname LIKE ? OR phone LIKE ? OR email LIKE ? OR username LIKE ? OR CAST(id AS TEXT) LIKE ?`;
+      queryStr += ` WHERE firstname ILIKE $1 OR lastname ILIKE $2 OR phone ILIKE $3 OR email ILIKE $4 OR username ILIKE $5 OR CAST(id AS TEXT) ILIKE $6`;
       params = [`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`];
     }
 
@@ -153,7 +153,7 @@ router.get('/users/:id/details', adminMiddleware, async (req, res) => {
     // Get user basic info
     const userResult = await query(`
       SELECT id, firstname, lastname, phone, email, username, referralId, idNumber, province, district, sector, cell, village, role, status, profile_picture
-      FROM users WHERE id = ?
+      FROM users WHERE id = $1
     `, [userId]);
 
     if (userResult.rows.length === 0) {
@@ -166,7 +166,7 @@ router.get('/users/:id/details', adminMiddleware, async (req, res) => {
     const balanceCalculation = await calculateEstimatedBalance(userId);
 
     // Update user's estimated balance in database
-    await query(`UPDATE users SET estimated_balance = ? WHERE id = ?`,
+    await query(`UPDATE users SET estimated_balance = $1 WHERE id = $2`,
       [balanceCalculation.estimatedBalance, userId]);
 
     // Add calculated balance to user object
@@ -175,37 +175,37 @@ router.get('/users/:id/details', adminMiddleware, async (req, res) => {
 
     // Get user's transactions
     const transactionsResult = await query(`
-      SELECT * FROM transactions WHERE user_id = ? ORDER BY created_at DESC
+      SELECT * FROM transactions WHERE user_id = $1 ORDER BY created_at DESC
     `, [userId]);
 
     // Get user's stakes
     const stakesResult = await query(`
-      SELECT * FROM stakes WHERE user_id = ? ORDER BY start_date DESC
+      SELECT * FROM stakes WHERE user_id = $1 ORDER BY start_date DESC
     `, [userId]);
 
     // Get user's withdrawals
     const withdrawalsResult = await query(`
-      SELECT * FROM withdrawals WHERE user_id = ? ORDER BY request_date DESC
+      SELECT * FROM withdrawals WHERE user_id = $1 ORDER BY request_date DESC
     `, [userId]);
 
     // Get user's bonuses
     const bonusesResult = await query(`
-      SELECT * FROM bonuses WHERE userId = ? ORDER BY created_at DESC
+      SELECT * FROM bonuses WHERE userId = $1 ORDER BY created_at DESC
     `, [userId]);
 
     // Get user's tree plans
     const treePlansResult = await query(`
-      SELECT * FROM tree_plans WHERE user_id = ? ORDER BY created_at DESC
+      SELECT * FROM tree_plans WHERE user_id = $1 ORDER BY created_at DESC
     `, [userId]);
 
     // Get user's savings
     const savingsResult = await query(`
-      SELECT * FROM savings WHERE user_id = ? ORDER BY created_at DESC
+      SELECT * FROM savings WHERE user_id = $1 ORDER BY created_at DESC
     `, [userId]);
 
     // Get user's loan repayments
     const loanRepaymentsResult = await query(`
-      SELECT * FROM loan_repayments WHERE user_id = ? ORDER BY payment_date DESC
+      SELECT * FROM loan_repayments WHERE user_id = $1 ORDER BY payment_date DESC
     `, [userId]);
 
     res.json({
@@ -253,10 +253,10 @@ router.put('/transactions/:id/approve', adminMiddleware, async (req, res) => {
   const newStatus = approve ? 'approved' : 'rejected';
 
   try {
-    await query(`UPDATE transactions SET status = ? WHERE id = ?`, [newStatus, txnId]);
+    await query(`UPDATE transactions SET status = $1 WHERE id = $2`, [newStatus, txnId]);
 
     if (approve) {
-      const txnResult = await query(`SELECT user_id, type, amount FROM transactions WHERE id = ?`, [txnId]);
+      const txnResult = await query(`SELECT user_id, type, amount FROM transactions WHERE id = $1`, [txnId]);
       const txn = txnResult.rows[0];
 
       if (txn) {
@@ -264,34 +264,34 @@ router.put('/transactions/:id/approve', adminMiddleware, async (req, res) => {
         if (txn.type === 'tree_plan') {
           // Add to tree_plans table
           const treesPlanted = Math.floor(txn.amount / 100); // Assuming 100 RWF per tree
-          await query(`INSERT INTO tree_plans (user_id, amount, trees_planted, status) VALUES (?, ?, ?, ?)`,
+          await query(`INSERT INTO tree_plans (user_id, amount, trees_planted, status) VALUES ($1, $2, $3, $4)`,
             [txn.user_id, txn.amount, treesPlanted, 'active']);
 
           // Add referral bonus if amount >= 1000
           if (txn.amount >= 1000) {
             const bonusAmount = Math.floor(txn.amount * 0.1);
-            await query(`INSERT INTO bonuses (userId, amount, description) VALUES (?, ?, ?)`,
+            await query(`INSERT INTO bonuses (userId, amount, description) VALUES ($1, $2, $3)`,
               [txn.user_id, bonusAmount, `Referral bonus for tree plan transaction #${txnId}`]);
           }
         } else if (txn.type === 'saving') {
           // Add to savings table
           const maturityDate = new Date();
           maturityDate.setFullYear(maturityDate.getFullYear() + 1); // 1 year maturity
-          await query(`INSERT INTO savings (user_id, amount, maturity_date, status) VALUES (?, ?, ?, ?)`,
+          await query(`INSERT INTO savings (user_id, amount, maturity_date, status) VALUES ($1, $2, $3, $4)`,
             [txn.user_id, txn.amount, maturityDate.toISOString(), 'active']);
         } else if (txn.type === 'stake') {
           // Stakes are already handled in the stakes table, just ensure they're active
-          await query(`UPDATE stakes SET status = 'active' WHERE user_id = ? AND amount = ? AND status = 'pending'`,
+          await query(`UPDATE stakes SET status = 'active' WHERE user_id = $1 AND amount = $2 AND status = 'pending'`,
             [txn.user_id, txn.amount]);
         } else if (txn.type === 'loan_repayment') {
           // Add to loan_repayments table (this will reduce the balance)
-          await query(`INSERT INTO loan_repayments (user_id, amount, status) VALUES (?, ?, ?)`,
+          await query(`INSERT INTO loan_repayments (user_id, amount, status) VALUES ($1, $2, $3)`,
             [txn.user_id, txn.amount, 'completed']);
         }
 
         // Recalculate estimated balance after transaction approval
         const balanceCalculation = await calculateEstimatedBalance(txn.user_id);
-        await query(`UPDATE users SET estimated_balance = ? WHERE id = ?`,
+        await query(`UPDATE users SET estimated_balance = $1 WHERE id = $2`,
           [balanceCalculation.estimatedBalance, txn.user_id]);
 
         // Send notification message to user
@@ -304,7 +304,7 @@ router.put('/transactions/:id/approve', adminMiddleware, async (req, res) => {
       }
     } else {
       // Send rejection message
-      const txnResult = await query(`SELECT user_id, type, amount FROM transactions WHERE id = ?`, [txnId]);
+      const txnResult = await query(`SELECT user_id, type, amount FROM transactions WHERE id = $1`, [txnId]);
       const txn = txnResult.rows[0];
 
       if (txn) {
@@ -341,7 +341,7 @@ router.get('/transactions', adminMiddleware, async (req, res) => {
 router.get('/users/:id/transactions', adminMiddleware, async (req, res) => {
   const userId = req.params.id;
   try {
-    const result = await query(`SELECT * FROM transactions WHERE user_id = ? ORDER BY created_at DESC`, [userId]);
+    const result = await query(`SELECT * FROM transactions WHERE user_id = $1 ORDER BY created_at DESC`, [userId]);
     const rows = result.rows;
     res.json(rows);
   } catch (err) {
@@ -379,11 +379,11 @@ router.put('/withdrawals/:id/approve', adminMiddleware, async (req, res) => {
   const processedDate = new Date().toISOString();
 
   try {
-    await query(`UPDATE withdrawals SET status = ?, processed_date = ? WHERE id = ?`,
+    await query(`UPDATE withdrawals SET status = $1, processed_date = $2 WHERE id = $3`,
       [newStatus, processedDate, withdrawalId]);
 
     // Send notification message to user
-    const withdrawalResult = await query(`SELECT user_id, amount FROM withdrawals WHERE id = ?`, [withdrawalId]);
+    const withdrawalResult = await query(`SELECT user_id, amount FROM withdrawals WHERE id = $1`, [withdrawalId]);
     const withdrawal = withdrawalResult.rows[0];
 
     if (withdrawal) {
@@ -393,7 +393,7 @@ router.put('/withdrawals/:id/approve', adminMiddleware, async (req, res) => {
 
       await query(
         `INSERT INTO messages (user_id, admin_id, subject, message, type, activity_type, activity_id)
-         VALUES (?, ?, ?, ?, ?, $6, $7)`,
+          VALUES ($1, $2, $3, $4, $5, $6, $7)`,
         [withdrawal.user_id, req.user.id, `Withdrawal ${approve ? 'Approved' : 'Rejected'}`, messageText, 'notification', 'withdrawal', withdrawalId]
       );
     }
@@ -416,7 +416,7 @@ router.post('/messages', adminMiddleware, async (req, res) => {
   try {
     const result = await query(
       `INSERT INTO messages (user_id, admin_id, subject, message, type, activity_type, activity_id)
-       VALUES (?, ?, ?, ?, ?, $6, $7)`,
+        VALUES ($1, $2, $3, $4, $5, $6, $7)`,
       [userId, adminId, subject, message, type || 'notification', activityType, activityId]
     );
     res.json({ message: 'Message sent successfully', id: result.lastID });
@@ -432,7 +432,7 @@ router.get('/users/:id/messages', adminMiddleware, async (req, res) => {
       SELECT m.*, u.firstname as admin_firstname, u.lastname as admin_lastname
       FROM messages m
       LEFT JOIN users u ON m.admin_id = u.id
-      WHERE m.user_id = ?
+      WHERE m.user_id = $1
       ORDER BY m.created_at DESC
     `, [userId]);
     const rows = result.rows;
@@ -467,7 +467,7 @@ router.get('/messages', adminMiddleware, async (req, res) => {
 router.put('/messages/:id/read', adminMiddleware, async (req, res) => {
   const messageId = req.params.id;
   try {
-    await query(`UPDATE messages SET is_read = true WHERE id = ?`, [messageId]);
+    await query(`UPDATE messages SET is_read = true WHERE id = $1`, [messageId]);
     res.json({ message: 'Message marked as read' });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
