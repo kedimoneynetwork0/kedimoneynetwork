@@ -6,63 +6,59 @@ const { adminMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Function to calculate estimated balance for a user
+// Function to calculate estimated balance for a user (matching user dashboard calculation)
 async function calculateEstimatedBalance(userId) {
   try {
-    // Get tree plan investments
-    const treePlanResult = await query(`
-      SELECT COALESCE(SUM(amount), 0) as total_tree_plan
-      FROM tree_plans
-      WHERE user_id = $1 AND status = 'active'
-    `, [userId]);
+    // Single optimized query for balance calculation (same as user dashboard)
+    const balanceQuery = await query(`
+      SELECT
+        -- Deposits: tree_plan + saving + deposit + investment (only approved)
+        (SELECT COALESCE(SUM(amount), 0) FROM transactions
+         WHERE user_id = $1 AND status = 'approved'
+         AND type IN ('tree_plan', 'saving', 'deposit', 'investment')) as total_deposits,
 
-    // Get stake revenue (active stakes with interest)
-    const stakeResult = await query(`
-      SELECT COALESCE(SUM(amount * (1 + interest_rate)), 0) as total_stake_revenue
-      FROM stakes
-      WHERE user_id = $1 AND status = 'active'
-    `, [userId]);
+        -- Withdrawals
+        (SELECT COALESCE(SUM(amount), 0) FROM transactions
+         WHERE user_id = $2 AND status = 'approved' AND type = 'withdrawal') as total_withdrawals,
 
-    // Get savings with interest
-    const savingsResult = await query(`
-      SELECT COALESCE(SUM(amount * (1 + interest_rate)), 0) as total_savings
-      FROM savings
-      WHERE user_id = $1 AND status = 'active'
-    `, [userId]);
+        -- Loan repayments
+        (SELECT COALESCE(SUM(amount), 0) FROM transactions
+         WHERE user_id = $3 AND status = 'approved' AND type = 'loan') as total_loans,
 
-    // Get loan repayments (to subtract)
-    const loanRepaymentResult = await query(`
-      SELECT COALESCE(SUM(amount), 0) as total_loan_repayments
-      FROM loan_repayments
-      WHERE user_id = $1 AND status = 'completed'
-    `, [userId]);
+        -- Active stakes and interest
+        (SELECT COALESCE(SUM(amount), 0) FROM stakes
+         WHERE user_id = $4 AND status = 'active') as total_stakes,
 
-    // Get bonuses
-    const bonusResult = await query(`
-      SELECT COALESCE(SUM(amount), 0) as total_bonuses
-      FROM bonuses
-      WHERE userId = $1
-    `, [userId]);
+        (SELECT COALESCE(SUM(amount * interest_rate * (stake_period / 365.0)), 0) FROM stakes
+         WHERE user_id = $5 AND status = 'active') as total_interest,
 
-    const treePlan = parseFloat(treePlanResult.rows[0].total_tree_plan) || 0;
-    const stakeRevenue = parseFloat(stakeResult.rows[0].total_stake_revenue) || 0;
-    const savings = parseFloat(savingsResult.rows[0].total_savings) || 0;
-    const loanRepayments = parseFloat(loanRepaymentResult.rows[0].total_loan_repayments) || 0;
-    const bonuses = parseFloat(bonusResult.rows[0].total_bonuses) || 0;
+        -- Referral bonus (5,000 per approved referral)
+        (SELECT COUNT(*) * 5000 FROM users WHERE referralId IS NOT NULL AND id = $6) as referral_bonus
+    `, [userId, userId, userId, userId, userId, userId]);
 
-    // Calculate estimated balance: (Tree Plan + Stake Revenue + Savings + Bonuses) - Loan Repayments
-    const estimatedBalance = (treePlan + stakeRevenue + savings + bonuses) - loanRepayments;
+    const calc = balanceQuery.rows[0];
+
+    const totalDeposits = parseFloat(calc.total_deposits) || 0;
+    const totalWithdrawals = parseFloat(calc.total_withdrawals) || 0;
+    const totalLoans = parseFloat(calc.total_loans) || 0;
+    const totalStakes = parseFloat(calc.total_stakes) || 0;
+    const totalInterest = parseFloat(calc.total_interest) || 0;
+    const referralBonus = parseFloat(calc.referral_bonus) || 0;
+
+    // Balance calculation: Deposits + Referral Bonus + Stakes Interest - Withdrawals - Loan Repayments
+    const estimatedBalance = totalDeposits + referralBonus + totalInterest - totalWithdrawals - totalLoans;
 
     return {
       estimatedBalance: Math.max(0, estimatedBalance), // Ensure non-negative
       breakdown: {
-        treePlan,
-        stakeRevenue,
-        savings,
-        bonuses,
-        loanRepayments,
-        totalCredits: treePlan + stakeRevenue + savings + bonuses,
-        totalDebits: loanRepayments
+        totalDeposits,
+        totalWithdrawals,
+        totalLoans,
+        totalStakes,
+        totalInterest,
+        referralBonus,
+        totalCredits: totalDeposits + referralBonus + totalInterest,
+        totalDebits: totalWithdrawals + totalLoans
       }
     };
   } catch (error) {
@@ -152,7 +148,7 @@ router.get('/users/:id/details', adminMiddleware, async (req, res) => {
   try {
     // Get user basic info
     const userResult = await query(`
-      SELECT id, firstname, lastname, phone, email, username, referralId, idNumber, province, district, sector, cell, village, role, status, profile_picture
+      SELECT id, firstname, lastname, phone, email, username, referralId, idNumber, province, district, sector, cell, village, role, status, profile_picture, created_at, updated_at
       FROM users WHERE id = $1
     `, [userId]);
 
@@ -208,6 +204,15 @@ router.get('/users/:id/details', adminMiddleware, async (req, res) => {
       SELECT * FROM loan_repayments WHERE user_id = $1 ORDER BY payment_date DESC
     `, [userId]);
 
+    // Get user's messages
+    const messagesResult = await query(`
+      SELECT m.*, u.firstname as admin_firstname, u.lastname as admin_lastname
+      FROM messages m
+      LEFT JOIN users u ON m.admin_id = u.id
+      WHERE m.user_id = $1
+      ORDER BY m.created_at DESC
+    `, [userId]);
+
     res.json({
       user: user,
       balanceCalculation: balanceCalculation,
@@ -217,11 +222,130 @@ router.get('/users/:id/details', adminMiddleware, async (req, res) => {
       bonuses: bonusesResult.rows,
       treePlans: treePlansResult.rows,
       savings: savingsResult.rows,
-      loanRepayments: loanRepaymentsResult.rows
+      loanRepayments: loanRepaymentsResult.rows,
+      messages: messagesResult.rows
     });
   } catch (err) {
     console.error('Error getting user details:', err);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Update user information
+router.put('/users/:id/update', adminMiddleware, upload.single('profilePicture'), async (req, res) => {
+  const userId = req.params.id;
+  const {
+    firstname, lastname, phone, email, username, idNumber,
+    province, district, sector, cell, village, status, role
+  } = req.body;
+
+  try {
+    // Check if user exists
+    const userCheck = await query('SELECT id FROM users WHERE id = $1', [userId]);
+    if (userCheck.rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Build update query dynamically
+    let updateFields = [];
+    let updateValues = [];
+    let paramIndex = 1;
+
+    if (firstname !== undefined) {
+      updateFields.push(`firstname = $${paramIndex++}`);
+      updateValues.push(firstname);
+    }
+    if (lastname !== undefined) {
+      updateFields.push(`lastname = $${paramIndex++}`);
+      updateValues.push(lastname);
+    }
+    if (phone !== undefined) {
+      updateFields.push(`phone = $${paramIndex++}`);
+      updateValues.push(phone);
+    }
+    if (email !== undefined) {
+      updateFields.push(`email = $${paramIndex++}`);
+      updateValues.push(email);
+    }
+    if (username !== undefined) {
+      updateFields.push(`username = $${paramIndex++}`);
+      updateValues.push(username);
+    }
+    if (idNumber !== undefined) {
+      updateFields.push(`idNumber = $${paramIndex++}`);
+      updateValues.push(idNumber);
+    }
+    if (province !== undefined) {
+      updateFields.push(`province = $${paramIndex++}`);
+      updateValues.push(province);
+    }
+    if (district !== undefined) {
+      updateFields.push(`district = $${paramIndex++}`);
+      updateValues.push(district);
+    }
+    if (sector !== undefined) {
+      updateFields.push(`sector = $${paramIndex++}`);
+      updateValues.push(sector);
+    }
+    if (cell !== undefined) {
+      updateFields.push(`cell = $${paramIndex++}`);
+      updateValues.push(cell);
+    }
+    if (village !== undefined) {
+      updateFields.push(`village = $${paramIndex++}`);
+      updateValues.push(village);
+    }
+    if (status !== undefined) {
+      updateFields.push(`status = $${paramIndex++}`);
+      updateValues.push(status);
+    }
+    if (role !== undefined) {
+      updateFields.push(`role = $${paramIndex++}`);
+      updateValues.push(role);
+    }
+
+    // Handle profile picture upload
+    if (req.file) {
+      const profilePictureUrl = `/uploads/${req.file.filename}`;
+      updateFields.push(`profile_picture = $${paramIndex++}`);
+      updateValues.push(profilePictureUrl);
+    }
+
+    // Add updated_at timestamp
+    updateFields.push(`updated_at = NOW()`);
+
+    if (updateFields.length === 0) {
+      return res.status(400).json({ message: 'No fields to update' });
+    }
+
+    // Add user ID at the end
+    updateValues.push(userId);
+
+    const updateQuery = `
+      UPDATE users
+      SET ${updateFields.join(', ')}
+      WHERE id = $${paramIndex}
+      RETURNING id, firstname, lastname, phone, email, username, idNumber, province, district, sector, cell, village, role, status, profile_picture, updated_at
+    `;
+
+    const result = await query(updateQuery, updateValues);
+
+    // Recalculate balance after update
+    const balanceCalculation = await calculateEstimatedBalance(userId);
+    await query(`UPDATE users SET estimated_balance = $1 WHERE id = $2`,
+      [balanceCalculation.estimatedBalance, userId]);
+
+    res.json({
+      message: 'User updated successfully',
+      user: {
+        ...result.rows[0],
+        estimated_balance: balanceCalculation.estimatedBalance,
+        balance_breakdown: balanceCalculation.breakdown
+      }
+    });
+  } catch (err) {
+    console.error('Error updating user:', err);
+    res.status(500).json({ message: 'Server error updating user' });
   }
 });
 
