@@ -28,7 +28,8 @@ import {
   downloadTransactionsCSV,
   getAllMessagesAdmin,
   markMessageAsReadAdmin,
-  sendMessageToUser
+  sendMessageToUser,
+  getUserMessages
 } from '../api';
 import {
   calculateAdminMetrics,
@@ -37,15 +38,22 @@ import {
   getTransactionStatuses,
   formatCurrency
 } from '../utils/calculations';
-import './admin-dashboard.css'; // Import original dashboard styles
+import '../styles/dashboard.css'; // Import unified dashboard styles
+
+// Add Poppins font
+const fontLink = document.createElement('link');
+fontLink.href = 'https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap';
+fontLink.rel = 'stylesheet';
+document.head.appendChild(fontLink);
 
 const KediAdminDashboard = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [currentSection, setCurrentSection] = useState('overview');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+   const [sidebarOpen, setSidebarOpen] = useState(false);
+   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+   const [notificationsCollapsed, setNotificationsCollapsed] = useState(true);
+   const [currentSection, setCurrentSection] = useState('overview');
+   const [isLoading, setIsLoading] = useState(false);
+   const [error, setError] = useState(null);
+   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   // Data states
   const [stats, setStats] = useState({
@@ -62,6 +70,7 @@ const KediAdminDashboard = () => {
   const [news, setNews] = useState([]);
   const [pendingWithdrawals, setPendingWithdrawals] = useState([]);
   const [messages, setMessages] = useState([]);
+  const [userMessages, setUserMessages] = useState([]);
   const [message, setMessage] = useState('');
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedUser, setSelectedUser] = useState(null);
@@ -131,6 +140,7 @@ const KediAdminDashboard = () => {
     content: '',
     media: null
   });
+  const [editingNews, setEditingNews] = useState(null);
 
   const navigationItems = [
     { id: 'overview', label: 'Overview', icon: FaTachometerAlt },
@@ -152,11 +162,16 @@ const KediAdminDashboard = () => {
     requestNotificationPermission();
 
     const handleResize = () => {
-      if (window.innerWidth > 768) {
-        setSidebarOpen(false);
+      if (window.innerWidth <= 768) {
+        setSidebarCollapsed(true); // Collapsed by default on mobile
+        setSidebarOpen(false); // Closed by default on mobile
+      } else {
+        setSidebarCollapsed(false); // Not collapsed on desktop
+        setSidebarOpen(false); // Closed by default on desktop
       }
     };
 
+    handleResize();
     window.addEventListener('resize', handleResize);
 
     // Set up real-time notification polling
@@ -558,6 +573,10 @@ const KediAdminDashboard = () => {
 
   const toggleSidebarCollapse = () => {
     setSidebarCollapsed(!sidebarCollapsed);
+  };
+
+  const toggleNotificationsCollapse = () => {
+    setNotificationsCollapsed(!notificationsCollapsed);
   };
 
   const showSection = (section) => {
@@ -1770,270 +1789,151 @@ const KediAdminDashboard = () => {
   }, [transactionFilters, advancedSearch]);
 
   return (
-    <div className="min-h-screen bg-[#f8f9fa] font-['Poppins',sans-serif]">
-      {/* Top Navbar */}
-      <nav className="bg-white shadow-lg border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Left side - Logo and app name */}
-            <div className="flex items-center">
-              <div className="flex-shrink-0 flex items-center">
-                <div className="w-8 h-8 bg-[#28a745] rounded-lg flex items-center justify-center mr-3">
-                  <span className="text-white font-bold text-sm">KEDI</span>
-                </div>
-                <h1 className="text-lg sm:text-xl font-bold text-[#1c3c2e] hidden sm:block">
-                  KEDI BUSINESS & AGRI FUNDS
-                </h1>
-                <h1 className="text-lg font-bold text-[#1c3c2e] sm:hidden">
-                  KEDI
-                </h1>
-              </div>
-            </div>
+   <div className="dashboard-container">
+     <>
+       {/* Mobile Collapse Button - Fixed at top */}
+       <button
+         className="fixed top-4 left-4 z-50 md:hidden bg-green-600 text-white p-2 rounded-lg shadow-lg hover:bg-green-700 transition-colors"
+         onClick={toggleSidebar}
+         aria-label="Toggle sidebar"
+       >
+         <FaBars size={20} />
+       </button>
 
-            {/* Right side - User dropdown */}
-            <div className="flex items-center space-x-2 sm:space-x-4">
-              {/* Notifications - Hidden on mobile */}
-              <div className="relative hidden sm:block">
-                <button
-                  onClick={() => setShowNotifications(!showNotifications)}
-                  className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#28a745] focus:ring-offset-2"
-                  title="Notifications"
-                >
-                  <FaBell size={20} />
-                  {unreadNotifications > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
-                      {unreadNotifications > 99 ? '99+' : unreadNotifications}
-                    </span>
-                  )}
-                </button>
+       {/* Top Navbar */}
+       <nav className="navbar">
+         <div className="navbar-left">
+           <div className="navbar-brand">
+             <div className="navbar-brand-logo">KEDI</div>
+             <span>Business Dashboard</span>
+           </div>
+         </div>
 
-                {/* Notification Dropdown */}
-                {showNotifications && (
-                  <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-96">
-                    <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-lg">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center">
-                          <FaBell className="mr-2 text-blue-600" />
-                          Notifications
-                          {unreadNotifications > 0 && (
-                            <span className="ml-2 bg-red-500 text-white text-xs font-bold rounded-full px-2 py-1">
-                              {unreadNotifications}
-                            </span>
-                          )}
-                        </h3>
-                        {unreadNotifications > 0 && (
-                          <button
-                            onClick={markAllNotificationsAsRead}
-                            className="text-sm text-blue-600 hover:text-blue-700 font-medium underline"
-                          >
-                            Mark all read
-                          </button>
-                        )}
-                      </div>
-                    </div>
+         <div className="navbar-right">
+           <div className="navbar-welcome">
+             Welcome back, Administrator
+           </div>
+           <div className="navbar-actions">
+             <button className="btn btn-outline btn-sm">
+               <FaBell />
+             </button>
+             <div className="relative">
+               <button
+                 onClick={() => setDropdownOpen(!dropdownOpen)}
+                 className="flex items-center gap-sm bg-white hover:bg-gray-50 px-md py-sm rounded-xl transition-all shadow hover:shadow-md"
+               >
+                 <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                   <span className="text-white font-bold text-sm">A</span>
+                 </div>
+                 <div className="text-left hidden md:block">
+                   <div className="text-sm font-semibold text-primary">Admin</div>
+                   <div className="text-xs text-gray-500">Administrator</div>
+                 </div>
+                 <FaChevronDown size={12} className={`text-gray-500 transition-transform duration-300 ${dropdownOpen ? 'rotate-180' : ''}`} />
+               </button>
 
-                    <div className="max-h-96 overflow-y-auto">
-                      {notifications.length === 0 ? (
-                        <div className="p-8 text-center">
-                          <FaBell className="text-4xl text-gray-300 mx-auto mb-3" />
-                          <p className="text-gray-500">No notifications yet</p>
-                        </div>
-                      ) : (
-                        notifications.map((notification) => (
-                          <div
-                            key={notification.id}
-                            className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-all duration-200 ${
-                              !notification.read ? getNotificationPriorityColor(notification.priority) : ''
-                            } ${!notification.read ? 'border-l-4' : ''} ${
-                              notification.priority === 'high' ? 'border-l-red-500' :
-                              notification.priority === 'medium' ? 'border-l-yellow-500' : 'border-l-blue-500'
-                            }`}
-                            onClick={() => markNotificationAsRead(notification.id)}
-                          >
-                            <div className="flex items-start space-x-3">
-                              <div className={`text-xl sm:text-2xl p-2 rounded-lg ${
-                                notification.priority === 'high' ? 'bg-red-100 text-red-600' :
-                                notification.priority === 'medium' ? 'bg-yellow-100 text-yellow-600' :
-                                'bg-blue-100 text-blue-600'
-                              }`}>
-                                {getNotificationIcon(notification.type)}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between">
-                                  <h4 className={`text-sm font-semibold truncate ${
-                                    !notification.read ? 'text-gray-900' : 'text-gray-700'
-                                  }`}>
-                                    {notification.title}
-                                    {notification.priority === 'high' && (
-                                      <span className="ml-2 text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full font-medium">
-                                        HIGH
-                                      </span>
-                                    )}
-                                  </h4>
-                                  <span className="text-xs text-gray-500 ml-2 flex-shrink-0">
-                                    {getTimeAgo(notification.timestamp)}
-                                  </span>
-                                </div>
-                                <p className={`text-sm mt-1 ${
-                                  !notification.read ? 'text-gray-700' : 'text-gray-600'
-                                }`}>
-                                  {notification.message}
-                                </p>
-                                {!notification.read && (
-                                  <div className="mt-2 flex items-center">
-                                    <span className="inline-block w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-                                    <span className="text-xs text-blue-600 font-medium">New</span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
+               {dropdownOpen && (
+                 <div className="absolute right-0 mt-sm w-64 bg-white rounded-xl shadow-xl border border-gray-200 z-50 overflow-hidden">
+                   <div className="p-lg border-b border-gray-100 bg-highlight">
+                     <div className="flex items-center gap-md">
+                       <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                         <span className="text-white font-bold text-sm">A</span>
+                       </div>
+                       <div>
+                         <p className="text-sm font-semibold text-primary">Admin User</p>
+                         <p className="text-xs text-gray-600">admin@kedi.rw</p>
+                       </div>
+                     </div>
+                   </div>
+                   <div className="py-sm">
+                     <button
+                       onClick={() => showSection('settings')}
+                       className="w-full text-left px-lg py-md text-sm text-gray-700 hover:bg-highlight flex items-center transition-all hover:translate-x-1"
+                     >
+                       <FaCog className="mr-md text-accent" />
+                       <span className="font-medium">Settings</span>
+                     </button>
+                     <button
+                       onClick={logout}
+                       className="w-full text-left px-lg py-md text-sm text-red-600 hover:bg-red-50 flex items-center transition-all hover:translate-x-1"
+                     >
+                       <FaSignOutAlt className="mr-md" />
+                       <span className="font-medium">Logout</span>
+                     </button>
+                   </div>
+                 </div>
+               )}
+             </div>
+           </div>
+         </div>
+       </nav>
 
-                    <div className="p-4 border-t border-gray-200">
-                      <button className="w-full text-center text-blue-600 hover:text-blue-700 font-medium text-sm">
-                        View All Notifications
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
+       <div>
+         {/* Mobile Menu Button */}
+         <button
+           className="navbar-menu-toggle"
+           onClick={toggleSidebar}
+           aria-label="Toggle navigation menu"
+           aria-expanded={sidebarOpen}
+         >
+           <FaBars size={20} aria-hidden="true" />
+         </button>
 
-              {/* User Dropdown */}
-              <div className="relative">
-                <button
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="flex items-center space-x-2 sm:space-x-3 text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#28a745] focus:ring-offset-2 rounded-lg p-2 transition-all duration-200"
-                >
-                  <div className="w-8 h-8 bg-[#28a745] rounded-full flex items-center justify-center">
-                    <span className="text-white font-bold text-sm">A</span>
-                  </div>
-                  <span className="font-medium hidden sm:block">Admin</span>
-                  <FaChevronDown size={14} />
-                </button>
-
-                {dropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
-                    <div className="p-4 border-b border-gray-200 bg-[#f8f9fa]">
-                      <p className="text-sm font-medium text-gray-900">Admin User</p>
-                      <p className="text-sm text-gray-600">admin@kedi.rw</p>
-                    </div>
-                    <div className="py-2">
-                      <button
-                        onClick={() => showSection('settings')}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center transition-all duration-200"
-                      >
-                        <FaCog className="mr-3" />
-                        Settings
-                      </button>
-                      <button
-                        onClick={logout}
-                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center transition-all duration-200"
-                      >
-                        <FaSignOutAlt className="mr-3" />
-                        Logout
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+         {/* Sidebar - Fixed/Frozen for Admin */}
+         <aside className={`admin-sidebar ${sidebarCollapsed ? 'collapsed' : ''} ${sidebarOpen ? 'open' : ''}`}>
+        <div className="sidebar-header">
+          <div className="sidebar-title">Admin Dashboard</div>
+          <button
+            onClick={toggleSidebarCollapse}
+            className="sidebar-collapse-btn"
+            title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            <FaArrowLeft size={16} />
+          </button>
+          <div className="sidebar-subtitle">KEDI Money Network</div>
         </div>
-      </nav>
 
-      {/* Mobile Menu Button */}
-      <button
-        className="lg:hidden fixed top-20 left-4 z-50 bg-[#28a745] hover:bg-[#218838] text-white p-3 rounded-lg shadow-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#28a745] focus:ring-offset-2"
-        onClick={toggleSidebar}
-        aria-label="Toggle navigation menu"
-        aria-expanded={sidebarOpen}
-      >
-        <FaBars size={20} aria-hidden="true" />
-      </button>
-
-      {/* Sidebar */}
-      <div
-        className={`fixed inset-y-0 left-0 z-40 w-64 text-white transform transition-all duration-300 ease-in-out mt-16 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } lg:translate-x-0 lg:static lg:inset-0 ${
-          sidebarCollapsed ? 'lg:w-16' : 'lg:w-64'
-        }`}
-        style={{ backgroundColor: '#1c3c2e' }}
-        role="navigation"
-        aria-label="Main navigation"
-      >
-        <div className="flex flex-col h-full">
-          {/* Sidebar Header with Collapse Toggle */}
-          <div className="hidden lg:flex justify-end p-2 border-b border-[#28a745]">
+        <nav className="sidebar-nav">
+          {navigationItems.map((item) => (
             <button
-              onClick={toggleSidebarCollapse}
-              className="p-2 text-[#f8f9fa] hover:bg-[#28a745] rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#28a745] focus:ring-offset-2"
-              aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              key={item.id}
+              className={`sidebar-nav-link ${currentSection === item.id ? 'active' : ''}`}
+              onClick={() => showSection(item.id)}
+              aria-current={currentSection === item.id ? 'page' : undefined}
+              aria-label={`Navigate to ${item.label}`}
             >
-              <FaChevronDown
-                size={16}
-                className={`transform transition-transform duration-200 ${sidebarCollapsed ? 'rotate-90' : '-rotate-90'}`}
-              />
-            </button>
-          </div>
-
-          <nav className="flex-1 px-4 py-6 space-y-2" role="navigation" aria-label="Dashboard sections">
-            <h2 className="sr-only">Dashboard Navigation</h2>
-            {navigationItems.map((item) => (
-              <button
-                key={item.id}
-                className={`w-full flex items-center px-4 py-3 text-left rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[#1c3c2e] ${
-                  currentSection === item.id
-                    ? 'shadow-lg bg-[#28a745] text-white'
-                    : 'hover:bg-[#28a745] hover:text-white hover:shadow-md text-[#f8f9fa]'
-                } ${sidebarCollapsed ? 'lg:justify-center lg:px-2' : ''}`}
-                onClick={() => showSection(item.id)}
-                aria-current={currentSection === item.id ? 'page' : undefined}
-                aria-label={`Navigate to ${item.label}`}
-                title={sidebarCollapsed ? item.label : ''}
-              >
-                <item.icon className="text-lg flex-shrink-0" aria-hidden="true" />
-                <span className={`font-medium ml-3 ${sidebarCollapsed ? 'lg:hidden' : ''}`}>
-                  {item.label}
-                </span>
-              </button>
-            ))}
-          </nav>
-
-          <div className="p-4 border-t border-[#28a745]">
-            <button
-              className={`w-full flex items-center px-4 py-3 text-left rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-2 focus:ring-offset-[#1c3c2e] hover:bg-red-600 hover:shadow-md text-[#f8f9fa] ${
-                sidebarCollapsed ? 'lg:justify-center lg:px-2' : ''
-              }`}
-              onClick={logout}
-              aria-label="Logout from admin dashboard"
-              title={sidebarCollapsed ? 'Logout' : ''}
-            >
-              <FaSignOutAlt className="text-lg flex-shrink-0" aria-hidden="true" />
-              <span className={`font-medium ml-3 ${sidebarCollapsed ? 'lg:hidden' : ''}`}>
-                Logout
+              <span className="sidebar-nav-icon">
+                <item.icon />
               </span>
+              <span className="sidebar-nav-text">{item.label}</span>
             </button>
-          </div>
-        </div>
-      </div>
+          ))}
+        </nav>
 
-      {/* Mobile Overlay */}
-      {sidebarOpen && (
+        <div className="sidebar-footer">
+          <button
+            className="btn btn-outline w-full"
+            onClick={logout}
+            aria-label="Logout from admin dashboard"
+          >
+            <FaSignOutAlt className="mr-2" />
+            Logout
+          </button>
+        </div>
+      </aside>
+
+      {/* Mobile Overlay - Only show on desktop when sidebar is open */}
+      {sidebarOpen && window.innerWidth > 768 && (
         <div
           className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30 mt-16"
           onClick={toggleSidebar}
         ></div>
       )}
 
-      {/* Main Content */}
-      <main className={`min-h-screen pt-20 transition-all duration-300 ${
-        sidebarOpen ? 'lg:ml-64' : 'lg:ml-16'
-      } ${sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'}`} role="main">
-        <div className="p-4 sm:p-6 lg:p-8">
+      {/* Main Content - Single Column Layout */}
+      <main className={`admin-dashboard-layout ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`} role="main">
+        <div className="dashboard-main-content max-w-7xl mx-auto flex justify-center">
+          <div className="w-full max-w-6xl">
           {/* Initial Loading Skeleton */}
           {isLoading && allUsers.length === 0 && (
             <div className="space-y-6">
@@ -2091,6 +1991,7 @@ const KediAdminDashboard = () => {
             </div>
           )}
 
+          {/* Message Display */}
           {message && (
             <div className={`mb-6 p-4 rounded-lg ${
               message.includes('Error') || message.includes('error')
@@ -2112,153 +2013,211 @@ const KediAdminDashboard = () => {
         {currentSection === 'overview' && (
           <div className="space-y-6">
             {/* Welcome Section */}
-            <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow duration-300">
-              <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                    Welcome back, Admin!
-                  </h1>
-                  <p className="text-gray-600 text-lg">
-                    Here's an overview of your KEDI platform and recent activities.
-                  </p>
-                </div>
-                <div className="flex items-center space-x-4">
-                  <button
-                    onClick={loadDashboardData}
-                    disabled={isLoading}
-                    className="inline-flex items-center px-6 py-3 text-white font-medium rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:-translate-y-1"
-                    style={{ backgroundColor: '#28a745' }}
-                    onMouseEnter={(e) => !isLoading && (e.target.style.backgroundColor = '#218838')}
-                    onMouseLeave={(e) => !isLoading && (e.target.style.backgroundColor = '#28a745')}
-                  >
-                    {isLoading ? (
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                    ) : (
-                      <FaExchangeAlt className="mr-2" />
-                    )}
-                    Refresh Data
-                  </button>
+            <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-8 hover:shadow-2xl transition-all duration-500 relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-r from-green-50 via-white to-green-50 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full opacity-10 group-hover:opacity-20 transition-opacity duration-500 transform translate-x-16 -translate-y-16"></div>
+              <div className="relative z-10">
+                <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-6">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg">
+                        <FaLeaf className="text-white text-xl" />
+                      </div>
+                      <div>
+                        <h1 className="text-4xl font-bold text-gray-900 mb-1">
+                          Welcome back, Admin!
+                        </h1>
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                          <span className="text-green-600 font-semibold text-sm">System Online</span>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-gray-600 text-lg leading-relaxed">
+                      Here's an overview of your KEDI Business & Agri Funds platform and recent activities.
+                    </p>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    <button
+                      onClick={loadDashboardData}
+                      disabled={isLoading}
+                      className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-xl hover:shadow-2xl hover:-translate-y-1 hover:scale-105 group/btn"
+                      onMouseEnter={(e) => !isLoading && (e.target.style.background = 'linear-gradient(to right, #16a34a, #059669)')}
+                      onMouseLeave={(e) => !isLoading && (e.target.style.background = 'linear-gradient(to right, #22c55e, #10b981)')}
+                    >
+                      {isLoading ? (
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                      ) : (
+                        <FaExchangeAlt className="mr-3 group-hover/btn:rotate-180 transition-transform duration-300" />
+                      )}
+                      <span className="font-semibold">Refresh Data</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Overview Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-3">
-                      <div className="p-3 bg-green-100 rounded-lg">
-                        <FaUsers className="text-xl text-green-600" />
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 cursor-pointer group relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-green-50 to-emerald-50 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="p-4 bg-gradient-to-br from-green-100 to-emerald-100 rounded-2xl group-hover:scale-110 transition-transform duration-300">
+                      <FaUsers className="text-2xl text-green-600" />
+                    </div>
+                    <div className="text-right">
+                      <div className="text-3xl font-bold text-green-600 mb-1 group-hover:scale-110 transition-transform duration-300">
+                        {stats.totalUsers || 0}
                       </div>
-                      <span className="text-sm font-medium text-gray-600">Total Users</span>
+                      <span className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Total Users</span>
                     </div>
-                    <div className="text-3xl font-bold text-green-600 mb-1">
-                      {stats.totalUsers || 0}
-                    </div>
-                    <p className="text-gray-500 text-sm">
-                      Registered users
-                    </p>
+                  </div>
+                  <p className="text-gray-600 text-sm font-medium">
+                    Registered platform users
+                  </p>
+                  <div className="mt-4 flex items-center text-green-600">
+                    <span className="text-xs font-semibold">Active</span>
+                    <div className="ml-2 w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                   </div>
                 </div>
+                <div className="absolute -bottom-2 -right-2 w-20 h-20 bg-green-100 rounded-full opacity-20 group-hover:opacity-30 transition-opacity duration-300"></div>
               </div>
 
-              <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-3">
-                      <div className="p-3 bg-yellow-100 rounded-lg">
-                        <FaClock className="text-xl text-yellow-600" />
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 cursor-pointer group relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-yellow-50 to-amber-50 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="p-4 bg-gradient-to-br from-yellow-100 to-amber-100 rounded-2xl group-hover:scale-110 transition-transform duration-300">
+                      <FaClock className="text-2xl text-yellow-600" />
+                    </div>
+                    <div className="text-right">
+                      <div className="text-3xl font-bold text-yellow-600 mb-1 group-hover:scale-110 transition-transform duration-300">
+                        {stats.pendingUsers || 0}
                       </div>
-                      <span className="text-sm font-medium text-gray-600">Pending Users</span>
+                      <span className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Pending Users</span>
                     </div>
-                    <div className="text-3xl font-bold text-yellow-600 mb-1">
-                      {stats.pendingUsers || 0}
-                    </div>
-                    <p className="text-gray-500 text-sm">
-                      Awaiting approval
-                    </p>
+                  </div>
+                  <p className="text-gray-600 text-sm font-medium">
+                    Awaiting approval
+                  </p>
+                  <div className="mt-4 flex items-center text-yellow-600">
+                    <span className="text-xs font-semibold">Requires Action</span>
+                    <div className="ml-2 w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
                   </div>
                 </div>
+                <div className="absolute -bottom-2 -right-2 w-20 h-20 bg-yellow-100 rounded-full opacity-20 group-hover:opacity-30 transition-opacity duration-300"></div>
               </div>
 
-              <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-3">
-                      <div className="p-3 bg-blue-100 rounded-lg">
-                        <FaExchangeAlt className="text-xl text-blue-600" />
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 cursor-pointer group relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-50 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="p-4 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-2xl group-hover:scale-110 transition-transform duration-300">
+                      <FaExchangeAlt className="text-2xl text-blue-600" />
+                    </div>
+                    <div className="text-right">
+                      <div className="text-3xl font-bold text-blue-600 mb-1 group-hover:scale-110 transition-transform duration-300">
+                        {stats.totalTransactions || 0}
                       </div>
-                      <span className="text-sm font-medium text-gray-600">Total Transactions</span>
+                      <span className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Transactions</span>
                     </div>
-                    <div className="text-3xl font-bold text-blue-600 mb-1">
-                      {stats.totalTransactions || 0}
-                    </div>
-                    <p className="text-gray-500 text-sm">
-                      All transactions
-                    </p>
+                  </div>
+                  <p className="text-gray-600 text-sm font-medium">
+                    Total processed transactions
+                  </p>
+                  <div className="mt-4 flex items-center text-blue-600">
+                    <span className="text-xs font-semibold">Processed</span>
+                    <div className="ml-2 w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
                   </div>
                 </div>
+                <div className="absolute -bottom-2 -right-2 w-20 h-20 bg-blue-100 rounded-full opacity-20 group-hover:opacity-30 transition-opacity duration-300"></div>
               </div>
 
-              <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-3">
-                      <div className="p-3 bg-purple-100 rounded-lg">
-                        <FaChartLine className="text-xl text-purple-600" />
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 cursor-pointer group relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-50 to-violet-50 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="p-4 bg-gradient-to-br from-purple-100 to-violet-100 rounded-2xl group-hover:scale-110 transition-transform duration-300">
+                      <FaChartLine className="text-2xl text-purple-600" />
+                    </div>
+                    <div className="text-right">
+                      <div className="text-3xl font-bold text-purple-600 mb-1 group-hover:scale-110 transition-transform duration-300">
+                        {formatCurrency(stats.totalRevenue || 0)}
                       </div>
-                      <span className="text-sm font-medium text-gray-600">Total Revenue</span>
+                      <span className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Revenue</span>
                     </div>
-                    <div className="text-3xl font-bold text-purple-600 mb-1">
-                      {formatCurrency(stats.totalRevenue || 0)} RWF
-                    </div>
-                    <p className="text-gray-500 text-sm">
-                      Net revenue
-                    </p>
+                  </div>
+                  <p className="text-gray-600 text-sm font-medium">
+                    Total platform revenue
+                  </p>
+                  <div className="mt-4 flex items-center text-purple-600">
+                    <span className="text-xs font-semibold">RWF</span>
+                    <div className="ml-2 w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
                   </div>
                 </div>
+                <div className="absolute -bottom-2 -right-2 w-20 h-20 bg-purple-100 rounded-full opacity-20 group-hover:opacity-30 transition-opacity duration-300"></div>
               </div>
             </div>
 
             {/* Quick Actions */}
-            <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow duration-300">
-              <h3 className="text-xl font-semibold text-gray-900 mb-6">Quick Actions</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <button
-                  onClick={() => showSection('users')}
-                  className="flex items-center justify-center px-6 py-4 text-white font-medium rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1"
-                  style={{ backgroundColor: '#28a745' }}
-                  onMouseEnter={(e) => e.target.style.backgroundColor = '#218838'}
-                  onMouseLeave={(e) => e.target.style.backgroundColor = '#28a745'}
-                >
-                  <FaUsers className="mr-2" />
-                  Manage Users
-                </button>
+            <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-8 hover:shadow-2xl transition-all duration-500 relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-50 via-white to-purple-50 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="absolute top-0 left-0 w-24 h-24 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full opacity-10 group-hover:opacity-20 transition-opacity duration-500 transform -translate-x-12 -translate-y-12"></div>
+              <div className="relative z-10">
+                <div className="flex items-center gap-4 mb-8">
+                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+                    <FaCog className="text-white text-lg" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-gray-900">Quick Actions</h3>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <button
+                    onClick={() => showSection('users')}
+                    className="group/btn flex items-center justify-center px-8 py-6 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-2xl transition-all duration-300 shadow-xl hover:shadow-2xl hover:-translate-y-2 hover:scale-105 relative overflow-hidden"
+                    onMouseEnter={(e) => e.target.style.background = 'linear-gradient(to right, #16a34a, #059669)'}
+                    onMouseLeave={(e) => e.target.style.background = 'linear-gradient(to right, #22c55e, #10b981)'}
+                  >
+                    <div className="absolute inset-0 bg-white opacity-0 group-hover/btn:opacity-20 transition-opacity duration-300"></div>
+                    <div className="relative z-10 flex items-center">
+                      <FaUsers className="mr-3 text-xl group-hover/btn:scale-110 transition-transform duration-300" />
+                      <span className="font-semibold">Manage Users</span>
+                    </div>
+                  </button>
 
-                <button
-                  onClick={() => showSection('pending')}
-                  className="flex items-center justify-center px-6 py-4 bg-yellow-600 hover:bg-yellow-700 text-white font-medium rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1"
-                >
-                  <FaClock className="mr-2" />
-                  Approve Pending
-                </button>
+                  <button
+                    onClick={() => showSection('pending')}
+                    className="group/btn flex items-center justify-center px-8 py-6 bg-gradient-to-r from-yellow-500 to-amber-600 text-white font-semibold rounded-2xl transition-all duration-300 shadow-xl hover:shadow-2xl hover:-translate-y-2 hover:scale-105 relative overflow-hidden"
+                  >
+                    <div className="absolute inset-0 bg-white opacity-0 group-hover/btn:opacity-20 transition-opacity duration-300"></div>
+                    <div className="relative z-10 flex items-center">
+                      <FaClock className="mr-3 text-xl group-hover/btn:scale-110 transition-transform duration-300" />
+                      <span className="font-semibold">Approve Pending</span>
+                    </div>
+                  </button>
 
-                <button
-                  onClick={() => showSection('transactions')}
-                  className="flex items-center justify-center px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1"
-                >
-                  <FaExchangeAlt className="mr-2" />
-                  View Transactions
-                </button>
+                  <button
+                    onClick={() => showSection('transactions')}
+                    className="group/btn flex items-center justify-center px-8 py-6 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold rounded-2xl transition-all duration-300 shadow-xl hover:shadow-2xl hover:-translate-y-2 hover:scale-105 relative overflow-hidden"
+                  >
+                    <div className="absolute inset-0 bg-white opacity-0 group-hover/btn:opacity-20 transition-opacity duration-300"></div>
+                    <div className="relative z-10 flex items-center">
+                      <FaExchangeAlt className="mr-3 text-xl group-hover/btn:scale-110 transition-transform duration-300" />
+                      <span className="font-semibold">View Transactions</span>
+                    </div>
+                  </button>
 
-                <button
-                  onClick={() => showSection('announcements')}
-                  className="flex items-center justify-center px-6 py-4 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1"
-                >
-                  <FaBullhorn className="mr-2" />
-                  Post Announcement
-                </button>
+                  <button
+                    onClick={() => showSection('announcements')}
+                    className="group/btn flex items-center justify-center px-8 py-6 bg-gradient-to-r from-purple-500 to-violet-600 text-white font-semibold rounded-2xl transition-all duration-300 shadow-xl hover:shadow-2xl hover:-translate-y-2 hover:scale-105 relative overflow-hidden"
+                  >
+                    <div className="absolute inset-0 bg-white opacity-0 group-hover/btn:opacity-20 transition-opacity duration-300"></div>
+                    <div className="relative z-10 flex items-center">
+                      <FaBullhorn className="mr-3 text-xl group-hover/btn:scale-110 transition-transform duration-300" />
+                      <span className="font-semibold">Post Announcement</span>
+                    </div>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -2409,7 +2368,7 @@ const KediAdminDashboard = () => {
                   <div className="text-sm text-gray-600">
                     {applyAdvancedFilters(allTransactions).length} of {allTransactions.length} transactions match filters
                   </div>
-                  <div className="flex space-x-2">
+                  <div className="flex space-x-4 flex-nowrap">
                     <button
                       onClick={() => {
                         setAdvancedSearch({
@@ -2534,181 +2493,260 @@ const KediAdminDashboard = () => {
             </div>
 
             {/* Enhanced Analytics Overview */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-6">
-                <h3 className="text-2xl font-semibold text-gray-900">Advanced Analytics Dashboard</h3>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600">Last 12 months</span>
-                  <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
-                {/* User Registration Trend */}
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-6 border border-blue-100">
-                  <div className="flex items-center justify-between mb-4">
-                    <h4 className="text-lg font-semibold text-gray-900">User Growth Trend</h4>
-                    <div className="text-sm text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
-                      +{allUsers.length} total users
+            <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-8 relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-white to-purple-50 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full opacity-10 group-hover:opacity-20 transition-opacity duration-500 transform translate-x-20 -translate-y-20"></div>
+              <div className="relative z-10">
+                <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-8">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+                      <FaChartLine className="text-white text-xl" />
                     </div>
+                    <h3 className="text-3xl font-bold text-gray-900">Advanced Analytics Dashboard</h3>
                   </div>
-                  <div className="h-64">
-                    <Line data={generateUserRegistrationData()} options={chartOptions} />
+                  <div className="flex items-center gap-3 bg-gradient-to-r from-indigo-100 to-purple-100 px-4 py-2 rounded-2xl">
+                    <span className="text-sm font-semibold text-gray-700">Last 12 months</span>
+                    <div className="w-3 h-3 bg-indigo-500 rounded-full animate-pulse"></div>
                   </div>
                 </div>
 
-                {/* Transaction Volume Trend */}
-                <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-6 border border-green-100">
-                  <div className="flex items-center justify-between mb-4">
-                    <h4 className="text-lg font-semibold text-gray-900">Transaction Activity</h4>
-                    <div className="text-sm text-green-600 bg-green-100 px-2 py-1 rounded-full">
-                      {allTransactions.length} transactions
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
+                  {/* User Registration Trend */}
+                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-8 border border-blue-100 hover:shadow-xl transition-all duration-300 group/chart relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-indigo-100 opacity-0 group-hover/chart:opacity-20 transition-opacity duration-300"></div>
+                    <div className="relative z-10">
+                      <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                            <FaUsers className="text-white text-lg" />
+                          </div>
+                          <h4 className="text-xl font-bold text-gray-900">User Growth Trend</h4>
+                        </div>
+                        <div className="text-sm font-semibold text-blue-600 bg-blue-100 px-3 py-1 rounded-full shadow-sm">
+                          +{allUsers.length} total users
+                        </div>
+                      </div>
+                      <div className="h-72">
+                        <Line data={generateUserRegistrationData()} options={chartOptions} />
+                      </div>
                     </div>
                   </div>
-                  <div className="h-64">
-                    <Line data={generateTransactionVolumeData()} options={chartOptions} />
+
+                  {/* Transaction Volume Trend */}
+                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-8 border border-green-100 hover:shadow-xl transition-all duration-300 group/chart relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-green-100 to-emerald-100 opacity-0 group-hover/chart:opacity-20 transition-opacity duration-300"></div>
+                    <div className="relative z-10">
+                      <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center">
+                            <FaExchangeAlt className="text-white text-lg" />
+                          </div>
+                          <h4 className="text-xl font-bold text-gray-900">Transaction Activity</h4>
+                        </div>
+                        <div className="text-sm font-semibold text-green-600 bg-green-100 px-3 py-1 rounded-full shadow-sm">
+                          {allTransactions.length} transactions
+                        </div>
+                      </div>
+                      <div className="h-72">
+                        <Line data={generateTransactionVolumeData()} options={chartOptions} />
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                {/* Transaction Amount Trend */}
-                <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-6 border border-purple-100">
-                  <div className="flex items-center justify-between mb-4">
-                    <h4 className="text-lg font-semibold text-gray-900">Revenue Trend</h4>
-                    <div className="text-sm text-purple-600 bg-purple-100 px-2 py-1 rounded-full">
-                      {formatCurrency(allTransactions.reduce((sum, txn) => sum + txn.amount, 0))} total
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                  {/* Transaction Amount Trend */}
+                  <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-8 border border-purple-100 hover:shadow-xl transition-all duration-300 group/chart relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-purple-100 to-pink-100 opacity-0 group-hover/chart:opacity-20 transition-opacity duration-300"></div>
+                    <div className="relative z-10">
+                      <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center">
+                            <FaChartLine className="text-white text-lg" />
+                          </div>
+                          <h4 className="text-xl font-bold text-gray-900">Revenue Trend</h4>
+                        </div>
+                        <div className="text-sm font-semibold text-purple-600 bg-purple-100 px-3 py-1 rounded-full shadow-sm">
+                          {formatCurrency(allTransactions.reduce((sum, txn) => sum + txn.amount, 0))} total
+                        </div>
+                      </div>
+                      <div className="h-72">
+                        <Bar data={generateTransactionAmountData()} options={chartOptions} />
+                      </div>
                     </div>
                   </div>
-                  <div className="h-64">
-                    <Bar data={generateTransactionAmountData()} options={chartOptions} />
-                  </div>
-                </div>
 
-                {/* Top Users by Transaction Volume */}
-                <div className="bg-gradient-to-br from-orange-50 to-yellow-50 rounded-lg p-6 border border-orange-100">
-                  <div className="flex items-center justify-between mb-4">
-                    <h4 className="text-lg font-semibold text-gray-900">Top Performing Users</h4>
-                    <div className="text-sm text-orange-600 bg-orange-100 px-2 py-1 rounded-full">
-                      By transaction volume
-                    </div>
-                  </div>
-                  <div className="h-64">
-                    <Bar
-                      data={generateTopUsersData()}
-                      options={{
-                        ...chartOptions,
-                        indexAxis: 'y',
-                        plugins: {
-                          ...chartOptions.plugins,
-                          legend: { display: false }
-                        },
-                        scales: {
-                          x: {
-                            beginAtZero: true,
-                            ticks: {
-                              callback: function(value) {
-                                return formatCurrency(value);
+                  {/* Top Users by Transaction Volume */}
+                  <div className="bg-gradient-to-br from-orange-50 to-yellow-50 rounded-2xl p-8 border border-orange-100 hover:shadow-xl transition-all duration-300 group/chart relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-orange-100 to-yellow-100 opacity-0 group-hover/chart:opacity-20 transition-opacity duration-300"></div>
+                    <div className="relative z-10">
+                      <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-yellow-600 rounded-xl flex items-center justify-center">
+                            <FaCoins className="text-white text-lg" />
+                          </div>
+                          <h4 className="text-xl font-bold text-gray-900">Top Performing Users</h4>
+                        </div>
+                        <div className="text-sm font-semibold text-orange-600 bg-orange-100 px-3 py-1 rounded-full shadow-sm">
+                          By transaction volume
+                        </div>
+                      </div>
+                      <div className="h-72">
+                        <Bar
+                          data={generateTopUsersData()}
+                          options={{
+                            ...chartOptions,
+                            indexAxis: 'y',
+                            plugins: {
+                              ...chartOptions.plugins,
+                              legend: { display: false }
+                            },
+                            scales: {
+                              x: {
+                                beginAtZero: true,
+                                ticks: {
+                                  callback: function(value) {
+                                    return formatCurrency(value);
+                                  }
+                                }
+                              },
+                              y: {
+                                grid: { display: false }
                               }
                             }
-                          },
-                          y: {
-                            grid: { display: false }
-                          }
-                        }
-                      }}
-                    />
+                          }}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Recent Activity */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Pending Users Preview */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-xl font-semibold text-gray-900">Recent Pending Users</h3>
-                  <button
-                    onClick={() => showSection('pending')}
-                    className="text-green-600 hover:text-green-700 font-medium text-sm transition-colors"
-                  >
-                    View All →
-                  </button>
-                </div>
+              <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-8 hover:shadow-2xl transition-all duration-500 relative overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-br from-green-50 to-emerald-50 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full opacity-10 group-hover:opacity-20 transition-opacity duration-500 transform translate-x-12 -translate-y-12"></div>
+                <div className="relative z-10">
+                  <div className="flex justify-between items-center mb-8">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg">
+                        <FaUser className="text-white text-lg" />
+                      </div>
+                      <h3 className="text-2xl font-bold text-gray-900">Recent Pending Users</h3>
+                    </div>
+                    <button
+                      onClick={() => showSection('pending')}
+                      className="text-green-600 hover:text-green-700 font-semibold text-sm transition-all duration-300 hover:scale-105 flex items-center gap-2 bg-green-50 hover:bg-green-100 px-4 py-2 rounded-2xl"
+                    >
+                      <span>View All</span>
+                      <FaArrowLeft className="rotate-180" />
+                    </button>
+                  </div>
 
-                <div className="space-y-4">
-                  {pendingUsers.slice(0, 3).map((user) => (
-                    <div key={user.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                          <FaUser className="text-green-600 text-lg" />
+                  <div className="space-y-4">
+                    {pendingUsers.slice(0, 3).map((user) => (
+                      <div key={user.id} className="flex items-center justify-between p-6 bg-gradient-to-r from-gray-50 to-green-50 rounded-2xl hover:from-green-50 hover:to-emerald-50 transition-all duration-300 group/item border border-gray-100 hover:border-green-200 hover:shadow-lg">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-14 h-14 bg-gradient-to-br from-green-100 to-emerald-100 rounded-2xl flex items-center justify-center group-hover/item:scale-110 transition-transform duration-300">
+                            <FaUser className="text-green-600 text-xl" />
+                          </div>
+                          <div>
+                            <p className="font-bold text-gray-900 text-lg">{user.email}</p>
+                            <p className="text-sm text-gray-600 font-medium">Pending approval</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+                              <span className="text-xs text-yellow-600 font-semibold">Awaiting Action</span>
+                            </div>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-semibold text-gray-900">{user.email}</p>
-                          <p className="text-sm text-gray-600">Pending approval</p>
+                        <div className="flex space-x-3">
+                          <button
+                            onClick={() => handleApproveUser(user.id, true)}
+                            className="p-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-2xl transition-all duration-300 hover:scale-110 hover:shadow-lg"
+                            title="Approve"
+                          >
+                            <FaCheck className="text-sm" />
+                          </button>
+                          <button
+                            onClick={() => handleApproveUser(user.id, false)}
+                            className="p-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-2xl transition-all duration-300 hover:scale-110 hover:shadow-lg"
+                            title="Reject"
+                          >
+                            <FaTimes className="text-sm" />
+                          </button>
                         </div>
                       </div>
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => handleApproveUser(user.id, true)}
-                          className="p-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
-                          title="Approve"
-                        >
-                          <FaCheck className="text-sm" />
-                        </button>
-                        <button
-                          onClick={() => handleApproveUser(user.id, false)}
-                          className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
-                          title="Reject"
-                        >
-                          <FaReject className="text-sm" />
-                        </button>
+                    ))}
+                    {pendingUsers.length === 0 && (
+                      <div className="text-center py-12">
+                        <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                          <FaUser className="text-4xl text-gray-400" />
+                        </div>
+                        <p className="text-gray-500 font-semibold text-lg">No pending users</p>
+                        <p className="text-sm text-gray-400 mt-2">All users have been processed</p>
                       </div>
-                    </div>
-                  ))}
-                  {pendingUsers.length === 0 && (
-                    <div className="text-center py-8">
-                      <FaUser className="text-4xl text-gray-300 mx-auto mb-3" />
-                      <p className="text-gray-500">No pending users</p>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
 
               {/* Recent Transactions Preview */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-xl font-semibold text-gray-900">Recent Transactions</h3>
-                  <button
-                    onClick={() => showSection('transactions')}
-                    className="text-green-600 hover:text-green-700 font-medium text-sm transition-colors"
-                  >
-                    View All →
-                  </button>
-                </div>
+              <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-8 hover:shadow-2xl transition-all duration-500 relative overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-50 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full opacity-10 group-hover:opacity-20 transition-opacity duration-500 transform translate-x-12 -translate-y-12"></div>
+                <div className="relative z-10">
+                  <div className="flex justify-between items-center mb-8">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
+                        <FaExchangeAlt className="text-white text-lg" />
+                      </div>
+                      <h3 className="text-2xl font-bold text-gray-900">Recent Transactions</h3>
+                    </div>
+                    <button
+                      onClick={() => showSection('transactions')}
+                      className="text-blue-600 hover:text-blue-700 font-semibold text-sm transition-all duration-300 hover:scale-105 flex items-center gap-2 bg-blue-50 hover:bg-blue-100 px-4 py-2 rounded-2xl"
+                    >
+                      <span>View All</span>
+                      <FaArrowLeft className="rotate-180" />
+                    </button>
+                  </div>
 
-                <div className="space-y-4">
-                  {allTransactions.slice(0, 3).map((txn) => (
-                    <div key={txn.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                          <FaExchangeAlt className="text-blue-600 text-lg" />
+                  <div className="space-y-4">
+                    {allTransactions.slice(0, 3).map((txn) => (
+                      <div key={txn.id} className="flex items-center justify-between p-6 bg-gradient-to-r from-gray-50 to-blue-50 rounded-2xl hover:from-blue-50 hover:to-indigo-50 transition-all duration-300 group/item border border-gray-100 hover:border-blue-200 hover:shadow-lg">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-14 h-14 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-2xl flex items-center justify-center group-hover/item:scale-110 transition-transform duration-300">
+                            <FaExchangeAlt className="text-blue-600 text-xl" />
+                          </div>
+                          <div>
+                            <p className="font-bold text-gray-900 text-lg">{txn.email}</p>
+                            <p className="text-sm text-gray-600 font-medium">{txn.type} - {formatCurrency(txn.amount)} RWF</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <div className={`w-2 h-2 rounded-full animate-pulse ${txn.status === 'approved' ? 'bg-green-500' : txn.status === 'pending' ? 'bg-yellow-500' : 'bg-red-500'}`}></div>
+                              <span className={`text-xs font-semibold ${txn.status === 'approved' ? 'text-green-600' : txn.status === 'pending' ? 'text-yellow-600' : 'text-red-600'}`}>
+                                {txn.status.charAt(0).toUpperCase() + txn.status.slice(1)}
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-semibold text-gray-900">{txn.email}</p>
-                          <p className="text-sm text-gray-600">{txn.type} - {formatCurrency(txn.amount)} RWF</p>
+                        <div className="flex flex-col items-end gap-2">
+                          {getStatusBadge(txn.status)}
                         </div>
                       </div>
-                      {getStatusBadge(txn.status)}
-                    </div>
-                  ))}
-                  {allTransactions.length === 0 && (
-                    <div className="text-center py-8">
-                      <FaExchangeAlt className="text-4xl text-gray-300 mx-auto mb-3" />
-                      <p className="text-gray-500">No transactions</p>
-                    </div>
-                  )}
+                    ))}
+                    {allTransactions.length === 0 && (
+                      <div className="text-center py-12">
+                        <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                          <FaExchangeAlt className="text-4xl text-gray-400" />
+                        </div>
+                        <p className="text-gray-500 font-semibold text-lg">No transactions</p>
+                        <p className="text-sm text-gray-400 mt-2">Transaction history will appear here</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -2805,10 +2843,10 @@ const KediAdminDashboard = () => {
                 )}
               </div>
 
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+              <div className="green-table">
                 <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50">
+                  <table>
+                    <thead>
                       <tr>
                         {bulkActionMode && (
                           <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
@@ -2824,6 +2862,7 @@ const KediAdminDashboard = () => {
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Email</th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Phone</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Location</th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">ID Number</th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Role</th>
@@ -2855,6 +2894,16 @@ const KediAdminDashboard = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                             {user.phone || 'N/A'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            <div className="text-xs">
+                              {user.province && <div><strong>P:</strong> {user.province}</div>}
+                              {user.district && <div><strong>D:</strong> {user.district}</div>}
+                              {user.sector && <div><strong>S:</strong> {user.sector}</div>}
+                              {user.cell && <div><strong>C:</strong> {user.cell}</div>}
+                              {user.village && <div><strong>V:</strong> {user.village}</div>}
+                              {!user.province && !user.district && !user.sector && !user.cell && !user.village && 'N/A'}
+                            </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-600">
                             {user.idNumber || 'N/A'}
@@ -3793,6 +3842,26 @@ const KediAdminDashboard = () => {
                           <span>{userDetails.user?.phone || 'N/A'}</span>
                         </div>
                         <div className="flex justify-between">
+                          <span className="font-medium text-gray-600">Province:</span>
+                          <span>{userDetails.user?.province || 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium text-gray-600">District:</span>
+                          <span>{userDetails.user?.district || 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium text-gray-600">Sector:</span>
+                          <span>{userDetails.user?.sector || 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium text-gray-600">Cell:</span>
+                          <span>{userDetails.user?.cell || 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="font-medium text-gray-600">Village:</span>
+                          <span>{userDetails.user?.village || 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between">
                           <span className="font-medium text-gray-600">ID Number:</span>
                           <span className="font-mono text-sm">{userDetails.user?.idNumber || 'N/A'}</span>
                         </div>
@@ -4497,9 +4566,66 @@ const KediAdminDashboard = () => {
             </div>
           </div>
         )}
+          </div>
         </div>
       </main>
-    </div>
+
+      {/* Right Sidebar - Notifications */}
+      <aside className={`right-sidebar ${notificationsCollapsed ? 'collapsed' : ''}`}>
+        <div className="right-sidebar-header">
+          <h3 className="right-sidebar-title">
+            {!notificationsCollapsed && 'Notifications'}
+          </h3>
+          <button
+            onClick={toggleNotificationsCollapse}
+            className="collapse-btn"
+            title={notificationsCollapsed ? 'Expand notifications' : 'Collapse notifications'}
+          >
+            {notificationsCollapsed ? <FaArrowLeft size={16} /> : <FaArrowLeft size={16} />}
+          </button>
+        </div>
+
+        {!notificationsCollapsed && (
+          <div className="right-sidebar-content">
+            <div className="notifications-list">
+              {notifications.length === 0 ? (
+                <div className="no-notifications">
+                  <FaBell className="no-notifications-icon" />
+                  <p>No notifications</p>
+                </div>
+              ) : (
+                notifications.slice(0, 5).map((notification) => (
+                  <div
+                    key={notification.id}
+                    className={`notification-item ${!notification.read ? 'unread' : ''}`}
+                    onClick={() => markNotificationAsRead(notification.id)}
+                  >
+                    <div className="notification-icon">
+                      {getNotificationIcon(notification.type)}
+                    </div>
+                    <div className="notification-content">
+                      <div className="notification-title">{notification.title}</div>
+                      <div className="notification-message">{notification.message}</div>
+                      <div className="notification-time">{getTimeAgo(notification.timestamp)}</div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {notifications.length > 5 && (
+              <div className="view-all-notifications">
+                <button className="view-all-btn">
+                  View All Notifications ({notifications.length})
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </aside>
+      </div>
+  </>
+</div>
   );
 };
 

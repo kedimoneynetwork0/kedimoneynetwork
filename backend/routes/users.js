@@ -2,7 +2,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const multer = require('multer');
 const path = require('path');
-const { query } = require('../utils/database');
+const { query } = require('../utils/database-sqlite');
 const { authMiddleware, adminMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
@@ -38,7 +38,7 @@ const upload = multer({
 router.get('/bonus', authMiddleware, async (req, res) => {
   const userId = req.user.id;
   try {
-    const result = await query(`SELECT SUM(amount) as totalBonus FROM bonuses WHERE userId = $1`, [userId]);
+    const result = await query(`SELECT SUM(amount) as totalBonus FROM bonuses WHERE userId = ?`, [userId]);
     const row = result.rows[0];
     res.json({ totalBonus: row.totalBonus || 0 });
   } catch (err) {
@@ -52,7 +52,7 @@ router.get('/dashboard', authMiddleware, async (req, res) => {
     // Get transactions with database-level calculations
     const transactionsQuery = await query(`
       SELECT * FROM transactions
-      WHERE user_id = $1
+      WHERE user_id = ?
       ORDER BY created_at DESC
       LIMIT 10
     `, [userId]);
@@ -61,7 +61,7 @@ router.get('/dashboard', authMiddleware, async (req, res) => {
     const depositsQuery = await query(`
       SELECT COALESCE(SUM(amount), 0) as total_deposits
       FROM transactions
-      WHERE user_id = $1
+      WHERE user_id = ?
       AND status = 'approved'
       AND type IN ('tree_plan', 'saving', 'deposit', 'investment')
     `, [userId]);
@@ -70,7 +70,7 @@ router.get('/dashboard', authMiddleware, async (req, res) => {
     const withdrawalsQuery = await query(`
       SELECT COALESCE(SUM(amount), 0) as total_withdrawals
       FROM transactions
-      WHERE user_id = $1
+      WHERE user_id = ?
       AND status = 'approved'
       AND type = 'withdrawal'
     `, [userId]);
@@ -79,7 +79,7 @@ router.get('/dashboard', authMiddleware, async (req, res) => {
     const loansQuery = await query(`
       SELECT COALESCE(SUM(amount), 0) as total_loans
       FROM transactions
-      WHERE user_id = $1
+      WHERE user_id = ?
       AND status = 'approved'
       AND type = 'loan'
     `, [userId]);
@@ -90,7 +90,7 @@ router.get('/dashboard', authMiddleware, async (req, res) => {
         COALESCE(SUM(amount), 0) as total_stakes,
         COALESCE(SUM(amount * interest_rate * (stake_period / 365.0)), 0) as total_interest
       FROM stakes
-      WHERE user_id = $1 AND status = 'active'
+      WHERE user_id = ? AND status = 'active'
     `, [userId]);
 
     // Calculate referral bonus (5,000 per referral) - database level
@@ -98,7 +98,7 @@ router.get('/dashboard', authMiddleware, async (req, res) => {
       SELECT COUNT(*) * 5000 as referral_bonus
       FROM users
       WHERE referralId IS NOT NULL
-      AND id = $1
+      AND id = ?
     `, [userId]);
 
     const transactions = transactionsQuery.rows;
@@ -141,9 +141,28 @@ router.get('/dashboard', authMiddleware, async (req, res) => {
 router.get('/profile', authMiddleware, async (req, res) => {
   const userId = req.user.id;
   try {
-    const result = await query(`SELECT firstname, lastname, phone, email, username, referralId, idNumber, profile_picture, estimated_balance FROM users WHERE id = $1`, [userId]);
+    const result = await query(`SELECT firstname, lastname, phone, email, username, referralId, idNumber, profile_picture, estimated_balance FROM users WHERE id = ?`, [userId]);
     const row = result.rows[0];
     if (!row) return res.status(404).json({ message: 'User not found' });
+
+    // Generate referral ID if user doesn't have one
+    if (!row.referralId) {
+      const currentYear = new Date().getFullYear().toString().slice(-2);
+      const countryCode = 'RW';
+      const companyPrefix = 'KEDI';
+
+      // Get the next sequential number
+      const countResult = await query('SELECT COUNT(*) as count FROM users WHERE referral_id IS NOT NULL');
+      const userCount = countResult.rows[0].count;
+      const sequentialNumber = (userCount + 1).toString().padStart(3, '0');
+
+      const newReferralId = `${companyPrefix}${sequentialNumber}${countryCode}${currentYear}`;
+
+      // Update user with new referral ID
+      await query(`UPDATE users SET referralId = ?, referral_id = ? WHERE id = ?`, [newReferralId, newReferralId, userId]);
+      row.referralId = newReferralId;
+    }
+
     res.json(row);
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
@@ -164,7 +183,7 @@ router.post('/change-password', authMiddleware, async (req, res) => {
   }
 
   try {
-    const result = await query(`SELECT password FROM users WHERE id = $1`, [userId]);
+    const result = await query(`SELECT password FROM users WHERE id = ?`, [userId]);
     const user = result.rows[0];
     if (!user) return res.status(404).json({ message: 'User not found' });
 
@@ -172,7 +191,7 @@ router.post('/change-password', authMiddleware, async (req, res) => {
     if (!match) return res.status(400).json({ message: 'Old password is incorrect' });
 
     const hash = await bcrypt.hash(newPassword, 10);
-    await query(`UPDATE users SET password = $1 WHERE id = $2`, [hash, userId]);
+    await query(`UPDATE users SET password = ? WHERE id = ?`, [hash, userId]);
     res.json({ message: 'Password updated successfully' });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
@@ -189,7 +208,7 @@ router.post('/upload-profile-picture', authMiddleware, upload.single('profilePic
   const profilePictureUrl = `/uploads/${req.file.filename}`;
 
   try {
-    await query(`UPDATE users SET profile_picture = $1 WHERE id = $2`, [profilePictureUrl, userId]);
+    await query(`UPDATE users SET profile_picture = ? WHERE id = ?`, [profilePictureUrl, userId]);
     res.json({ message: 'Profile picture uploaded successfully', profilePicture: profilePictureUrl });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
@@ -240,7 +259,7 @@ router.post('/stakes', authMiddleware, async (req, res) => {
 
   try {
     const result = await query(
-      `INSERT INTO stakes (user_id, amount, stake_period, interest_rate, end_date) VALUES ($1, $2, $3, $4, $5)`,
+      `INSERT INTO stakes (user_id, amount, stake_period, interest_rate, end_date) VALUES (?, ?, ?, ?, ?)`,
       [userId, amount, stakePeriod, interestRate, endDate.toISOString()]
     );
     res.json({ message: 'Stake deposit created successfully', id: result.lastID });
@@ -252,7 +271,7 @@ router.post('/stakes', authMiddleware, async (req, res) => {
 router.get('/stakes', authMiddleware, async (req, res) => {
   const userId = req.user.id;
   try {
-    const result = await query(`SELECT * FROM stakes WHERE user_id = $1 ORDER BY start_date DESC`, [userId]);
+    const result = await query(`SELECT * FROM stakes WHERE user_id = ? ORDER BY start_date DESC`, [userId]);
     const rows = result.rows;
     res.json({ stakes: rows });
   } catch (err) {
@@ -262,56 +281,136 @@ router.get('/stakes', authMiddleware, async (req, res) => {
 
 router.post('/withdrawals', authMiddleware, async (req, res) => {
   const userId = req.user.id;
-  const { stakeId } = req.body;
+  const { amount } = req.body;
 
-  if (!stakeId) {
-    return res.status(400).json({ message: 'Stake ID is required' });
+  if (!amount || isNaN(amount) || amount <= 0) {
+    return res.status(400).json({ message: 'Umubare wamafaranga ushaka kubikura ni ngombwa kandi ugomba kuba umubare uhagije' });
   }
 
   try {
-    // Get stake details
-    const stakeResult = await query(`SELECT * FROM stakes WHERE id = $1 AND user_id = $2`, [stakeId, userId]);
-    const stake = stakeResult.rows[0];
+    // Check user eligibility for withdrawal (3 months registration + 2000 RWF/month savings)
+    const userResult = await query(`SELECT created_at FROM users WHERE id = ?`, [userId]);
+    const user = userResult.rows[0];
 
-    if (!stake) return res.status(404).json({ message: 'Stake not found' });
+    if (!user) return res.status(404).json({ message: 'User not found' });
 
     const currentDate = new Date();
-    const endDate = new Date(stake.end_date);
-    if (currentDate < endDate) {
-      return res.status(400).json({ message: 'Stake has not matured yet' });
+    const registrationDate = new Date(user.created_at);
+    const monthsSinceRegistration = Math.floor((currentDate - registrationDate) / (1000 * 60 * 60 * 24 * 30));
+
+    // User must be registered for at least 3 months
+    if (monthsSinceRegistration < 3) {
+      return res.status(400).json({
+        message: `Kwemererwa gukoresha serivise ya KEDI bisaba kuba umpaje amezi atatu wizigama byibura 2000RWF buri kwezi. Uratwaye amezi ${monthsSinceRegistration} gusa.`
+      });
     }
 
-    if (stake.status === 'withdrawn') {
-      return res.status(400).json({ message: 'Stake already withdrawn' });
+    // Check if user has saved at least 2000 RWF per month for the past 3 months
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+
+    const savingsQuery = await query(`
+      SELECT
+        strftime('%Y-%m', created_at) as month,
+        SUM(amount) as monthly_savings
+      FROM transactions
+      WHERE user_id = ?
+        AND status = 'approved'
+        AND type IN ('tree_plan', 'saving', 'deposit', 'investment')
+        AND created_at >= ?
+      GROUP BY strftime('%Y-%m', created_at)
+      ORDER BY month DESC
+    `, [userId, threeMonthsAgo.toISOString()]);
+
+    const monthlySavings = savingsQuery.rows;
+
+    // Check if user has at least 2000 RWF savings for each of the past 3 months
+    let eligibleMonths = 0;
+    for (let i = 0; i < 3; i++) {
+      const targetMonth = new Date();
+      targetMonth.setMonth(targetMonth.getMonth() - i);
+      const targetMonthStr = targetMonth.toISOString().substring(0, 7); // YYYY-MM format
+
+      const monthData = monthlySavings.find(m => m.month === targetMonthStr);
+      if (monthData && parseFloat(monthData.monthly_savings) >= 2000) {
+        eligibleMonths++;
+      }
     }
 
-    const principal = stake.amount;
-    const interest = Math.floor(principal * stake.interest_rate);
-    const totalAmount = principal + interest;
+    if (eligibleMonths < 3) {
+      return res.status(400).json({
+        message: `Kwemererwa gukoresha serivise ya KEDI bisaba kuba umpaje amezi atatu wizigama byibura 2000RWF buri kwezi. Uratwaye amezi ${eligibleMonths} gusa ahagije.`
+      });
+    }
 
-    // Update stake status
-    await query(`UPDATE stakes SET status = 'withdrawn' WHERE id = $1`, [stakeId]);
+    // Calculate user's current estimated balance
+    const balanceQuery = await query(`
+      SELECT
+        -- Deposits: tree_plan + saving + deposit + investment
+        (SELECT COALESCE(SUM(amount), 0) FROM transactions
+         WHERE user_id = ? AND status = 'approved'
+         AND type IN ('tree_plan', 'saving', 'deposit', 'investment')) as total_deposits,
 
-    // Create withdrawal record
+        -- Withdrawals
+        (SELECT COALESCE(SUM(amount), 0) FROM transactions
+         WHERE user_id = ? AND status = 'approved' AND type = 'withdrawal') as total_withdrawals,
+
+        -- Loan repayments
+        (SELECT COALESCE(SUM(amount), 0) FROM transactions
+         WHERE user_id = ? AND status = 'approved' AND type = 'loan') as total_loans,
+
+        -- Active stakes and interest
+        (SELECT COALESCE(SUM(amount), 0) FROM stakes
+         WHERE user_id = ? AND status = 'active') as total_stakes,
+
+        (SELECT COALESCE(SUM(amount * interest_rate * (stake_period / 365.0)), 0) FROM stakes
+         WHERE user_id = ? AND status = 'active') as total_interest,
+
+        -- Referral bonus (5,000 per approved referral)
+        (SELECT COUNT(*) * 5000 FROM users WHERE referralId IS NOT NULL AND id = ?) as referral_bonus
+    `, [userId, userId, userId, userId, userId, userId]);
+
+    const calc = balanceQuery.rows[0];
+
+    const totalDeposits = parseFloat(calc.total_deposits) || 0;
+    const totalWithdrawals = parseFloat(calc.total_withdrawals) || 0;
+    const totalLoans = parseFloat(calc.total_loans) || 0;
+    const totalStakes = parseFloat(calc.total_stakes) || 0;
+    const totalInterest = parseFloat(calc.total_interest) || 0;
+    const referralBonus = parseFloat(calc.referral_bonus) || 0;
+
+    // Calculate available balance: Deposits + Referral Bonus + Stakes Interest - Withdrawals - Loan Repayments
+    const availableBalance = totalDeposits + referralBonus + totalInterest - totalWithdrawals - totalLoans;
+
+    // Check if requested amount doesn't exceed available balance
+    if (amount > availableBalance) {
+      return res.status(400).json({
+        message: `Umubare wamafaranga ushaka kubikura (${amount} RWF) urenze amafaranga ufite kuri konti yawe (${availableBalance.toLocaleString()} RWF)`
+      });
+    }
+
+    // Create withdrawal request (pending approval)
     const withdrawalResult = await query(
-      `INSERT INTO withdrawals (user_id, stake_id, amount) VALUES ($1, $2, $3)`,
-      [userId, stakeId, totalAmount]
+      `INSERT INTO withdrawals (user_id, amount, status, request_date) VALUES (?, ?, 'pending', NOW())`,
+      [userId, amount]
     );
 
     res.json({
-      message: 'Withdrawal request submitted successfully',
+      message: 'Icypuramutungo cyo kubikura cyoherejwe neza. Tega ko cyemererwa nuyobozi.',
       id: withdrawalResult.lastID,
-      amount: totalAmount
+      amount: amount,
+      status: 'pending'
     });
   } catch (err) {
-    res.status(500).json({ message: 'Server error during withdrawal' });
+    console.error('Withdrawal error:', err);
+    res.status(500).json({ message: 'Server error during withdrawal request' });
   }
 });
 
 router.get('/withdrawals', authMiddleware, async (req, res) => {
   const userId = req.user.id;
   try {
-    const result = await query(`SELECT * FROM withdrawals WHERE user_id = $1 ORDER BY request_date DESC`, [userId]);
+    const result = await query(`SELECT * FROM withdrawals WHERE user_id = ? ORDER BY request_date DESC`, [userId]);
     const rows = result.rows;
     res.json({ withdrawals: rows });
   } catch (err) {
@@ -323,7 +422,7 @@ router.get('/withdrawals', authMiddleware, async (req, res) => {
 router.get('/savings', authMiddleware, async (req, res) => {
   const userId = req.user.id;
   try {
-    const result = await query(`SELECT * FROM savings WHERE user_id = $1 ORDER BY created_at DESC`, [userId]);
+    const result = await query(`SELECT * FROM savings WHERE user_id = ? ORDER BY created_at DESC`, [userId]);
     const rows = result.rows;
     res.json({ savings: rows });
   } catch (err) {
@@ -346,7 +445,7 @@ router.post('/savings/withdraw', authMiddleware, async (req, res) => {
 
   try {
     // Get savings details
-    const savingsResult = await query(`SELECT * FROM savings WHERE id = $1 AND user_id = $2`, [savingsId, userId]);
+    const savingsResult = await query(`SELECT * FROM savings WHERE id = ? AND user_id = ?`, [savingsId, userId]);
     const savings = savingsResult.rows[0];
 
     if (!savings) return res.status(404).json({ message: 'Savings account not found' });
@@ -367,12 +466,12 @@ router.post('/savings/withdraw', authMiddleware, async (req, res) => {
 
     // Create savings withdrawal record (similar to stake withdrawal)
     const withdrawalResult = await query(
-      `INSERT INTO savings_withdrawals (user_id, savings_id, amount, request_date) VALUES ($1, $2, $3, NOW())`,
+      `INSERT INTO savings_withdrawals (user_id, savings_id, amount, request_date) VALUES (?, ?, ?, NOW())`,
       [userId, savingsId, amount]
     );
 
     // Update savings balance
-    await query(`UPDATE savings SET amount = amount - $1 WHERE id = $2`, [amount, savingsId]);
+    await query(`UPDATE savings SET amount = amount - ? WHERE id = ?`, [amount, savingsId]);
 
     res.json({
       message: 'Savings withdrawal request submitted successfully',
@@ -393,7 +492,7 @@ router.get('/messages', authMiddleware, async (req, res) => {
       SELECT m.*, u.firstname as admin_firstname, u.lastname as admin_lastname
       FROM messages m
       LEFT JOIN users u ON m.admin_id = u.id
-      WHERE m.user_id = $1
+      WHERE m.user_id = ?
       ORDER BY m.created_at DESC
     `, [userId]);
     const rows = result.rows;
@@ -408,7 +507,7 @@ router.put('/messages/:id/read', authMiddleware, async (req, res) => {
   const userId = req.user.id;
 
   try {
-    await query(`UPDATE messages SET is_read = true WHERE id = $1 AND user_id = $2`, [messageId, userId]);
+    await query(`UPDATE messages SET is_read = true WHERE id = ? AND user_id = ?`, [messageId, userId]);
     res.json({ message: 'Message marked as read' });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
@@ -424,26 +523,26 @@ router.get('/balance', authMiddleware, async (req, res) => {
       SELECT
         -- Deposits: tree_plan + saving + deposit + investment
         (SELECT COALESCE(SUM(amount), 0) FROM transactions
-         WHERE user_id = $1 AND status = 'approved'
+         WHERE user_id = ? AND status = 'approved'
          AND type IN ('tree_plan', 'saving', 'deposit', 'investment')) as total_deposits,
 
         -- Withdrawals
         (SELECT COALESCE(SUM(amount), 0) FROM transactions
-         WHERE user_id = $1 AND status = 'approved' AND type = 'withdrawal') as total_withdrawals,
+         WHERE user_id = ? AND status = 'approved' AND type = 'withdrawal') as total_withdrawals,
 
         -- Loan repayments
         (SELECT COALESCE(SUM(amount), 0) FROM transactions
-         WHERE user_id = $1 AND status = 'approved' AND type = 'loan') as total_loans,
+         WHERE user_id = ? AND status = 'approved' AND type = 'loan') as total_loans,
 
         -- Active stakes and interest
         (SELECT COALESCE(SUM(amount), 0) FROM stakes
-         WHERE user_id = $1 AND status = 'active') as total_stakes,
+         WHERE user_id = ? AND status = 'active') as total_stakes,
 
         (SELECT COALESCE(SUM(amount * interest_rate * (stake_period / 365.0)), 0) FROM stakes
-         WHERE user_id = $1 AND status = 'active') as total_interest,
+         WHERE user_id = ? AND status = 'active') as total_interest,
 
         -- Referral bonus (5,000 per approved referral)
-        (SELECT COUNT(*) * 5000 FROM users WHERE referralId IS NOT NULL AND id = $1) as referral_bonus
+        (SELECT COUNT(*) * 5000 FROM users WHERE referralId IS NOT NULL AND id = ?) as referral_bonus
     `, [userId]);
 
     const calc = balanceQuery.rows[0];

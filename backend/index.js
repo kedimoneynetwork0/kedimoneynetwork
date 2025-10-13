@@ -6,7 +6,7 @@ const dotenv = require('dotenv');
 const morgan = require('morgan');
 const path = require('path');
 const fs = require('fs');
-const { query } = require('./utils/database');
+const { query } = require('./utils/database-sqlite');
 
 // Load environment variables
 dotenv.config();
@@ -37,7 +37,7 @@ const createTables = async () => {
   try {
     await query(`
       CREATE TABLE IF NOT EXISTS users (
-      id SERIAL PRIMARY KEY,
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
       firstname VARCHAR(255),
       lastname VARCHAR(255),
       phone VARCHAR(20),
@@ -45,7 +45,13 @@ const createTables = async () => {
       username VARCHAR(255) UNIQUE NOT NULL,
       password VARCHAR(255),
       referralId VARCHAR(255),
+      referral_id VARCHAR(255) UNIQUE,
       idNumber VARCHAR(20),
+      province VARCHAR(255),
+      district VARCHAR(255),
+      sector VARCHAR(255),
+      cell VARCHAR(255),
+      village VARCHAR(255),
       role VARCHAR(50),
       status VARCHAR(50),
       profile_picture VARCHAR(500),
@@ -55,7 +61,7 @@ const createTables = async () => {
 
     await query(`
       CREATE TABLE IF NOT EXISTS transactions (
-      id SERIAL PRIMARY KEY,
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER REFERENCES users(id),
       type VARCHAR(50),
       amount DECIMAL(10,2),
@@ -66,7 +72,7 @@ const createTables = async () => {
 
     await query(`
       CREATE TABLE IF NOT EXISTS bonuses (
-      id SERIAL PRIMARY KEY,
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
       userId INTEGER REFERENCES users(id),
       amount DECIMAL(10,2),
       description TEXT,
@@ -75,7 +81,7 @@ const createTables = async () => {
 
     await query(`
       CREATE TABLE IF NOT EXISTS password_reset_requests (
-      id SERIAL PRIMARY KEY,
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
       userId INTEGER REFERENCES users(id),
       email VARCHAR(255),
       requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -83,7 +89,7 @@ const createTables = async () => {
 
     await query(`
       CREATE TABLE IF NOT EXISTS stakes (
-      id SERIAL PRIMARY KEY,
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER REFERENCES users(id),
       amount DECIMAL(10,2),
       stake_period INTEGER,
@@ -95,7 +101,7 @@ const createTables = async () => {
 
     await query(`
       CREATE TABLE IF NOT EXISTS withdrawals (
-      id SERIAL PRIMARY KEY,
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER REFERENCES users(id),
       stake_id INTEGER REFERENCES stakes(id),
       amount DECIMAL(10,2),
@@ -106,7 +112,7 @@ const createTables = async () => {
 
     await query(`
       CREATE TABLE IF NOT EXISTS news (
-      id SERIAL PRIMARY KEY,
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
       title VARCHAR(500),
       content TEXT,
       media_url VARCHAR(500),
@@ -117,7 +123,7 @@ const createTables = async () => {
 
     await query(`
       CREATE TABLE IF NOT EXISTS messages (
-      id SERIAL PRIMARY KEY,
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER REFERENCES users(id),
       admin_id INTEGER REFERENCES users(id),
       subject VARCHAR(255),
@@ -131,7 +137,7 @@ const createTables = async () => {
 
     await query(`
       CREATE TABLE IF NOT EXISTS savings (
-      id SERIAL PRIMARY KEY,
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER REFERENCES users(id),
       amount DECIMAL(10,2),
       interest_rate DECIMAL(5,4) DEFAULT 0.05,
@@ -142,7 +148,7 @@ const createTables = async () => {
 
     await query(`
       CREATE TABLE IF NOT EXISTS savings_withdrawals (
-      id SERIAL PRIMARY KEY,
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER REFERENCES users(id),
       savings_id INTEGER REFERENCES savings(id),
       amount DECIMAL(10,2),
@@ -154,7 +160,7 @@ const createTables = async () => {
     // Tree Plan table for tree planting investments
     await query(`
       CREATE TABLE IF NOT EXISTS tree_plans (
-      id SERIAL PRIMARY KEY,
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER REFERENCES users(id),
       amount DECIMAL(10,2),
       trees_planted INTEGER,
@@ -163,22 +169,10 @@ const createTables = async () => {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);
 
-    // Savings table for user savings accounts
-    await query(`
-      CREATE TABLE IF NOT EXISTS savings (
-      id SERIAL PRIMARY KEY,
-      user_id INTEGER REFERENCES users(id),
-      amount DECIMAL(10,2),
-      interest_rate DECIMAL(5,4) DEFAULT 0.05,
-      maturity_date TIMESTAMP,
-      status VARCHAR(50) DEFAULT 'active',
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )`);
-
     // Loan Repayment table for tracking loan repayments
     await query(`
       CREATE TABLE IF NOT EXISTS loan_repayments (
-      id SERIAL PRIMARY KEY,
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER REFERENCES users(id),
       loan_id INTEGER,
       amount DECIMAL(10,2),
@@ -209,7 +203,7 @@ async function seedAdmin() {
   const hash = await bcrypt.hash(adminPassword, 10);
 
   try {
-    const res = await query(`SELECT * FROM users WHERE email = $1 AND role = $2`, [adminEmail, 'admin']);
+    const res = await query(`SELECT * FROM users WHERE email = ? AND role = ?`, [adminEmail, 'admin']);
     const row = res.rows[0];
     if (row) {
       console.log('Admin user already exists');
@@ -217,9 +211,9 @@ async function seedAdmin() {
     }
 
     await query(
-      `INSERT INTO users (firstname, lastname, phone, email, username, password, referralId, idNumber, role, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-      ['Admin', 'User', '0000000000', adminEmail, 'admin', hash, null, '0000000000', 'admin', 'approved']
+      `INSERT INTO users (firstname, lastname, phone, email, username, password, referralId, referral_id, idNumber, province, district, sector, cell, village, role, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ['Admin', 'User', '0795772698', adminEmail, 'admin', hash, null, 'KEDI001RW25', '0000000000', 'Kigali', 'Gasabo', 'Remera', 'Gisimenti', 'Kacyiru', 'admin', 'approved']
     );
     console.log(`Admin user seeded successfully: ${adminEmail}`);
   } catch (err) {
@@ -276,13 +270,18 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
-// Start server
+// Start server only if this file is run directly (not imported for testing)
 const PORT = process.env.PORT || 4000;
 
-// Initialize database and start server
-createTables().then(() => {
-  seedAdmin();
-  app.listen(PORT, () => {
-    console.log(`Backend listening on port ${PORT}`);
+if (require.main === module) {
+  // Initialize database and start server
+  createTables().then(() => {
+    seedAdmin();
+    app.listen(PORT, () => {
+      console.log(`Backend listening on port ${PORT}`);
+    });
   });
-});
+}
+
+// Export app for testing
+module.exports = app;

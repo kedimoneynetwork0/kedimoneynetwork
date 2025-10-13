@@ -1,5 +1,5 @@
 const express = require('express');
-const { query } = require('../utils/database');
+const { query } = require('../utils/database-sqlite');
 const { authMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
@@ -19,7 +19,7 @@ router.post('/', authMiddleware, async (req, res) => {
 
   try {
     const result = await query(
-      `INSERT INTO transactions (user_id, type, amount, txn_id, status) VALUES ($1, $2, $3, $4, $5)`,
+      `INSERT INTO transactions (user_id, type, amount, txn_id, status) VALUES (?, ?, ?, ?, ?)`,
       [userId, type, amount, txn_id, 'pending']
     );
     res.json({ message: 'Transaction submitted for approval', id: result.lastID });

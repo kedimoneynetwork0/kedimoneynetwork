@@ -27,11 +27,12 @@ import {
   getUserStats,
   formatCurrency
 } from '../utils/calculations';
-import './admin-dashboard.css'; // Import original dashboard styles
+import '../styles/dashboard.css'; // Import unified dashboard styles
 
 const KediUserDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [notificationsCollapsed, setNotificationsCollapsed] = useState(true);
   const [currentSection, setCurrentSection] = useState('dashboard');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -43,7 +44,8 @@ const KediUserDashboard = () => {
     avatar: '',
     balance: 0,
     bonus: 0,
-    profilePicture: ''
+    profilePicture: '',
+    referralId: ''
   });
 
   const [transactions, setTransactions] = useState([]);
@@ -94,7 +96,7 @@ const KediUserDashboard = () => {
   });
 
   const [withdrawalForm, setWithdrawalForm] = useState({
-    stakeId: ''
+    amount: ''
   });
 
   const [savingsWithdrawalForm, setSavingsWithdrawalForm] = useState({
@@ -120,6 +122,7 @@ const KediUserDashboard = () => {
     { id: 'dashboard', label: 'Dashboard', icon: FaTachometerAlt },
     { id: 'transaction', label: 'Make Transaction', icon: FaExchangeAlt },
     { id: 'stake', label: 'Deposit Stake', icon: FaPiggyBank },
+    { id: 'withdraw', label: 'Withdraw Funds', icon: FaMoneyBillWave },
     { id: 'history', label: 'Transaction History', icon: FaHistory },
     { id: 'bonus', label: 'Referral Bonus', icon: FaGift },
     { id: 'inbox', label: 'Inbox', icon: FaUser },
@@ -176,6 +179,7 @@ const KediUserDashboard = () => {
         balance: calculatedBalance,
         bonus: referralBonus,
         profilePicture: profile.profile_picture || '',
+        referralId: profile.referralId || '',
         stats: getUserStats(profile, transactions, stakes)
       });
 
@@ -307,8 +311,8 @@ const KediUserDashboard = () => {
 
   const handleWithdrawalSubmit = async (e) => {
     e.preventDefault();
-    if (!withdrawalForm.stakeId) {
-      setError('Please select a stake to withdraw');
+    if (!withdrawalForm.amount || isNaN(withdrawalForm.amount) || withdrawalForm.amount <= 0) {
+      setError('Umubare wamafaranga ushaka kubikura ni ngombwa kandi ugomba kuba umubare uhagije');
       return;
     }
 
@@ -317,13 +321,13 @@ const KediUserDashboard = () => {
 
     try {
       await requestWithdrawal({
-        stakeId: parseInt(withdrawalForm.stakeId)
+        amount: parseFloat(withdrawalForm.amount)
       });
 
       // Reset form and refresh data
-      setWithdrawalForm({ stakeId: '' });
+      setWithdrawalForm({ amount: '' });
       await loadUserData();
-      alert('Withdrawal request submitted successfully!');
+      alert('Icypuramutungo cyo kubikura cyoherejwe neza. Tega ko cyemererwa nuyobozi.');
 
     } catch (err) {
       console.error('Withdrawal error:', err);
@@ -419,20 +423,6 @@ const KediUserDashboard = () => {
     return new Date(currentDate) >= new Date(endDate) && stake.status === 'active';
   });
 
-  // Pagination functions
-  const getPaginatedTransactions = () => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return filterUserTransactions(transactions).slice(startIndex, endIndex);
-  };
-
-  const totalPages = Math.ceil(filterUserTransactions(transactions).length / itemsPerPage);
-
-  // Reset to first page when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, transactionFilters]);
-
   // Enhanced filtering functions
   const filterUserTransactions = (transactions) => {
     return (Array.isArray(transactions) ? transactions : []).filter(txn => {
@@ -483,6 +473,20 @@ const KediUserDashboard = () => {
       return true;
     });
   };
+
+  // Pagination functions
+  const getPaginatedTransactions = () => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filterUserTransactions(transactions).slice(startIndex, endIndex);
+  };
+
+  const totalPages = Math.ceil(filterUserTransactions(transactions).length / itemsPerPage);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, transactionFilters]);
 
   // Support form submission handler
   const handleSupportSubmit = async (e) => {
@@ -688,155 +692,137 @@ const KediUserDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8f9fa] font-['Poppins',sans-serif]">
-      {/* Top Navbar */}
-      <nav className="bg-white shadow-lg border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Left: Logo and App Name */}
-            <div className="flex items-center space-x-4">
-              <button
-                className="lg:hidden p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-all duration-200"
-                onClick={toggleSidebar}
-                aria-label="Toggle sidebar"
-              >
-                <FaBars size={20} />
-              </button>
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#28a745' }}>
-                  <span className="text-white font-bold text-sm">K</span>
-                </div>
-                <div className="hidden sm:block">
-                  <h1 className="text-lg font-semibold text-gray-900">KEDI Business & Agri Funds</h1>
-                  <p className="text-xs text-gray-500">User Dashboard</p>
-                </div>
-              </div>
-            </div>
+   <div className="dashboard-container">
+     {/* Mobile Menu Toggle */}
+     <div className="md:hidden fixed top-4 left-4 z-50">
+       <button
+         onClick={toggleSidebar}
+         className="bg-green-600 text-white p-2 rounded-lg shadow-lg"
+       >
+         <FaBars size={20} />
+       </button>
+     </div>
 
-            {/* Right: Minimal for mobile */}
-            <div className="flex items-center space-x-4">
-              {/* For desktop, sidebar has these */}
-            </div>
-          </div>
-        </div>
-      </nav>
+     {/* Top Navbar - Hidden on mobile, shown on desktop */}
+     <nav className="hidden md:block navbar">
+       <div className="navbar-left">
+         <div className="navbar-brand">
+           <div className="navbar-brand-logo">KEDI</div>
+           <span>Business Dashboard</span>
+         </div>
+       </div>
+
+       <div className="navbar-right">
+         <div className="navbar-welcome">
+           Welcome back, {userData.name}
+         </div>
+         <div className="navbar-actions">
+           <button className="btn btn-outline btn-sm" onClick={() => setShowInbox(!showInbox)}>
+             <FaBell />
+             {unreadCount > 0 && (
+               <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
+                 {unreadCount > 99 ? '99+' : unreadCount}
+               </span>
+             )}
+           </button>
+           <div className="relative">
+             <button
+               onClick={() => setDropdownOpen(!dropdownOpen)}
+               className="flex items-center gap-sm bg-white hover:bg-gray-50 px-md py-sm rounded-xl transition-all shadow hover:shadow-md"
+             >
+               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                 <span className="text-white font-bold text-sm">{userData.avatar}</span>
+               </div>
+               <div className="text-left hidden md:block">
+                 <div className="text-sm font-semibold text-primary">{userData.name}</div>
+                 <div className="text-xs text-gray-500">User</div>
+               </div>
+               <FaChevronDown size={12} className={`text-gray-500 transition-transform duration-300 ${dropdownOpen ? 'rotate-180' : ''}`} />
+             </button>
+
+             {dropdownOpen && (
+               <div className="absolute right-0 mt-sm w-64 bg-white rounded-xl shadow-xl border border-gray-200 z-50 overflow-hidden">
+                 <div className="p-lg border-b border-gray-100 bg-highlight">
+                   <div className="flex items-center gap-md">
+                     <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                       <span className="text-white font-bold text-sm">{userData.avatar}</span>
+                     </div>
+                     <div>
+                       <p className="text-sm font-semibold text-primary">{userData.name}</p>
+                       <p className="text-xs text-gray-600">{userData.email}</p>
+                     </div>
+                   </div>
+                 </div>
+                 <div className="py-sm">
+                   <button
+                     onClick={() => showSection('settings')}
+                     className="w-full text-left px-lg py-md text-sm text-gray-700 hover:bg-highlight flex items-center transition-all hover:translate-x-1"
+                   >
+                     <FaCog className="mr-md text-accent" />
+                     <span className="font-medium">Settings</span>
+                   </button>
+                   <button
+                     onClick={logout}
+                     className="w-full text-left px-lg py-md text-sm text-red-600 hover:bg-red-50 flex items-center transition-all hover:translate-x-1"
+                   >
+                     <FaSignOutAlt className="mr-md" />
+                     <span className="font-medium">Logout</span>
+                   </button>
+                 </div>
+               </div>
+             )}
+           </div>
+         </div>
+       </div>
+     </nav>
 
       {/* Sidebar */}
-      <aside className={`fixed top-16 left-0 z-40 h-[calc(100vh-4rem)] w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out ${
-        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      } lg:translate-x-0`}>
-        <div className="flex flex-col h-full">
-          {/* Sidebar Header */}
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                <span className="text-lg font-bold text-green-700">
-                  {userData.avatar}
-                </span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-900 truncate">{userData.name}</p>
-                <p className="text-xs text-gray-500 truncate">{userData.email}</p>
-              </div>
-            </div>
-            {/* User Actions */}
-            <div className="flex items-center justify-between mt-4">
-              {/* Notifications */}
-              <button
-                onClick={() => setShowInbox(!showInbox)}
-                className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors relative"
-                aria-label="Notifications"
-              >
-                <FaBell size={18} />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                    {unreadCount > 99 ? '99+' : unreadCount}
-                  </span>
-                )}
-              </button>
+      <aside className={`user-sidebar ${sidebarOpen ? 'open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}>
+        <div className="sidebar-header">
+          <div className="sidebar-title">User Dashboard</div>
+          <div className="sidebar-subtitle">KEDI Money Network</div>
+        </div>
 
-              {/* User Dropdown */}
-              <div className="relative">
-                <button
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                  aria-label="User menu"
-                >
-                  <FaCog size={16} className="text-gray-500" />
-                </button>
+        <nav className="sidebar-nav">
+          {navigationItems.map((item) => (
+            <button
+              key={item.id}
+              className={`sidebar-nav-link ${currentSection === item.id ? 'active' : ''}`}
+              onClick={() => showSection(item.id)}
+            >
+              <span className="sidebar-nav-icon">
+                <item.icon />
+              </span>
+              <span className="sidebar-nav-text">{item.label}</span>
+            </button>
+          ))}
+        </nav>
 
-                {/* Dropdown Menu */}
-                {dropdownOpen && (
-                  <div>
-                    <div
-                      className="fixed inset-0 z-10"
-                      onClick={() => setDropdownOpen(false)}
-                    ></div>
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
-                      <div className="py-2">
-                        <button
-                          onClick={() => showSection('settings')}
-                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                        >
-                          <FaCog className="inline mr-3" />
-                          Settings
-                        </button>
-                        <button
-                          onClick={logout}
-                          className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                        >
-                          <FaSignOutAlt className="inline mr-3" />
-                          Logout
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Navigation */}
-          <nav className="flex-1 px-4 py-6 space-y-1">
-            {navigationItems.map((item) => (
-              <button
-                key={item.id}
-                className={`w-full flex items-center px-4 py-3 text-left rounded-lg transition-all duration-200 ${
-                  currentSection === item.id
-                    ? 'bg-green-50 text-green-700 border-r-2 border-green-600'
-                    : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
-                }`}
-                onClick={() => showSection(item.id)}
-              >
-                <item.icon className="mr-3 text-lg" />
-                <span className="font-medium">{item.label}</span>
-              </button>
-            ))}
-          </nav>
-
-          {/* Sidebar Footer */}
-          <div className="p-4 border-t border-gray-200">
-            <div className="text-xs text-gray-500 text-center">
-              KEDI Money Network © 2024
-            </div>
-          </div>
+        <div className="sidebar-footer">
+          <button
+            className="btn btn-outline w-full"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          >
+            {sidebarCollapsed ? 'Expand' : 'Collapse'}
+          </button>
         </div>
       </aside>
 
       {/* Mobile Overlay */}
       {sidebarOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30 top-16"
+          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30 mt-16"
           onClick={toggleSidebar}
         ></div>
       )}
 
       {/* Main Content */}
-      <main className="lg:ml-64 pt-16 min-h-screen">
-        <div className="p-6 lg:p-8">
-        {/* Dashboard Section */}
-        {currentSection === 'dashboard' && (
-          <div className="space-y-6">
+      <main className={`user-dashboard-layout ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`} role="main">
+        <div className="dashboard-main-content max-w-7xl mx-auto flex justify-center">
+          <div className="w-full max-w-6xl">
+          {/* Dashboard Section */}
+          {currentSection === 'dashboard' && (
+            <div className="space-y-6">
             {/* Welcome Section */}
             <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow duration-300">
               <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
@@ -869,40 +855,64 @@ const KediUserDashboard = () => {
             </div>
 
             {/* Balance Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-3">
-                      <div className="p-3 bg-green-100 rounded-lg">
-                        <FaWallet className="text-xl text-green-600" />
-                      </div>
-                      <span className="text-sm font-medium text-gray-600">Estimated Balance</span>
-                    </div>
-                    <div className="text-3xl font-bold text-green-600 mb-1">
+            <div className="stats">
+              <div className="stat-card">
+                <div className="stat-card-header">
+                  <div className="stat-card-icon">
+                    <FaWallet />
+                  </div>
+                  <div className="stat-card-content">
+                    <h3>Estimated Balance</h3>
+                    <div className="stat-value">
                       {formatCurrency(calculateRealBalance())} RWF
                     </div>
-                    <p className="text-gray-500 text-sm">
+                    <p className="stat-description">
                       Total wallet balance
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-3">
-                      <div className="p-3 bg-blue-100 rounded-lg">
-                        <FaGift className="text-xl text-blue-600" />
-                      </div>
-                      <span className="text-sm font-medium text-gray-600">Referral Bonus</span>
-                    </div>
-                    <div className="text-3xl font-bold text-blue-600 mb-1">
+              <div className="stat-card">
+                <div className="stat-card-header">
+                  <div className="stat-card-icon">
+                    <FaGift />
+                  </div>
+                  <div className="stat-card-content">
+                    <h3>Referral Bonus</h3>
+                    <div className="stat-value">
                       {formatCurrency(userData.bonus || 0)} RWF
                     </div>
-                    <p className="text-gray-500 text-sm">
+                    <p className="stat-description">
                       Total referral earnings
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="stat-card">
+                <div className="stat-card-header">
+                  <div className="stat-card-icon">
+                    <FaUser />
+                  </div>
+                  <div className="stat-card-content">
+                    <h3>Your Referral ID</h3>
+                    <div className="stat-value font-mono">
+                      {userData.referralId || 'Generating...'}
+                    </div>
+                    {userData.referralId && (
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(userData.referralId);
+                          alert('Referral ID copied to clipboard!');
+                        }}
+                        className="text-xs text-purple-500 hover:text-purple-700 underline mt-1"
+                      >
+                        Copy ID
+                      </button>
+                    )}
+                    <p className="stat-description">
+                      Share this ID to earn bonuses
                     </p>
                   </div>
                 </div>
@@ -910,8 +920,8 @@ const KediUserDashboard = () => {
             </div>
 
             {/* Quick Actions */}
-            <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow duration-300">
-              <h3 className="text-xl font-semibold text-gray-900 mb-6">Quick Actions</h3>
+            <div className="quick-actions">
+              <h3>Quick Actions</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <button
                   onClick={() => showSection('transaction')}
@@ -933,7 +943,7 @@ const KediUserDashboard = () => {
                 </button>
 
                 <button
-                  onClick={() => showSection('history')}
+                  onClick={() => showSection('withdraw')}
                   className="flex items-center justify-center px-6 py-4 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1"
                 >
                   <FaMoneyBillWave className="mr-2" />
@@ -943,117 +953,111 @@ const KediUserDashboard = () => {
             </div>
 
             {/* Recent Transactions */}
-            <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow duration-300">
+            <div className="table-container">
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-semibold text-gray-900">Recent Transactions</h3>
+                <h3>Recent Transactions</h3>
                 <button
                   onClick={() => showSection('history')}
                   className="text-green-600 hover:text-green-700 font-medium text-sm transition-colors hover:underline"
                 >
                   View All →
                 </button>
-              </div>
-
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-lg">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-100">
-                      <tr>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Date</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Type</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Amount</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Date</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Type</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Amount</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {getRecentTransactions(transactions, 3).map((txn, index) => (
+                      <tr key={txn.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 transition-colors`}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {new Date(txn.created_at).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {txn.type}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
+                          {formatCurrency(txn.amount)} RWF
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {getStatusBadge(txn.status)}
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {getRecentTransactions(transactions, 3).map((txn, index) => (
-                        <tr key={txn.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 transition-colors`}>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {new Date(txn.created_at).toLocaleDateString()}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                            {txn.type}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
-                            {formatCurrency(txn.amount)} RWF
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            {getStatusBadge(txn.status)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                {getRecentTransactions(transactions, 3).length === 0 && (
-                  <div className="text-center py-8">
-                    <FaExchangeAlt className="text-4xl text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-500">No recent transactions</p>
-                  </div>
-                )}
+                    ))}
+                  </tbody>
+                </table>
               </div>
+              {getRecentTransactions(transactions, 3).length === 0 && (
+                <div className="text-center py-8">
+                  <FaExchangeAlt className="text-4xl text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500">No recent transactions</p>
+                </div>
+              )}
+            </div>
             </div>
 
             {/* Active Stakes */}
-            <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow duration-300">
-              <h3 className="text-xl font-semibold text-gray-900 mb-6">Active Stakes</h3>
+            <div className="table-container">
+              <h3>Active Stakes</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Principal</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Duration</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Rate</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Interest</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Total Value</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {(Array.isArray(stakes) ? stakes : []).filter(stake => stake && stake.status === 'active').map((stake, index) => {
+                      const interestEarned = stake.amount * stake.interest_rate * (stake.stake_period / 365);
+                      const totalValue = stake.amount + interestEarned;
 
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-lg">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-100">
-                      <tr>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Principal</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Duration</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Rate</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Interest</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Total Value</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {(Array.isArray(stakes) ? stakes : []).filter(stake => stake && stake.status === 'active').map((stake, index) => {
-                        const interestEarned = stake.amount * stake.interest_rate * (stake.stake_period / 365);
-                        const totalValue = stake.amount + interestEarned;
-
-                        return (
-                          <tr key={stake.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 transition-colors`}>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                              {formatCurrency(stake.amount)} RWF
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                              {stake.stake_period} days
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                              {(stake.interest_rate * 100)}%
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 font-medium">
-                              {formatCurrency(interestEarned)} RWF
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
-                              {formatCurrency(totalValue)} RWF
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              {getStatusBadge(stake.status)}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-                {(Array.isArray(stakes) ? stakes : []).filter(stake => stake && stake.status === 'active').length === 0 && (
-                  <div className="text-center py-8">
-                    <FaPiggyBank className="text-4xl text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-500">No active stakes</p>
-                  </div>
-                )}
+                      return (
+                        <tr key={stake.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 transition-colors`}>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                            {formatCurrency(stake.amount)} RWF
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {stake.stake_period} days
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {(stake.interest_rate * 100)}%
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 font-medium">
+                            {formatCurrency(interestEarned)} RWF
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
+                            {formatCurrency(totalValue)} RWF
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {getStatusBadge(stake.status)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
+              {(Array.isArray(stakes) ? stakes : []).filter(stake => stake && stake.status === 'active').length === 0 && (
+                <div className="text-center py-8">
+                  <FaPiggyBank className="text-4xl text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500">No active stakes</p>
+                </div>
+              )}
             </div>
 
             {/* Personal Analytics */}
             <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow duration-300">
-              <h3 className="text-xl font-semibold text-gray-900 mb-6">Your Analytics</h3>
+              <h3>Your Analytics</h3>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Transaction Activity */}
@@ -1198,6 +1202,162 @@ const KediUserDashboard = () => {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Withdraw Section */}
+        {currentSection === 'withdraw' && (
+          <div>
+            <div className="dashboard-card">
+              <h3>Withdraw Funds</h3>
+              <p className="text-gray-600 mb-6">
+                Request withdrawal from your available balance. Stakes are separate investments and can be withdrawn when they mature.
+              </p>
+
+              {/* Balance Information */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-semibold text-blue-800">Available Balance</h4>
+                      <p className="text-2xl font-bold text-blue-600">{formatCurrency(calculateRealBalance())} RWF</p>
+                      <p className="text-sm text-blue-600 mt-1">Regular account balance</p>
+                    </div>
+                    <FaWallet className="text-3xl text-blue-500" />
+                  </div>
+                </div>
+
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-semibold text-green-800">Active Stakes</h4>
+                      <p className="text-2xl font-bold text-green-600">{withdrawableStakes.length}</p>
+                      <p className="text-sm text-green-600 mt-1">Matured stakes available</p>
+                    </div>
+                    <FaPiggyBank className="text-3xl text-green-500" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Withdrawal Options */}
+              <div className="space-y-6">
+                {/* Regular Balance Withdrawal */}
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                  <h4 className="text-lg font-semibold mb-4">Withdraw from Balance</h4>
+                  <p className="text-gray-600 mb-4">
+                    Withdraw funds from your regular account balance. This balance comes from approved transactions and bonuses.
+                  </p>
+
+                  <form onSubmit={handleWithdrawalSubmit}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Withdrawal Amount (RWF) *
+                        </label>
+                        <input
+                          type="number"
+                          value={withdrawalForm.amount}
+                          onChange={(e) => setWithdrawalForm({...withdrawalForm, amount: e.target.value})}
+                          placeholder="Enter amount to withdraw"
+                          min="1"
+                          max={calculateRealBalance()}
+                          required
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Maximum: {formatCurrency(calculateRealBalance())} RWF
+                        </p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Available Balance
+                        </label>
+                        <input
+                          type="text"
+                          value={formatCurrency(calculateRealBalance()) + ' RWF'}
+                          readOnly
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                      <div className="flex items-start">
+                        <FaLeaf className="text-yellow-600 mt-1 mr-3" />
+                        <div>
+                          <h5 className="font-semibold text-yellow-800">Important Notice</h5>
+                          <p className="text-yellow-700 text-sm">
+                            Withdrawal requests are subject to approval by our administrators.
+                            Processing may take 1-3 business days. You will receive a notification once your request is processed.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isLoading || !withdrawalForm.amount || withdrawalForm.amount <= 0 || withdrawalForm.amount > calculateRealBalance()}
+                      className="action-button disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isLoading ? (
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      ) : (
+                        <FaMoneyBillWave className="mr-2" />
+                      )}
+                      Request Withdrawal
+                    </button>
+                  </form>
+                </div>
+
+                {/* Stake Withdrawal (Optional) */}
+                {withdrawableStakes.length > 0 && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+                    <h4 className="text-lg font-semibold mb-4 text-green-800">Withdraw Matured Stakes (Optional)</h4>
+                    <p className="text-green-700 mb-4">
+                      Your matured stakes are available for withdrawal. These are separate from your regular balance.
+                    </p>
+
+                    <div className="space-y-4">
+                      {withdrawableStakes.map((stake) => (
+                        <div key={stake.id} className="bg-white border border-green-200 rounded-lg p-4">
+                          <div className="flex justify-between items-center mb-3">
+                            <div>
+                              <h5 className="font-semibold text-green-800">
+                                Stake #{stake.id} - {formatCurrency(stake.amount)} RWF Principal
+                              </h5>
+                              <p className="text-sm text-green-600">
+                                Period: {stake.stake_period} days | Rate: {(stake.interest_rate * 100)}%
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-lg font-bold text-green-800">
+                                {formatCurrency(stake.amount + (stake.amount * stake.interest_rate))} RWF
+                              </p>
+                              <p className="text-xs text-green-600">Total with interest</p>
+                            </div>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-gray-600">
+                              Matured on: {new Date(stake.end_date).toLocaleDateString()}
+                            </span>
+                            <button
+                              onClick={() => {
+                                // For stake withdrawal, we might need a different API call
+                                // For now, show that stakes are separate
+                                alert('Stake withdrawals will be available in the next update. Please use regular balance withdrawal for now.');
+                              }}
+                              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                            >
+                              Withdraw Stake
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -1807,8 +1967,65 @@ const KediUserDashboard = () => {
           </div>
         )}
 
+          </div>
         </div>
       </main>
+
+      {/* Right Sidebar - Notifications */}
+      <aside className={`right-sidebar ${notificationsCollapsed ? 'collapsed' : ''}`}>
+        <div className="right-sidebar-header">
+          <div className="right-sidebar-title">Notifications</div>
+          <div className="right-sidebar-subtitle">{unreadCount} unread messages</div>
+          <button
+            className="right-sidebar-collapse-btn"
+            onClick={() => setNotificationsCollapsed(!notificationsCollapsed)}
+            aria-label="Toggle notifications"
+          >
+            {notificationsCollapsed ? '←' : '→'}
+          </button>
+        </div>
+
+        <div className="right-sidebar-content">
+          <div className="notifications-list">
+            {messages.length === 0 ? (
+              <div className="text-center py-8">
+                <FaBell className="text-4xl text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500">No notifications yet</p>
+              </div>
+            ) : (
+              messages.slice(0, 5).map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`notification-item ${!msg.is_read ? 'unread' : ''}`}
+                  onClick={() => showSection('inbox')}
+                >
+                  <div className="notification-header">
+                    <div className="notification-title">{msg.subject}</div>
+                    <div className="notification-time">
+                      {new Date(msg.created_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <div className="notification-message">
+                    {msg.message.length > 100
+                      ? `${msg.message.substring(0, 100)}...`
+                      : msg.message
+                    }
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        <div className="right-sidebar-footer">
+          <button
+            className="mark-all-read-btn"
+            onClick={() => showSection('inbox')}
+          >
+            View All Messages
+          </button>
+        </div>
+      </aside>
 
       {/* Error Display */}
       {error && (

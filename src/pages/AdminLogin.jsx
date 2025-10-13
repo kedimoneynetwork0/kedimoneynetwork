@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 
 export default function AdminLogin() {
-  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -14,9 +14,9 @@ export default function AdminLogin() {
     e.preventDefault();
     setError('');
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setError('Invalid email format');
+    const phoneRegex = /^\d{10}$/;
+    if (!phoneRegex.test(phone)) {
+      setError('Phone number must be exactly 10 digits');
       return;
     }
 
@@ -27,7 +27,7 @@ export default function AdminLogin() {
     }
 
     try {
-      const res = await adminLogin({ email, password }); // Use the API module function
+      const res = await adminLogin({ phone, password }); // Use the API module function
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('role', 'admin');
       navigate('/kedi-admin-dashboard'); // Redirect to enhanced admin dashboard with revenue analytics
@@ -43,10 +43,10 @@ export default function AdminLogin() {
         <form onSubmit={handleSubmit} className="max-w-md w-full p-6 bg-green-50 rounded shadow">
           <h2 className="text-2xl font-bold mb-6 text-green-700">Admin Login</h2>
           <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            type="tel"
+            placeholder="Phone Number (10 digits)"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
             required
             className="mb-4 p-2 border border-gray-300 rounded w-full"
           />

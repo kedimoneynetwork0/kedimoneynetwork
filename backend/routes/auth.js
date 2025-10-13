@@ -1,8 +1,22 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const rateLimit = require('express-rate-limit');
-const { query } = require('../utils/database');
+const { query } = require('../utils/database-sqlite');
 const { generateToken } = require('../middleware/auth');
+
+// Referral ID generator function
+const generateReferralId = async () => {
+  const currentYear = new Date().getFullYear().toString().slice(-2); // Get last 2 digits of year
+  const countryCode = 'RW'; // Rwanda
+  const companyPrefix = 'KEDI';
+
+  // Get the next sequential number
+  const result = await query('SELECT COUNT(*) as count FROM users');
+  const userCount = result.rows[0].count;
+  const sequentialNumber = (userCount + 1).toString().padStart(3, '0');
+
+  return `${companyPrefix}${sequentialNumber}${countryCode}${currentYear}`;
+};
 
 const router = express.Router();
 
@@ -22,13 +36,25 @@ const adminLoginLimiter = rateLimit({
 // Signup
 router.post('/signup', async (req, res) => {
   try {
-    const { firstname, lastname, phone, email, username, password, referralId, idNumber } = req.body;
+    const { firstname, lastname, phone, email, username, password, referralId, idNumber, province, district, sector, cell, village } = req.body;
 
-    const requiredFields = { firstname, lastname, phone, email, username, password, idNumber };
+    const requiredFields = { firstname, lastname, phone, email, username, password, idNumber, province, district, sector, cell, village };
     for (let [key, value] of Object.entries(requiredFields)) {
       if (!value || value.trim() === '') {
         return res.status(400).json({ message: `${key} is required` });
       }
+    }
+
+    // Validate phone number format (exactly 10 digits)
+    const phoneRegex = /^\d{10}$/;
+    if (!phoneRegex.test(phone)) {
+      return res.status(400).json({ message: 'Phone number must be exactly 10 digits' });
+    }
+
+    // Check if phone number is already taken
+    const phoneCheck = await query(`SELECT id FROM users WHERE phone = ?`, [phone]);
+    if (phoneCheck.rows.length > 0) {
+      return res.status(400).json({ message: 'Phone number already exists' });
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -36,24 +62,48 @@ router.post('/signup', async (req, res) => {
       return res.status(400).json({ message: 'Invalid email format' });
     }
 
+    // Check if email is already taken
+    const emailCheck = await query(`SELECT id FROM users WHERE email = ?`, [email]);
+    if (emailCheck.rows.length > 0) {
+      return res.status(400).json({ message: 'Email already exists' });
+    }
+
+    // Check if username is already taken
+    const usernameCheck = await query(`SELECT id FROM users WHERE username = ?`, [username]);
+    if (usernameCheck.rows.length > 0) {
+      return res.status(400).json({ message: 'Username already exists' });
+    }
+
     const passwordRegex = /^(?=.*[0-9])(?=.*[!@#$%^&*]).{8,}$/;
     if (!passwordRegex.test(password)) {
       return res.status(400).json({ message: 'Password must be at least 8 characters long, include a number and a special character' });
     }
 
+    // Validate referral ID if provided
+    if (referralId && referralId.trim() !== '') {
+      const referralCheck = await query(`SELECT id FROM users WHERE referral_id = ? AND status = 'approved'`, [referralId.trim()]);
+      if (referralCheck.rows.length === 0) {
+        return res.status(400).json({ message: 'Referral ID not found or user not approved' });
+      }
+    }
+
     const hash = await bcrypt.hash(password, 10);
+
+    // Generate unique referral ID for the new user
+    const newReferralId = await generateReferralId();
 
     try {
       await query(
-        `INSERT INTO users (firstname, lastname, phone, email, username, password, referralId, idNumber, role, status)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-        [firstname, lastname, phone, email, username, hash, referralId || null, idNumber, 'user', 'pending']
+        `INSERT INTO users (firstname, lastname, phone, email, username, password, referralId, referral_id, idNumber, province, district, sector, cell, village, role, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [firstname, lastname, phone, email, username, hash, referralId || null, newReferralId, idNumber, province, district, sector, cell, village, 'user', 'pending']
       );
-      res.json({ message: 'Signup successful, wait for admin approval' });
+      res.json({
+        message: 'Signup successful, wait for admin approval',
+        referralId: newReferralId
+      });
     } catch (err) {
-      if (err.message.includes('UNIQUE constraint failed')) {
-        return res.status(400).json({ message: 'Email or username already exists' });
-      }
+      console.error('Signup error:', err);
       return res.status(500).json({ message: 'Server error' });
     }
   } catch (error) {
@@ -64,17 +114,23 @@ router.post('/signup', async (req, res) => {
 
 // Login (user)
 router.post('/login', userLoginLimiter, async (req, res) => {
-  const { email, password } = req.body;
+  const { phone, password } = req.body;
 
-  console.log('User login attempt for:', email);
+  console.log('User login attempt for phone:', phone);
 
-  if (!email || !password) {
-    console.log('Missing email or password');
-    return res.status(400).json({ message: 'Email and password are required' });
+  if (!phone || !password) {
+    console.log('Missing phone or password');
+    return res.status(400).json({ message: 'Phone number and password are required' });
+  }
+
+  // Validate phone number format
+  const phoneRegex = /^\d{10}$/;
+  if (!phoneRegex.test(phone)) {
+    return res.status(400).json({ message: 'Phone number must be exactly 10 digits' });
   }
 
   try {
-    const result = await query(`SELECT * FROM users WHERE email = $1`, [email]);
+    const result = await query(`SELECT * FROM users WHERE phone = ?`, [phone]);
     const user = result.rows[0];
 
     console.log('User found:', !!user);
@@ -84,7 +140,7 @@ router.post('/login', userLoginLimiter, async (req, res) => {
     }
 
     if (!user) {
-      console.log('No user found with email:', email);
+      console.log('No user found with phone:', phone);
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
@@ -97,12 +153,12 @@ router.post('/login', userLoginLimiter, async (req, res) => {
     console.log('Password match result:', match);
 
     if (!match) {
-      console.log('Password does not match for user:', email);
+      console.log('Password does not match for user:', phone);
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
     const token = generateToken({ id: user.id, role: user.role });
-    console.log('User login successful for:', email);
+    console.log('User login successful for phone:', phone);
     res.json({ token, role: user.role, status: user.status, message: 'Login successful' });
   } catch (err) {
     console.error('User login error:', err);
@@ -112,17 +168,23 @@ router.post('/login', userLoginLimiter, async (req, res) => {
 
 // Admin login
 router.post('/admin-login', adminLoginLimiter, async (req, res) => {
-  const { email, password } = req.body;
+  const { phone, password } = req.body;
 
-  console.log('Admin login attempt for:', email);
+  console.log('Admin login attempt for phone:', phone);
 
-  if (!email || !password) {
-    console.log('Missing email or password');
-    return res.status(400).json({ message: 'Email and password are required' });
+  if (!phone || !password) {
+    console.log('Missing phone or password');
+    return res.status(400).json({ message: 'Phone number and password are required' });
+  }
+
+  // Validate phone number format
+  const phoneRegex = /^\d{10}$/;
+  if (!phoneRegex.test(phone)) {
+    return res.status(400).json({ message: 'Phone number must be exactly 10 digits' });
   }
 
   try {
-    const result = await query(`SELECT * FROM users WHERE email = $1 AND role = 'admin'`, [email]);
+    const result = await query(`SELECT * FROM users WHERE phone = ? AND role = 'admin'`, [phone]);
     const user = result.rows[0];
 
     console.log('Admin user found:', !!user);
@@ -132,7 +194,7 @@ router.post('/admin-login', adminLoginLimiter, async (req, res) => {
     }
 
     if (!user) {
-      console.log('No admin user found with email:', email);
+      console.log('No admin user found with phone:', phone);
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
@@ -140,12 +202,12 @@ router.post('/admin-login', adminLoginLimiter, async (req, res) => {
     console.log('Password match result:', match);
 
     if (!match) {
-      console.log('Password does not match for user:', email);
+      console.log('Password does not match for user:', phone);
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
     const token = generateToken({ id: user.id, role: user.role });
-    console.log('Admin login successful for:', email);
+    console.log('Admin login successful for phone:', phone);
     res.json({ token, message: 'Login successful' });
   } catch (err) {
     console.error('Admin login error:', err);
