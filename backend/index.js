@@ -214,9 +214,9 @@ async function seedAdmin() {
     }
 
     await query(
-      `INSERT INTO users (firstname, lastname, phone, email, username, password, referralId, idNumber, province, district, sector, cell, village, role, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
-      ['Admin', 'User', '0795772698', adminEmail, 'admin', hash, null, '0000000000', 'Kigali', 'Gasabo', 'Remera', 'Gisimenti', 'Kacyiru', 'admin', 'approved']
+      `INSERT INTO users (firstname, lastname, phone, email, username, password, referralId, referral_id, idNumber, province, district, sector, cell, village, role, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
+      ['Admin', 'User', '0795772698', adminEmail, 'admin', hash, null, 'KEDI001RW25', '0000000000', 'Kigali', 'Gasabo', 'Remera', 'Gisimenti', 'Kacyiru', 'admin', 'approved']
     );
     console.log(`Admin user seeded successfully: ${adminEmail}`);
   } catch (err) {

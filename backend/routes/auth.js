@@ -1,7 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const rateLimit = require('express-rate-limit');
-const { query } = require('../utils/database-sqlite');
+const { query } = require('../utils/database');
 const { generateToken } = require('../middleware/auth');
 
 // Referral ID generator function
@@ -12,7 +12,7 @@ const generateReferralId = async () => {
 
   // Get the next sequential number
   const result = await query('SELECT COUNT(*) as count FROM users');
-  const userCount = result.rows[0].count;
+  const userCount = parseInt(result.rows[0].count) || 0;
   const sequentialNumber = (userCount + 1).toString().padStart(3, '0');
 
   return `${companyPrefix}${sequentialNumber}${countryCode}${currentYear}`;
@@ -52,7 +52,7 @@ router.post('/signup', async (req, res) => {
     }
 
     // Check if phone number is already taken
-    const phoneCheck = await query(`SELECT id FROM users WHERE phone = ?`, [phone]);
+    const phoneCheck = await query(`SELECT id FROM users WHERE phone = $1`, [phone]);
     if (phoneCheck.rows.length > 0) {
       return res.status(400).json({ message: 'Phone number already exists' });
     }
@@ -63,13 +63,13 @@ router.post('/signup', async (req, res) => {
     }
 
     // Check if email is already taken
-    const emailCheck = await query(`SELECT id FROM users WHERE email = ?`, [email]);
+    const emailCheck = await query(`SELECT id FROM users WHERE email = $1`, [email]);
     if (emailCheck.rows.length > 0) {
       return res.status(400).json({ message: 'Email already exists' });
     }
 
     // Check if username is already taken
-    const usernameCheck = await query(`SELECT id FROM users WHERE username = ?`, [username]);
+    const usernameCheck = await query(`SELECT id FROM users WHERE username = $1`, [username]);
     if (usernameCheck.rows.length > 0) {
       return res.status(400).json({ message: 'Username already exists' });
     }
@@ -81,7 +81,7 @@ router.post('/signup', async (req, res) => {
 
     // Validate referral ID if provided
     if (referralId && referralId.trim() !== '') {
-      const referralCheck = await query(`SELECT id FROM users WHERE referral_id = ? AND status = 'approved'`, [referralId.trim()]);
+      const referralCheck = await query(`SELECT id FROM users WHERE referral_id = $1 AND status = 'approved'`, [referralId.trim()]);
       if (referralCheck.rows.length === 0) {
         return res.status(400).json({ message: 'Referral ID not found or user not approved' });
       }
@@ -95,7 +95,7 @@ router.post('/signup', async (req, res) => {
     try {
       await query(
         `INSERT INTO users (firstname, lastname, phone, email, username, password, referralId, referral_id, idNumber, province, district, sector, cell, village, role, status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
         [firstname, lastname, phone, email, username, hash, referralId || null, newReferralId, idNumber, province, district, sector, cell, village, 'user', 'pending']
       );
       res.json({
@@ -130,7 +130,7 @@ router.post('/login', userLoginLimiter, async (req, res) => {
   }
 
   try {
-    const result = await query(`SELECT * FROM users WHERE phone = ?`, [phone]);
+    const result = await query(`SELECT * FROM users WHERE phone = $1`, [phone]);
     const user = result.rows[0];
 
     console.log('User found:', !!user);
@@ -184,7 +184,7 @@ router.post('/admin-login', adminLoginLimiter, async (req, res) => {
   }
 
   try {
-    const result = await query(`SELECT * FROM users WHERE phone = ? AND role = 'admin'`, [phone]);
+    const result = await query(`SELECT * FROM users WHERE phone = $1 AND role = 'admin'`, [phone]);
     const user = result.rows[0];
 
     console.log('Admin user found:', !!user);
