@@ -13,6 +13,9 @@ dotenv.config();
 
 const app = express();
 
+// Trust proxy for rate limiting (important for production deployments)
+app.set('trust proxy', 1);
+
 app.use(cors());
 app.use(bodyParser.json());
 app.use(morgan('combined'));

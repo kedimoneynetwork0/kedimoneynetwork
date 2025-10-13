@@ -62,10 +62,13 @@ export default function ModernHome() {
                   Ibyerekeye
                 </Link>
                 <Link to="/signup" className="text-green-100 hover:text-white transition-colors text-sm">
-                  Sign Up
+                  Kwiyandikisha
                 </Link>
                 <Link to="/login" className="text-green-100 hover:text-white transition-colors text-sm">
-                  Sign In
+                  Kwinjira
+                </Link>
+                <Link to="/bonus" className="text-green-100 hover:text-white transition-colors text-sm">
+                  Amafaranga y'Abashyitsi
                 </Link>
               </nav>
             </div>
@@ -114,8 +117,8 @@ export default function ModernHome() {
                 </div>
                 <div className="flex items-center gap-sm">
                   <span>📱</span>
-                  <a href="https://wa.me/25075772698" className="hover:text-white transition-colors">
-                    +250 757 726 98
+                  <a href="https://wa.me/250795772698" className="hover:text-white transition-colors">
+                    +250 795 772 698
                   </a>
                 </div>
               </div>
@@ -144,10 +147,10 @@ export default function ModernHome() {
         </div>
         <div className="mt-sm bg-white rounded-lg shadow-lg p-md text-sm opacity-0 hover:opacity-100 transition-all">
           <a
-            href="https://wa.me/25075772698"
+            href="https://wa.me/250795772698"
             className="block text-primary hover:text-green-700 mb-sm"
           >
-            WhatsApp: +25075772698
+            WhatsApp: +250795772698
           </a>
           <a
             href="mailto:kedimoneynetwork@gmail.com"

@@ -2,7 +2,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const multer = require('multer');
 const path = require('path');
-const { query } = require('../utils/database-sqlite');
+const { query } = require('../utils/database');
 const { authMiddleware, adminMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
@@ -38,7 +38,7 @@ const upload = multer({
 router.get('/bonus', authMiddleware, async (req, res) => {
   const userId = req.user.id;
   try {
-    const result = await query(`SELECT SUM(amount) as totalBonus FROM bonuses WHERE userId = ?`, [userId]);
+    const result = await query(`SELECT SUM(amount) as totalBonus FROM bonuses WHERE userId = $1`, [userId]);
     const row = result.rows[0];
     res.json({ totalBonus: row.totalBonus || 0 });
   } catch (err) {
